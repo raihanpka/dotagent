@@ -29,7 +29,7 @@ with no saved session and no auto memory. Raw JSON stays in `bench/results/` (gi
 ## What it does not show
 
 - Two runs per condition is noise, not a trend. Do not read the time or cost gap as precise.
-- Only `scale=medium` ran here. The `large` workflow (`ship.js`) needs the Workflow tool, which a
+- Only `scale=medium` ran here. The `large` workflow (`ship-large.js`) needs the Workflow tool, which a
   headless `claude -p` run did not have, so its escalation ladder is covered by tests against a
   fake agent only.
 - No PR or CI step ran, the repo has no GitHub remote.

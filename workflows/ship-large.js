@@ -3,7 +3,7 @@
 // Roles repeat agents/*.md in short form because a workflow agent gets only its prompt.
 // Slices run one at a time on purpose: one working tree has one git index, so parallel commits collide.
 export const meta = {
-  name: 'ship',
+  name: 'ship-large',
   description: 'Plan a task, build it in atomic slices, review it, open the PR, and fix failures with a Haiku then Sonnet ladder',
   phases: [
     { title: 'branch', detail: 'cut the branch' },

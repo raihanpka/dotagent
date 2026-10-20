@@ -56,7 +56,7 @@ By `scale`:
 
 - `small`: no plan, commit and PR directly.
 - `medium`: planner, then one slicer per slice, then reviewer.
-- `large`: the `ship.js` workflow does the same as a script, so it can resume.
+- `large`: the `ship-large.js` workflow does the same as a script, so it can resume.
 
 The team: Sonnet leads, planning and reviewing. A swarm of Haiku slicers builds, one agent per
 slice, one slice at a time. Fixed steps (git, `gh`, CI) are plain commands.
@@ -91,11 +91,11 @@ dotagent/
 ├── hooks/             # guard.py: commit, PR title, merge level, em dash, big reads
 ├── agents/            # planner (sonnet), slicer (haiku), reviewer (sonnet)
 ├── skills/ship/       # the entry point
-├── workflows/         # ship.js: branch, plan, slices, review, PR, CI
+├── workflows/         # ship-large.js: branch, plan, slices, review, PR, CI
 ├── templates/         # PR template and example, PR and main CI, git hooks, docs, AGENTS.md skeleton
 ├── examples/          # what setup generated for a real repo
 ├── docs/              # PRACTICES.md, the workflow diagram as svg and excalidraw
-├── tests/             # hook tests and a fake agent test for ship.js
+├── tests/             # hook tests and a fake agent test for ship-large.js
 └── bench/             # a real case with hidden checks, run.sh, and results
 ```
 
@@ -115,7 +115,7 @@ a task this easy. See `bench/RESULTS.md` for the table and what it does not show
 
 ## bugs
 
-This is built for my own workflow. `ship.js` needs a recent Claude Code with workflows turned on.
+This is built for my own workflow. `ship-large.js` needs a recent Claude Code with workflows turned on.
 Its control flow is tested against a fake agent, but it has not run end to end on a real repo
 yet, and headless runs do not offer the Workflow tool, so `scale=large` falls back to the medium steps there. If something does not work on yours, open an issue and I will take a look.
 

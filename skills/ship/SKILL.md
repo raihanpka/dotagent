@@ -25,7 +25,7 @@ slices share one git index. Fixed steps (git, `gh`, CI) are plain commands, not 
 - **small**: no plan. Change, run build, lint, test, commit, open the PR.
 - **medium**: spawn `planner` for `.dotagent/plan.md`. Then spawn one `slicer` per slice, in order,
   and wait for each commit before the next. Spawn `reviewer`. Fix gaps, open the PR.
-- **large**: run the `/dotagent:ship` workflow with the Workflow tool. If that tool is not in your
+- **large**: run the `ship-large` workflow (`/dotagent:ship-large`) with the Workflow tool. If that tool is not in your
   tool list (headless runs, older Claude Code), say so in one line and do the medium steps.
   The workflow does the medium steps with the limits and retries below and returns the PR. Then apply Merge. Pass the user's words as the argument
   `{ task, context, planOnly }`: `task` is one line of what to build, `context` is

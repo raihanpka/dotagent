@@ -1,9 +1,9 @@
-// Runs workflows/ship.js against a fake agent to check its control flow, limits, and models.
+// Runs workflows/ship-large.js against a fake agent to check its control flow, limits, and models.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
-const source = readFileSync(new URL('../workflows/ship.js', import.meta.url), 'utf8').replace('export const meta', 'const meta')
+const source = readFileSync(new URL('../workflows/ship-large.js', import.meta.url), 'utf8').replace('export const meta', 'const meta')
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
 
 const slices = n => Array.from({ length: n }, (_, i) => ({ message: `feat(m${i}): step ${i}`, change: [`a${i}.txt`], verify: 'make test' }))

@@ -43,7 +43,7 @@ Options (`/plugin configure dotagent@dotagent`). Unset means the value in bracke
   files, commits, and PR text. Generated-by lines in PR bodies count as emoji and are dropped.
 - `style_skills` [none]: skills to invoke at the start of a run, see step 3.
 
-Add `Workflow` to `permissions.allow` in `.claude/settings.json` so `ship.js` can start.
+Add `Workflow` to `permissions.allow` in `.claude/settings.json` so `ship-large.js` can start.
 
 ## 3. Interview, with the reasoning to give the user
 
