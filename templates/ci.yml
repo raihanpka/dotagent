@@ -1,0 +1,24 @@
+# Replace the {{...}} values. One run per pull request, the same commands the slicer runs.
+name: Quality
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      # {{setup}}: install your toolchain and dependencies here
+      - name: Build
+        run: "{{build}}"
+      - name: Lint
+        run: "{{lint}}"
+      - name: Test
+        run: "{{test}}"
