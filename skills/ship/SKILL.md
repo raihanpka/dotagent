@@ -24,8 +24,14 @@ every `planner` and `slicer` you spawn.
 - **small**: no plan. Change, run build, lint, test, commit, open the PR.
 - **medium**: spawn `planner` for `tasks/plan.md`. Then spawn one `slicer` per slice, in order,
   and wait for each commit before the next. Spawn `reviewer`. Fix gaps, open the PR.
-- **large**: run the `/harness:ship` workflow with the task as its argument. It does the
-  medium steps with the limits and retries below and returns the PR. Then apply Merge.
+- **large**: run the `/harness:ship` workflow. It does the medium steps with the limits and
+  retries below and returns the PR. Then apply Merge. Pass the user's words as the argument
+  `{ task, context, planOnly, companions }`: `task` is one line of what to build, `context` is
+  any pasted requirements verbatim, `planOnly` is true when the user said plan only, and
+  `companions` holds the `plan` and `build` values from the session line.
+
+Whatever the scale, text the user pastes after the task, such as requirements from product, is
+input to the plan. Never summarize it away, pass it on verbatim.
 
 ## Limits
 
