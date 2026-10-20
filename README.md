@@ -34,17 +34,15 @@ that, then bring the result here.
 ## install
 ```bash
 claude
-/plugin marketplace add OWNER/dotagent
+/plugin marketplace add raihanpka/dotagent
 /plugin install dotagent@dotagent
 ```
-
-Replace `OWNER` with the GitHub account that hosts this repo.
 
 Then tell your agent: `read SETUP.md and set dotagent up in this repo`. It checks the
 prerequisites, looks at your repo, asks a few questions, and shows every file before writing it.
 It also writes `docs/DOTAGENT-SETUP.md`, a checklist you can tick as you review each file.
 
-## use it
+## use it (example)
 ```
 /dotagent:ship add the overview endpoint. requirements from product: <paste them here>
 ```
@@ -52,11 +50,13 @@ It also writes `docs/DOTAGENT-SETUP.md`, a checklist you can tick as you review 
 Everything after the command is the task, pasted product requirements included, and the planner
 gets it verbatim. Say "plan only" and it stops after the plan so you can read it first.
 
-By `scale`:
+`scale` sets how much process a task gets. Set it once with `/plugin configure dotagent@dotagent`.
 
-- `small`: no plan, commit and PR directly.
-- `medium`: planner, then one slicer per slice, then reviewer.
-- `large`: the `ship-large.js` workflow does the same as a script, so it can resume.
+| Scale | Use it for | What happens |
+|---|---|---|
+| `small` | a tiny or solo repo, a one sentence diff | No plan. Change, build, lint, test, commit, open the PR. |
+| `medium` | most features (the default) | The planner cuts slices, one Haiku slicer builds each, the reviewer checks, then the PR. Claude follows the steps. |
+| `large` | many modules, a team, or an unattended run | The same steps as `medium`, run by the `ship-large` workflow script. The script, not the model, enforces the limits and the fix ladder, and the run can resume after a stop. Needs the Workflow tool, otherwise it falls back to `medium`. |
 
 The team: Sonnet leads, planning and reviewing. A swarm of Haiku slicers builds, one agent per
 slice, one slice at a time. Fixed steps (git, `gh`, CI) are plain commands.
