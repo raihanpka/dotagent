@@ -1,0 +1,27 @@
+# Main branch check. Runs after a merge, never on a feature branch push.
+# It holds what is too slow or too heavy for every PR: services, migrations, boot and health probe.
+# Delete this file when your repo has nothing heavier than the PR gate.
+name: Production Check
+
+on:
+  push:
+    branches: [{{default-branch}}]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify main
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # {{services}}: databases or caches the integration run needs, for example postgres and redis
+    steps:
+      - uses: actions/checkout@v5
+      # {{setup}}: same toolchain setup as the PR gate
+      - name: Build
+        run: "{{build}}"
+      - name: Integration
+        run: "{{integration-or-boot-and-health-probe}}"
