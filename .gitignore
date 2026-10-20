@@ -1,3 +1,4 @@
 # minimialistic gitignore
 bench/results/
 *.DS_Store
+__pycache__/

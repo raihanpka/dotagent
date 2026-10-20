@@ -1,14 +1,15 @@
 {
   "name": "dotagent",
   "owner": {
-    "name": "dotagent"
+    "name": "Raihan Putra Kirana",
+    "url": "https://github.com/raihanpka"
   },
   "plugins": [
     {
       "name": "dotagent",
       "source": "./plugin",
-      "description": "A minimalistic agent workflow for plan, slices, review, PR, CI, merge."
+      "description": "A minimalist agent swarm workflow: plan, atomic commits, review, PR, CI, merge by level."
     }
   ],
-  "description": "Agent workflow plugins: plan, atomic slices, review, PR, CI, merge by level."
+  "description": "A minimalist agent swarm workflow for Claude Code."
 }

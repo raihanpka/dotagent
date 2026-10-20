@@ -1,49 +1,21 @@
 {
   "name": "dotagent",
-  "version": "0.1.0",
-  "description": "A small agent workflow: plan, atomic slices, review, PR, CI, merge by permission level.",
-  "userConfig": {
-    "scale": {
-      "type": "string",
-      "title": "Scale",
-      "description": "small (commit and PR directly), medium (plan, atomic commits, one PR), or large (plan document, Haiku per slice, reviewer)",
-      "default": "medium"
-    },
-    "merge": {
-      "type": "string",
-      "title": "Merge level",
-      "description": "off (the agent never merges), on-green (after review and green CI), or full",
-      "default": "off"
-    },
-    "em_dash": {
-      "type": "string",
-      "title": "Em dash",
-      "description": "block (refuse em dashes in written text) or allow",
-      "default": "block"
-    },
-    "style_skills": {
-      "type": "string",
-      "title": "Style skills",
-      "description": "Comma separated skills to invoke at the start of a run, for example caveman,ponytail:lite, or none",
-      "default": "none"
-    },
-    "emoji": {
-      "type": "string",
-      "title": "Emoji",
-      "description": "block (refuse emoji in commit messages and PR text) or allow",
-      "default": "block"
-    }
-  },
+  "version": "0.2.0",
+  "description": "A minimalist agent swarm workflow: plan, atomic commits, review, PR, CI, merge by level.",
   "author": {
-    "name": "dotagent"
+    "name": "Raihan Putra Kirana",
+    "url": "https://github.com/raihanpka"
   },
+  "homepage": "https://github.com/raihanpka/dotagent",
+  "repository": "https://github.com/raihanpka/dotagent",
   "license": "MIT",
   "keywords": [
     "workflow",
+    "agent-swarm",
+    "minimalist",
     "pull-request",
     "ci",
     "atomic-commits",
-    "agents",
     "hooks"
   ]
 }
