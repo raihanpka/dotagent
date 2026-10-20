@@ -2,7 +2,7 @@
 # Runs every guard case against hooks/guard.py and fails on the first wrong exit code.
 set -u
 here="$(cd "$(dirname "$0")/.." && pwd)"
-guard="$here/hooks/guard.py"
+guard="$here/plugin/hooks/guard.py"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 pass=0

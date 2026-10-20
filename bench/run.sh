@@ -20,7 +20,7 @@ Commit your work in atomic commits. Do not push."
 # fresh_repo <dir> <with generic rules 0|1>: a copy of the case repo as a git repo with one commit.
 fresh_repo() {
   rm -rf "$1" && mkdir -p "$1" && cp -R "$case_dir/repo/." "$1" && cd "$1" || exit 1
-  if [ "$2" = 1 ]; then { printf '\n'; cat "$here/AGENTS.md"; } >> AGENTS.md; fi
+  if [ "$2" = 1 ]; then { printf '\n'; cat "$here/plugin/AGENTS.md"; } >> AGENTS.md; fi
   printf '@AGENTS.md\n' > CLAUDE.md
   git init -q -b main && git add -A && git -c user.name=bench -c user.email=b@b commit -qm "chore(repo): init"
 }
@@ -78,7 +78,7 @@ run_one() {
 for n in $(seq 1 "$runs"); do
   run_one baseline "$n" 0 "$task"
   run_one rules "$n" 1 "$task"
-  run_one plugin "$n" 1 "/dotagent $task" --plugin-dir "$here"
+  run_one plugin "$n" 1 "/dotagent $task" --plugin-dir "$here/plugin"
 done
 
 echo "case: $case_name, runs per condition: $runs"
