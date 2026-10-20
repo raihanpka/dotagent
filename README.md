@@ -3,7 +3,7 @@
 A small agent workflow for Claude Code, packed so you can try it.
 
 There is a new skill, plugin, or workflow every week, and keeping up with them is tiring. A lot
-of us feel it: you install five things, forget what each one does, and the setup gets heavier
+of me (or you) feel it: you install five things, forget what each one does, and the setup gets heavier
 than the work. I felt that too, so I made my own. It is small on purpose, it follows the
 engineering habits I trust, and it gets the job done: take a task with clear requirements and
 ship it as a clean pull request. I want to share it, but it only works if you adapt it to your
@@ -31,24 +31,31 @@ that, then bring the result here.
 | a GitHub remote with Actions | the PR and CI steps |
 | node and jq, optional | only to run dotagent's own tests |
 
-## install
+## install and first run
 ```bash
 claude
-/plugin marketplace add raihanpka/dotagent
+/plugin marketplace add OWNER/dotagent        # OWNER is the GitHub account hosting this repo
 /plugin install dotagent@dotagent
+/dotagent:setup                               # once per repo
 ```
 
-Then run `/dotagent:setup` (or tell your agent to read `SETUP.md` and set dotagent up in this repo). It checks the
-prerequisites, looks at your repo, asks a few questions, and shows every file before writing it.
-It also writes `docs/DOTAGENT-SETUP.md`, a checklist you can tick as you review each file.
+1. `/dotagent:setup` checks the prerequisites, looks at your repo, and asks a few questions: your
+   commands, architecture and coupling rules, commit scopes, CI, and git hooks. It shows every file
+   before writing it and ends with `docs/DOTAGENT-SETUP.md`, a checklist you tick as you review.
+2. The plugin options keep their defaults until you change them with
+   `/plugin configure dotagent@dotagent`: `scale=medium`, `merge=off`, `em_dash=block`,
+   `emoji=block`, `style_skills=none`.
+3. Ship a task. The scale word is optional and only applies to that run:
 
-## use it (example)
 ```
 /dotagent add the overview endpoint. requirements from product: <paste them here>
+/dotagent large add the overview endpoint. requirements from product: <paste them here>
+/dotagent small fix the typo in the login error message
 ```
 
 Everything after the command is the task, pasted product requirements included, and the planner
-gets it verbatim. Say "plan only" and it stops after the plan so you can read it first.
+gets it verbatim. Say "plan only" and it stops after the plan so you can read it first. With
+`merge=off` it stops at an open PR and you merge it yourself.
 
 `scale` sets how much process a task gets. Set it once with `/plugin configure dotagent@dotagent`.
 
@@ -58,8 +65,8 @@ gets it verbatim. Say "plan only" and it stops after the plan so you can read it
 | `medium` | most features (the default) | The planner cuts slices, one Haiku slicer builds each, the reviewer checks, then the PR. Claude follows the steps. |
 | `large` | many modules, a team, or an unattended run | The same steps as `medium`, run by the `ship-large` workflow script. The script, not the model, enforces the limits and the fix ladder, and the run can resume after a stop. Needs the Workflow tool, otherwise it falls back to `medium`. |
 
-The team: Sonnet leads, planning and reviewing. A swarm of Haiku slicers builds, one agent per
-slice, one slice at a time. Fixed steps (git, `gh`, CI) are plain commands.
+The team: Sonnet leads, planning and reviewing. A swarm of Haiku slicers builds, and each slice is
+one subagent (an Agent call in `medium`, an `agent()` call in `large`), run one at a time. Fixed steps (git, `gh`, CI) are plain commands.
 
 Limits: 8 slices and about 400 changed lines per PR. Every fix (a failed slice, review gaps, a red
 CI) gets two tries from Haiku, then one from Sonnet with the full context, then it stops and
