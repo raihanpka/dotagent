@@ -8,10 +8,15 @@
 - Lint: `{{lint}}`
 - Test: `{{test}}` (one file: `{{test-one}}`)
 
+## Architecture
+
+- Style: {{modular monolith, microservices, event driven, layered, or other}}. Structure: {{vertical slices by feature, layers, or other}}.
+- Coupling: {{the rule in one line, for example "a module is used only through its public interface, shared code lives in `shared/`, dependencies point one way"}}. Enforced by {{boundary check}}.
+
 ## Modules
 
-<!-- One line per module: what it owns and what it may import. The boundary check enforces it. -->
-- `{{path}}`: {{owns}}. May import: {{allowed}}.
+<!-- One line per module: what it owns, its public interface, and what it may depend on. -->
+- `{{path}}`: {{owns}}. Public interface: {{file}}. May depend on: {{allowed}}.
 
 ## Rules
 

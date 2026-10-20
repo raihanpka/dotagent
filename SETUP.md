@@ -38,7 +38,7 @@ Options (`/plugin configure harness@harness`). Unset means the value in brackets
   or a team.
 - `merge` [off]: `off`, `on-green`, or `full`. Recommend `off` first.
 - `em_dash` [block]: `block` or `allow`.
-- `plan_skill`, `build_skill`, `style_skills` [none]: optional companions, see step 3.
+- `style_skills` [none]: skills to invoke at the start of a run, see step 3.
 
 Add `Workflow` to `permissions.allow` in `.claude/settings.json` so `ship.js` can start.
 
@@ -46,13 +46,19 @@ Add `Workflow` to `permissions.allow` in `.claude/settings.json` so `ship.js` ca
 
 - **Commands.** Build, lint, test, and one test file. They must run the same locally and in CI,
   or the slicer and CI will disagree.
-- **Modules.** A module owns one thing, exposes a small public interface, and imports only what
-  you list. No cycles. Cross-module work goes through the interface, or a first slice that
-  defines the contract. This lets a subagent edit one slice without reading the rest.
-  Check the stated rule against the code: for every module, grep all its files, tests included,
-  for imports of every other module's path. Record the exact command next to your claim in
-  `docs/HARNESS-SETUP.md` so a human can rerun it. Never write that a rule holds without checking. List each existing violation as an open item in `docs/HARNESS-SETUP.md`
-  and describe it in `ARCHITECTURE.md` as it is today, not as the user wishes it were.
+- **Architecture style.** Ask which fits and why: modular monolith, microservices, event driven,
+  or layered. Then the structure: vertical slices by feature, or horizontal layers. Record the
+  answer and the reason in `ARCHITECTURE.md`. If the user is unsure, describe what the code shows.
+- **Coupling.** Lead with this one. Aim for low coupling and high cohesion: a module owns one
+  thing, hides its internals behind a small public interface, depends in one direction with no
+  cycles, and code that two modules share goes in a shared library. Cross-module work goes through
+  the interface, or a first slice that defines the contract. This is what lets a subagent edit one
+  slice without reading the rest. Ask what the shared library is called and what may depend on what.
+- **Check the rule against the code.** For every module, grep all its files, tests included, for
+  imports of every other module's path. Write the exact command next to your claim in
+  `docs/HARNESS-SETUP.md` so a human can rerun it. Never write that a rule holds without checking.
+  List each existing violation as an open item and under "Current violations" in
+  `ARCHITECTURE.md`, as it is today, not as the user wishes it were.
 - **Boundary check.** A rule in markdown gets ignored, a lint rule fails CI. Suggest the checker
   for the language: Dart `import_lint`, Go `internal/` plus `depguard`, TypeScript
   `eslint-plugin-boundaries` or `dependency-cruiser`, Python `import-linter`, Java ArchUnit.
@@ -62,15 +68,19 @@ Add `Workflow` to `permissions.allow` in `.claude/settings.json` so `ship.js` ca
   `type(scope): summary`, the scope is required.
 - **Git hooks.** Offer `.githooks/commit-msg` and `pre-push` so humans follow the same rules.
   Enabling them runs `git config core.hooksPath .githooks`, so ask first.
-- **CI.** Reuse the existing file when there is one. Otherwise start from `templates/ci.yml`.
-  One run per pull request, under 20 minutes.
-- **Companion skills.** Ask which the user already has installed. They are optional, harness
-  works without them. Install commands, only after the user agrees:
+- **CI.** Two workflows, each with one trigger, so a branch push never runs CI twice:
+  - `ci-pr.yml` runs on `pull_request` only. It is the gate: format, lint, build, test, and a
+    vulnerability scan if the stack has one. No services and no deploy, so it stays fast. Tell the
+    user to make it a required status check in branch protection.
+  - `ci-main.yml` runs on `push` to the default branch only. It holds what is too heavy for every
+    PR: services, migrations, boot and health probe, integration tests. Skip it when the repo has
+    nothing heavier than the gate.
+  Reuse existing workflows when there are any and split them this way. Never add a `push` trigger
+  for feature branches. A plain commit on a branch must not start a run.
+- **Style skills.** Optional, harness works without them. Ask which the user already has. They
+  only change how the agent writes replies. Install commands, only after the user agrees:
   - `caveman` for short replies: `/plugin marketplace add JuliusBrussee/caveman`
   - `ponytail:lite` for the simplest solution: `/plugin marketplace add DietrichGebert/ponytail`
-  - `agent-skills` for plan and build: `/plugin marketplace add addyosmani/agent-skills`, then use
-    `agent-skills:planning-and-task-breakdown` as `plan_skill` and
-    `agent-skills:incremental-implementation` as `build_skill`
 
 ## 4. Generate, then show
 
@@ -80,7 +90,8 @@ Add `Workflow` to `permissions.allow` in `.claude/settings.json` so `ship.js` ca
 | `CLAUDE.md` | one line, `@AGENTS.md` | when the repo has none |
 | `.github/PULL_REQUEST_TEMPLATE.md` | `templates/PULL_REQUEST_TEMPLATE.md` | always, with the real commands |
 | `.github/PR_EXAMPLE.md` | `templates/PR_EXAMPLE.md` | always, filled with a plausible finished example |
-| `.github/workflows/<name>.yml` | `templates/ci.yml` | only when there is no CI |
+| `.github/workflows/ci-pr.yml` | `templates/ci-pr.yml` | always, the PR gate |
+| `.github/workflows/ci-main.yml` | `templates/ci-main.yml` | only when the repo has heavier checks |
 | `.githooks/commit-msg`, `pre-push` | `templates/githooks/` | when the user said yes |
 | `docs/README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md` | `templates/docs/` | missing files only |
 | `docs/HARNESS-SETUP.md` | `templates/HARNESS-SETUP.md` | always, so a human can track it |

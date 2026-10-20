@@ -24,8 +24,11 @@ repo's own `AGENTS.md`, which wins on any conflict.
 ## Code
 
 - Touch only what the task needs. Note other problems, do not fix them.
-- A source file stays under 350 lines. Split it in its own slice.
-- A module is used through its public interface. Do not import across a module boundary.
+- Keep coupling low and cohesion high. A file or module has one responsibility and hides its
+  internals behind a small public interface. Dependencies point one way, with no cycles.
+- Code two modules share goes in a shared library, not into one module that the other reaches into.
+- File size is a signal, not a rule. Most files sit near 100 to 300 lines, and one past about 500
+  usually holds a second responsibility. Split by responsibility, in a slice of its own.
 - Do not add a dependency without asking.
 - Never commit code you cannot explain. If a slice is unclear, simplify it first.
 

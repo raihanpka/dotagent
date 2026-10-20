@@ -61,20 +61,20 @@ slice, 2 review rounds, 2 CI rounds. Bigger work is split into two tasks. Mergin
 levels, `off`, `on-green`, `full`. Start with `off`.
 
 Rules that must always hold are hooks, not prompts: one line `type(scope): summary` commits with
-no trailer, PR title format, the merge level, no em dash, and no whole read of a file over 350
+no trailer, PR title format, the merge level, no em dash, and no whole read of a file over 500
 lines. A rule in a markdown file can be ignored, a hook cannot.
 
-## skills i use with it
+## skills i use around it
 
-harness works alone. These are the ones i reach for, and you can name them in the plugin options:
+harness is only the shipping step and works alone. For the steps around it, use whatever fits:
+[`idea-refine`](https://github.com/addyosmani/agent-skills/tree/main/skills/idea-refine) to shape
+a vague idea, other skills for diagrams or for exploring how to improve a codebase. You can list
+style skills like `caveman` or `ponytail:lite` in the `style_skills` option.
 
-- [`idea-refine`](https://github.com/addyosmani/agent-skills/tree/main/skills/idea-refine) before
-  the task exists, to shape a vague idea
-- [`planning-and-task-breakdown`](https://github.com/addyosmani/agent-skills/tree/main/skills/planning-and-task-breakdown)
-  as `plan_skill`
-- [`incremental-implementation`](https://github.com/addyosmani/agent-skills/tree/main/skills/incremental-implementation)
-  as `build_skill`
-- `caveman` and `ponytail:lite` as `style_skills`, for short replies and the simplest solution
+The planner and slicer already carry the parts of
+[`planning-and-task-breakdown`](https://github.com/addyosmani/agent-skills/tree/main/skills/planning-and-task-breakdown)
+and [`incremental-implementation`](https://github.com/addyosmani/agent-skills/tree/main/skills/incremental-implementation)
+that fit this flow, so those two are not companions. Credit to Addy Osmani for both.
 
 ## structure
 ```
@@ -86,7 +86,7 @@ harness/
 ├── agents/            # planner (sonnet), slicer (haiku), reviewer (sonnet)
 ├── skills/ship/       # the entry point
 ├── workflows/         # ship.js: branch, plan, slices, review, PR, CI
-├── templates/         # PR template and example, CI, git hooks, docs, AGENTS.md skeleton
+├── templates/         # PR template and example, PR and main CI, git hooks, docs, AGENTS.md skeleton
 ├── examples/          # what setup generated for a real repo
 ├── docs/              # PRACTICES.md, workflow diagram
 ├── tests/             # hook tests and a fake agent test for ship.js
