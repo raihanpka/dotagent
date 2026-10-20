@@ -46,12 +46,16 @@ test('planner and reviewer use sonnet, slicers use haiku', async () => {
   assert.equal(calls.find(c => /slicer/.test(c.prompt)).model, 'haiku')
 })
 
-test('pasted requirements and companion skills reach the planner and slicers', async () => {
-  const { calls } = await run({ task: 'add x', context: 'PM says: must be idempotent', companions: { plan: 'agent-skills:plan', build: 'agent-skills:build' } })
-  const plan = calls.find(c => c.label === 'plan').prompt
-  assert.match(plan, /must be idempotent/)
-  assert.match(plan, /agent-skills:plan/)
-  assert.match(calls.find(c => /slicer/.test(c.prompt)).prompt, /agent-skills:build/)
+test('pasted requirements reach the planner verbatim', async () => {
+  const { calls } = await run({ task: 'add x', context: 'PM says: must be idempotent' })
+  assert.match(calls.find(c => c.label === 'plan').prompt, /must be idempotent/)
+})
+
+test('meta phases are objects with a title that phase() uses', async () => {
+  const meta = new Function(source.replace(/^[\s\S]*?(const meta = \{[\s\S]*?\n\})\n[\s\S]*$/, '$1; return meta'))()
+  assert.ok(meta.phases.every(p => typeof p.title === 'string'))
+  const { phases } = await run('add x')
+  assert.deepEqual(phases, meta.phases.map(p => p.title))
 })
 
 test('a task the planner calls too big stops before any slicer', async () => {

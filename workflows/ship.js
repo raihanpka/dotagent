@@ -4,7 +4,14 @@
 export const meta = {
   name: 'ship',
   description: 'Plan a task, build it in atomic slices, review it, open the PR, and fix CI twice at most',
-  phases: ['branch', 'plan', 'slices', 'review', 'pr', 'ci'],
+  phases: [
+    { title: 'branch', detail: 'cut the branch' },
+    { title: 'plan', detail: 'Sonnet cuts atomic slices' },
+    { title: 'slices', detail: 'one Haiku per slice, in order' },
+    { title: 'review', detail: 'Sonnet in a fresh context' },
+    { title: 'pr', detail: 'push and open the PR' },
+    { title: 'ci', detail: 'watch checks, 2 fix rounds' },
+  ],
 }
 
 const MODEL = { plan: 'sonnet', slice: 'haiku', review: 'sonnet', run: 'haiku' }
@@ -13,15 +20,11 @@ const MAX_SLICER_RUNS = 14 // 8 slices, retries, 2 review fixes, 2 CI fixes, wit
 const MAX_REVIEW_ROUNDS = 2
 const MAX_CI_ROUNDS = 2
 
-// args is the task as typed, pasted requirements included, or { task, context, planOnly, companions }.
+// args is the task as typed, pasted requirements included, or { task, context, planOnly }.
 const input = typeof args === 'string' ? { task: args } : args || {}
 const task = input.task
 if (!task) throw new Error('pass the task as the argument, for example /harness:ship add a slugify helper')
 const context = input.context ? '\nRequirements as given, verbatim:\n' + input.context : ''
-const companions = input.companions || {}
-const companionNote =
-  (companions.plan && companions.plan !== 'none' ? 'Invoke the skill ' + companions.plan + ' with the Skill tool and follow it. ' : '') +
-  (companions.build && companions.build !== 'none' ? 'Invoke the skill ' + companions.build + ' with the Skill tool and follow it. ' : '')
 
 let slicerRuns = 0
 const list = { type: 'array', items: { type: 'string' } }
@@ -36,7 +39,7 @@ const sliceResult = { type: 'object', required: ['commit', 'ok'], properties: { 
 const slicer = (s, label, note) => {
   if (++slicerRuns > MAX_SLICER_RUNS) throw new Error('slicer spawn cap reached: ' + MAX_SLICER_RUNS)
   return agent(
-    'You are the slicer. Implement exactly this slice and nothing else. ' + companionNote + '\n' +
+    'You are the slicer. Implement exactly this slice and nothing else. Simplest change that works, no unrelated cleanup. ' + '\n' +
       'Commit message: ' + s.message + '\nChange: ' + s.change.join(', ') + '\nRead only: ' + (s.read || []).join(', ') + '\nVerify: ' + s.verify + '\n' +
       'Read with offset and limit. Write a failing test first when behavior is added. Run the verify commands, never weaken a check. ' +
       'Stage only the Change files and commit with the one line message. Never push. ' + (note || ''),
@@ -53,11 +56,11 @@ const git = await agent(
 
 phase('plan')
 const plan = await agent(
-  'You are the planner. Never edit code. Read little: grep for symbols, then read ranges. ' + companionNote + 'Cut this task into ordered atomic slices: ' + task + context + '\n' +
+  'You are the planner. Never edit code. Read little: grep for symbols, then read ranges. ' + 'Cut this task into ordered atomic slices: ' + task + context + '\n' +
     'At most ' + MAX_SLICES + ' slices and about 400 changed lines in total. If the task needs more, return the first ' + MAX_SLICES + ' slices and set tooBig to true. ' +
     'Each slice builds and passes tests alone, changes 1 to 3 files inside one module, has a one line `type(scope): summary` commit message ' +
     'with a scope that describes exactly those files, lists only the symbols or ranges the worker must read, and the exact build, lint, and test commands. ' +
-    'No source file may end above 350 lines. Slices touching the same file are ordered. Write the plan to tasks/plan.md. Give a PR title and a two line summary.',
+    'Prefer small files with one responsibility: plan a split as its own slice when a file would pass about 500 lines or take a second responsibility. A refactor is its own slice, new behavior and its tests share a slice. Slices touching the same file are ordered. Write the plan to tasks/plan.md. Give a PR title and a two line summary.',
   { model: MODEL.plan, label: 'plan', schema: { type: 'object', required: ['slices', 'prTitle', 'summary', 'tooBig'], properties: { slices: { type: 'array', items: sliceSchema }, prTitle: { type: 'string' }, summary: { type: 'string' }, tooBig: { type: 'boolean' } } } },
 )
 if (plan.tooBig || plan.slices.length > MAX_SLICES) return { stopped: 'too big', hint: 'split the task into two PRs', plan: plan.slices.map(s => s.message) }
@@ -74,7 +77,7 @@ const review = () =>
   agent(
     'You are the reviewer with a fresh context. Run `git diff ' + git.base + '...HEAD` and compare with tasks/plan.md. Report only gaps that affect ' +
       'correctness or the plan: a missing requirement, a broken edge case, a test that proves nothing, a change outside the plan, a crossed module ' +
-      'boundary, a file above 350 lines. No style notes. When clean, write the PR body from templates/PULL_REQUEST_TEMPLATE.md: tick only what was ' +
+      'boundary, a refactor mixed with a feature, a file past about 500 lines or with a second responsibility. No style notes. When clean, write the PR body from templates/PULL_REQUEST_TEMPLATE.md: tick only what was ' +
       'done and delete every unchecked line. Summary of the change: ' + plan.summary,
     { model: MODEL.review, label: 'review', schema: { type: 'object', required: ['clean', 'gaps', 'prBody'], properties: { clean: { type: 'boolean' }, gaps: list, prBody: { type: 'string' } } } },
   )
