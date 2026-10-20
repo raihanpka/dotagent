@@ -27,18 +27,21 @@ bash_json() { jq -nc --arg c "$1" '{tool_name:"Bash",tool_input:{command:$c}}'; 
 
 # commit style
 expect "commit ok" 0 "$(bash_json 'git commit -m "feat(auth): add login"')"
-expect "commit no scope ok" 0 "$(bash_json 'git commit -m "fix: stop crash on empty list"')"
+expect "commit scope ok" 0 "$(bash_json 'git commit -m "fix(list): stop crash on empty list"')"
+expect "commit needs a scope" 2 "$(bash_json 'git commit -m "fix: stop crash on empty list"')"
+expect "commit hotfix type ok" 0 "$(bash_json 'git commit -m "hotfix(api): restore the health route"')"
 expect "commit bad type" 2 "$(bash_json 'git commit -m "added login"')"
 expect "commit two -m" 2 "$(bash_json 'git commit -m "feat: a" -m "body"')"
 expect "commit heredoc" 2 "$(bash_json $'git commit -m "$(cat <<\'EOF\'\nfeat: a\n\nbody\nEOF\n)"')"
 expect "commit trailer" 2 "$(bash_json 'git commit -m "feat: a Co-Authored-By: X"')"
 expect "commit em dash" 2 "$(bash_json 'git commit -m "feat: add — login"')"
 expect "commit amend no msg" 0 "$(bash_json 'git commit --amend --no-edit')"
-expect "chained add and commit" 0 "$(bash_json $'git add a.txt\ngit commit -m "chore: tidy"')"
+expect "chained add and commit" 0 "$(bash_json $'git add a.txt\ngit commit -m "chore(repo): tidy"')"
 expect "not a commit" 0 "$(bash_json 'git status')"
 
 # pull request
 expect "pr ok" 0 "$(bash_json 'gh pr create --title "fix: stop crash" --body "text"')"
+expect "pr scoped title ok" 0 "$(bash_json 'gh pr create --title "feat(home): add overview" --body "text"')"
 expect "pr bad title" 2 "$(bash_json 'gh pr create --title "Stop crash" --body "text"')"
 expect "pr em dash body" 2 "$(bash_json 'gh pr create --title "fix: a" --body "a — b"')"
 

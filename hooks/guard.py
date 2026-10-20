@@ -12,7 +12,9 @@ import sys
 
 MAX_LINES = 350
 EM_DASH = "—"
-TITLE = re.compile(r"^(feat|fix|refactor|perf|test|chore|docs|ci|build|style)(\([a-z0-9._/-]+\))?!?: \S")
+TYPES = "feat|fix|hotfix|docs|style|refactor|test|chore|perf|revert|ci|build"
+COMMIT = re.compile(rf"^({TYPES})\([a-zA-Z0-9_.-]+\): \S")
+TITLE = re.compile(rf"^({TYPES})(\([a-zA-Z0-9_.-]+\))?: \S")
 MERGE_SUBJECT = re.compile(r"\(#\d+\)$")
 SKIP_READ = re.compile(
     r"(\.(g|freezed|pb)\.\w+$|\.(lock|min\.js|min\.css|png|jpe?g|gif|webp|pdf|ipynb|svg)$|"
@@ -73,15 +75,15 @@ def check_commit(args):
         block("no Co-Authored-By trailer in commit messages.")
     if EM_DASH in msg:
         block("no em dash in commit messages. Use a comma, period, or parentheses.")
-    if not TITLE.match(msg):
-        block("commit message must look like `type(scope): summary`, for example `fix(auth): stop token reuse`.")
+    if not COMMIT.match(msg):
+        block("commit message must look like `type(scope): summary` with a scope, for example `fix(auth): stop token reuse`.")
 
 
 def check_pr_create(tokens):
     # A PR title follows the commit format and no text carries an em dash.
     for title in flag_values(tokens, "-t", "--title"):
         if not TITLE.match(title):
-            block("PR title must look like `type(scope): summary`.")
+            block("PR title must look like `type: summary` or `type(scope): summary`.")
     for text in flag_values(tokens, "-t", "--title") + flag_values(tokens, "-b", "--body"):
         if EM_DASH in text:
             block("no em dash in PR text. Use a comma, period, or parentheses.")
