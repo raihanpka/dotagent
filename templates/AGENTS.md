@@ -1,6 +1,6 @@
 # {{project}}
 
-{{one line: what this repo is}}
+{{One line: what this repo is.}} Generic working rules come from the harness, the facts below are this repo's.
 
 ## Commands
 
@@ -10,13 +10,13 @@
 
 ## Modules
 
-<!-- One line per module: what it owns and which modules it may import. Boundaries are
-     enforced by {{boundary check}}, not by this list. -->
+<!-- One line per module: what it owns and what it may import. The boundary check enforces it. -->
 - `{{path}}`: {{owns}}. May import: {{allowed}}.
 
 ## Rules
 
 - Branch from `{{default-branch}}`. One task is one branch and one PR.
-- Commits are one line, `type(scope): summary`, no trailer. Details go in the PR.
+- Commits are one line, `type(scope): summary`, no trailer. Scopes: {{scopes}}.
 - Never edit generated files under `{{generated}}`. Run `{{codegen}}` instead.
-- {{rule that differs from the language defaults, one per line}}
+- A PR stays near 400 changed lines. Split a bigger task into slices that each build and pass.
+- {{a rule that differs from the language defaults, one per line}}
