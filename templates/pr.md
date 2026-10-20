@@ -26,6 +26,6 @@
 - [ ] `{{test}}` passes
 - [ ] Manual check (paste the step and the result)
 
-## Logs
+## Logs or Screenshots
 
 <!-- Paste only the lines that prove the change, for example the test summary. -->

@@ -17,7 +17,7 @@ and take what's useful.
 ```
 harness/
 ├── SETUP.md           # your agent reads this, asks you, then writes your files
-├── AGENTS.md          # generic working rules, short on purpose
+├── AGENTS.md          # generic working rules, SETUP.md merges them into your repo's file
 ├── .claude-plugin/    # plugin.json and marketplace.json
 ├── hooks/             # guard.py: commit style, PR title, merge level, em dash, big reads
 ├── agents/            # planner (sonnet), slicer (haiku), reviewer (sonnet)
@@ -59,7 +59,14 @@ Your commands, your modules, your boundaries, your generated paths, and your com
 are yours. `SETUP.md` asks for them. Everything else works as is, and you can delete what you
 do not like. Run `bash tests/hooks.test.sh` after you change a hook.
 
+## numbers
+
+On one tiny task the plugin added about 1.3 s and 9 percent cost, and every commit came out in
+the right format. See `bench/RESULTS.md` for the table and what was not measured.
+
 ## bugs
 
-This is built for my own workflow. The `ship.js` workflow needs a recent Claude Code with
-workflows turned on. If something does not work on yours, open an issue and I will take a look.
+This is built for my own workflow. `ship.js` needs a recent Claude Code with workflows turned
+on, and it has not run end to end yet: the hooks, the agents, and the skill are tested, the
+workflow script is written from the docs only. If something does not work on yours, open an
+issue and I will take a look.

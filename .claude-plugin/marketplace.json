@@ -1,7 +1,14 @@
 {
   "name": "harness",
-  "owner": { "name": "raihanpka" },
+  "owner": {
+    "name": "raihanpka"
+  },
   "plugins": [
-    { "name": "harness", "source": "./", "description": "A small agent workflow for plan, slices, review, PR, CI, merge." }
-  ]
+    {
+      "name": "harness",
+      "source": "./",
+      "description": "A small agent workflow for plan, slices, review, PR, CI, merge."
+    }
+  ],
+  "description": "Agent workflow plugins: plan, atomic slices, review, PR, CI, merge by level."
 }
