@@ -81,7 +81,9 @@ test('a slice that fails once is retried, twice escalates to sonnet, then stops'
   assert.equal(flaky.result.slicerRuns, 4)
   const esc = await run('add x', { slice: (p, c) => ({ commit: 'abc', ok: /Haiku failed twice/.test(p), note: 'boom' }) })
   assert.ok(esc.calls.some(c => /escalated/.test(c.label) && c.model === 'sonnet'))
-  await assert.rejects(run('add x', { slice: () => ({ commit: '', ok: false, note: 'boom' }) }), /after escalation/)
+  const dead = await run('add x', { slice: () => ({ commit: '', ok: false, note: 'boom' }) })
+  assert.equal(dead.result.stopped, 'slice')
+  assert.equal(dead.result.note, 'boom')
 })
 
 test('review fixes go to haiku twice, then sonnet once, then stop', async () => {
@@ -101,9 +103,15 @@ test('CI fixes go to haiku twice, then sonnet once, then report the log', async 
 })
 
 test('the slicer spawn cap stops a runaway', async () => {
+  let reviews = 0
   await assert.rejects(
-    run('add x', { plan: () => ({ slices: slices(8), prTitle: 't', summary: 's', tooBig: false }), slice: () => ({ commit: 'c', ok: false, note: 'x' }) }),
-    /spawn cap|after escalation/,
+    run('add x', {
+      plan: () => ({ slices: slices(8), prTitle: 't', summary: 's', tooBig: false }),
+      slice: p => ({ commit: 'c', ok: !/You are the slicer/.test(p) || /last attempt failed|review gaps|CI/.test(p) || /fix\(/.test(p), note: 'x' }),
+      review: () => ({ clean: ++reviews > 2, gaps: ['g'], prBody: 'b' }),
+      ci: () => ({ green: false, log: 'red' }),
+    }),
+    /spawn cap/,
   )
 })
 

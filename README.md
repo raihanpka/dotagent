@@ -94,9 +94,9 @@ dotagent/
 ├── workflows/         # ship.js: branch, plan, slices, review, PR, CI
 ├── templates/         # PR template and example, PR and main CI, git hooks, docs, AGENTS.md skeleton
 ├── examples/          # what setup generated for a real repo
-├── docs/              # PRACTICES.md, workflow diagram
+├── docs/              # PRACTICES.md, the workflow diagram as svg and excalidraw
 ├── tests/             # hook tests and a fake agent test for ship.js
-└── bench/             # a small latency and token benchmark
+└── bench/             # a real case with hidden checks, run.sh, and results
 ```
 
 ## adapt it
@@ -108,14 +108,16 @@ like. `docs/PRACTICES.md` lists where each rule comes from, so you can judge whi
 
 ## numbers
 
-On one tiny task the plugin added about 1.3 s and 9 percent cost. See `bench/RESULTS.md` for the
-table and what was not measured.
+On a six point feature request in a small Python repo, all three conditions passed every hidden
+check. The plugin made 5 atomic commits instead of 3, with a planner, Haiku slicers, and a
+reviewer, at about twice the cost and four times the time. It buys structure, not correctness, on
+a task this easy. See `bench/RESULTS.md` for the table and what it does not show.
 
 ## bugs
 
 This is built for my own workflow. `ship.js` needs a recent Claude Code with workflows turned on.
 Its control flow is tested against a fake agent, but it has not run end to end on a real repo
-yet. If something does not work on yours, open an issue and I will take a look.
+yet, and headless runs do not offer the Workflow tool, so `scale=large` falls back to the medium steps there. If something does not work on yours, open an issue and I will take a look.
 
 ## credits
 

@@ -4,14 +4,14 @@
 // Slices run one at a time on purpose: one working tree has one git index, so parallel commits collide.
 export const meta = {
   name: 'ship',
-  description: 'Plan a task, build it in atomic slices, review it, open the PR, and fix CI twice at most',
+  description: 'Plan a task, build it in atomic slices, review it, open the PR, and fix failures with a Haiku then Sonnet ladder',
   phases: [
     { title: 'branch', detail: 'cut the branch' },
     { title: 'plan', detail: 'Sonnet cuts atomic slices' },
     { title: 'slices', detail: 'one Haiku per slice, in order' },
     { title: 'review', detail: 'Sonnet in a fresh context' },
     { title: 'pr', detail: 'push and open the PR' },
-    { title: 'ci', detail: 'watch checks, 2 fix rounds' },
+    { title: 'ci', detail: 'watch checks, fix ladder of 3 tries' },
   ],
 }
 
@@ -58,7 +58,7 @@ const git = await agent(
 
 phase('plan')
 const plan = await agent(
-  'You are the planner. Never edit code. Read little: grep for symbols, then read ranges. ' + 'Cut this task into ordered atomic slices: ' + task + context + '\n' +
+  'You are the planner. Never edit code. Read little: grep for symbols, then read ranges. Cut this task into ordered atomic slices: ' + task + context + '\n' +
     'At most ' + MAX_SLICES + ' slices and about 400 changed lines in total. If the task needs more, return the first ' + MAX_SLICES + ' slices and set tooBig to true. ' +
     'Each slice builds and passes tests alone, changes 1 to 3 files inside one module, has a one line `type(scope): summary` commit message ' +
     'with a scope that describes exactly those files, lists only the symbols or ranges the worker must read, and the exact build, lint, and test commands. ' +
@@ -73,19 +73,19 @@ for (const s of plan.slices) {
   let done = await slicer(s, s.message)
   if (!done.ok) done = await slicer(s, s.message + ' (retry)', 'The last attempt failed: ' + done.note)
   if (!done.ok) done = await slicer(s, s.message + ' (escalated)', 'Haiku failed twice: ' + done.note + '. Take the time you need, read what the slice depends on.', MODEL.plan)
-  if (!done.ok) throw new Error('slice failed after escalation: ' + s.message + ': ' + done.note)
+  if (!done.ok) return { stopped: 'slice', slice: s.message, note: done.note, branch: git.branch }
 }
 
 const review = () =>
   agent(
     'You are the reviewer with a fresh context. Run `git diff ' + git.base + '...HEAD` and compare with .dotagent/plan.md. Report only gaps that affect ' +
       'correctness or the plan: a missing requirement, a broken edge case, a test that proves nothing, a change outside the plan, a crossed module ' +
-      'boundary, a refactor mixed with a feature, a file past about 500 lines or with a second responsibility. No style notes. When clean, write the PR body from templates/PULL_REQUEST_TEMPLATE.md: tick only what was ' +
+      'boundary, a refactor mixed with a feature, a file past about 500 lines or with a second responsibility. No style notes. When clean, write the PR body from .github/PULL_REQUEST_TEMPLATE.md: tick only what was ' +
       'done and delete every unchecked line. Summary of the change: ' + plan.summary,
     { model: MODEL.review, label: 'review', schema: { type: 'object', required: ['clean', 'gaps', 'prBody'], properties: { clean: { type: 'boolean' }, gaps: list, prBody: { type: 'string' } } } },
   )
 
-// Fix rounds: Haiku twice, then Sonnet once. A round is skipped when the check is already green.
+// Fix ladder: Haiku twice, then Sonnet once. A round only runs while the check is still red.
 const fixModel = round => (round < HAIKU_ROUNDS ? MODEL.slice : MODEL.plan)
 const FIX_ROUNDS = HAIKU_ROUNDS + SONNET_ROUNDS
 

@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Workflow"
+    ],
+    "deny": [
+      "Read(./internal/db/sqlc/*.sql.go)",
+      "Read(./internal/db/sqlc/models.go)",
+      "Read(./internal/db/sqlc/db.go)",
+      "Read(./internal/db/sqlc/querier.go)",
+      "Read(./internal/db/sqlc/querier_mock.go)",
+      "Read(./internal/modules/ai/grpc/acmeaiv1/*.pb.go)"
+    ]
+  }
+}
