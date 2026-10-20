@@ -75,10 +75,11 @@ test('planOnly returns the plan and spawns no slicer', async () => {
   assert.equal(calls.filter(c => /slicer/.test(c.prompt)).length, 0)
 })
 
-test('a slice that fails once is retried, twice escalates to sonnet, then stops', async () => {
+test('a slice that fails once escalates to sonnet, failing again stops', async () => {
   let n = 0
-  const flaky = await run('add x', { slice: () => ({ commit: 'abc', ok: ++n > 1, note: 'boom' }) })
+  const flaky = await run('add x', { slice: () => ({ commit: 'abc', ok: ++n > 1 && true, note: 'boom' }) })
   assert.equal(flaky.result.slicerRuns, 4)
+  assert.ok(flaky.calls.some(c => /escalated/.test(c.label) && c.model === 'sonnet'))
   const esc = await run('add x', { slice: (p, c) => ({ commit: 'abc', ok: /Haiku failed twice/.test(p), note: 'boom' }) })
   assert.ok(esc.calls.some(c => /escalated/.test(c.label) && c.model === 'sonnet'))
   const dead = await run('add x', { slice: () => ({ commit: '', ok: false, note: 'boom' }) })
@@ -86,20 +87,20 @@ test('a slice that fails once is retried, twice escalates to sonnet, then stops'
   assert.equal(dead.result.note, 'boom')
 })
 
-test('review fixes go to haiku twice, then sonnet once, then stop', async () => {
+test('review fixes go to haiku once, then sonnet once, then stop', async () => {
   const { result, calls } = await run('add x', { review: () => ({ clean: false, gaps: ['g'], prBody: '' }) })
   assert.equal(result.stopped, 'review')
-  assert.equal(calls.filter(c => c.label === 'review').length, 4)
+  assert.equal(calls.filter(c => c.label === 'review').length, 3)
   const fixes = calls.filter(c => /review fix/.test(c.label))
-  assert.deepEqual(fixes.map(c => c.model), ['haiku', 'haiku', 'sonnet'])
+  assert.deepEqual(fixes.map(c => c.model), ['haiku', 'sonnet'])
 })
 
-test('CI fixes go to haiku twice, then sonnet once, then report the log', async () => {
+test('CI fixes go to haiku once, then sonnet once, then report the log', async () => {
   const { result, calls } = await run('add x', { ci: () => ({ green: false, log: 'lint failed' }) })
   assert.equal(result.ciGreen, false)
   assert.equal(result.ciLog, 'lint failed')
-  assert.equal(calls.filter(c => c.label === 'ci').length, 4)
-  assert.deepEqual(calls.filter(c => /ci fix/.test(c.label)).map(c => c.model), ['haiku', 'haiku', 'sonnet'])
+  assert.equal(calls.filter(c => c.label === 'ci').length, 3)
+  assert.deepEqual(calls.filter(c => /ci fix/.test(c.label)).map(c => c.model), ['haiku', 'sonnet'])
 })
 
 test('the slicer spawn cap stops a runaway', async () => {
@@ -107,7 +108,7 @@ test('the slicer spawn cap stops a runaway', async () => {
   await assert.rejects(
     run('add x', {
       plan: () => ({ slices: slices(8), prTitle: 't', summary: 's', tooBig: false }),
-      slice: p => ({ commit: 'c', ok: !/You are the slicer/.test(p) || /last attempt failed|review gaps|CI/.test(p) || /fix\(/.test(p), note: 'x' }),
+      slice: p => ({ commit: 'c', ok: /Haiku failed|fix\(/.test(p), note: 'x' }),
       review: () => ({ clean: ++reviews > 2, gaps: ['g'], prBody: 'b' }),
       ci: () => ({ green: false, log: 'red' }),
     }),

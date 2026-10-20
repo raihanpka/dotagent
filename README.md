@@ -14,7 +14,7 @@ repo. The generic parts are here. The parts that depend on your code, you fill i
 ## what it is for
 
 dotagent is for shipping when the requirements are already clear. It plans the change, builds it
-in atomic commits, reviews it in a fresh context, opens the PR, and gives CI two tries.
+in atomic commits, reviews it in a fresh context, opens the PR, and gives a failing CI one Haiku fix and one Sonnet fix before it stops.
 
 It is not for ideation, diagrams, or exploring how to improve a codebase. Use other skills for
 that, then bring the result here.
@@ -34,7 +34,7 @@ that, then bring the result here.
 ## install and first run
 ```bash
 claude
-/plugin marketplace add OWNER/dotagent        # OWNER is the GitHub account hosting this repo
+/plugin marketplace add raihanpka/dotagent
 /plugin install dotagent@dotagent
 /dotagent:setup                               # once per repo
 ```
@@ -68,10 +68,10 @@ gets it verbatim. Say "plan only" and it stops after the plan so you can read it
 The team: Sonnet leads, planning and reviewing. A swarm of Haiku slicers builds, and each slice is
 one subagent (an Agent call in `medium`, an `agent()` call in `large`), run one at a time. Fixed steps (git, `gh`, CI) are plain commands.
 
-Limits: 8 slices and about 400 changed lines per PR. Every fix (a failed slice, review gaps, a red
-CI) gets two tries from Haiku, then one from Sonnet with the full context, then it stops and
-reports. Bigger work is split into two tasks. Merging has three
-levels, `off`, `on-green`, `full`. Start with `off`.
+Limits, kept small so a run stays cheap and short: at most 8 slices and about 400 changed lines per
+PR, because bigger work is two tasks. A failure (a failed slice, review gaps, a red CI) gets one
+try from Haiku and one from Sonnet with the full context, then it stops and reports. Merging has
+three levels, `off`, `on-green`, `full`. Start with `off`.
 
 Rules that must always hold are hooks, not prompts: one line `type(scope): summary` commits with
 no trailer, PR title format, the merge level, no em dash or emoji, and no whole read of a file over 500
@@ -86,7 +86,6 @@ style skills like `caveman` or `ponytail:lite` in the `style_skills` option.
 
 The planner and slicer already carry the parts of
 [`planning-and-task-breakdown`](https://github.com/addyosmani/agent-skills/tree/main/skills/planning-and-task-breakdown)
-and [`incremental-implementation`](https://github.com/addyosmani/agent-skills/tree/main/skills/incremental-implementation)
 that fit this flow, so those two are not companions. Credit to Addy Osmani for both.
 
 ## structure

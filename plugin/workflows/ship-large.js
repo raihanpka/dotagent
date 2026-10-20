@@ -1,25 +1,25 @@
 // A small team: Sonnet leads (plan and review), a swarm of Haiku slicers does one narrow slice each, one at a time.
-// Plan, slices, review, PR, then CI. A failing fix goes to Haiku twice, then to Sonnet once, then the run stops and reports.
+// Plan, slices, review, PR, then CI. A failing fix goes to Haiku once, then to Sonnet once, then the run stops and reports.
 // Roles repeat agents/*.md in short form because a workflow agent gets only its prompt.
 // Slices run one at a time on purpose: one working tree has one git index, so parallel commits collide.
 export const meta = {
   name: 'ship-large',
-  description: 'Plan a task, build it in atomic slices, review it, open the PR, and fix failures with a Haiku then Sonnet ladder',
+  description: 'Plan a task, build it in atomic slices, review it, open the PR, and fix failures with one Haiku try then one Sonnet try',
   phases: [
     { title: 'branch', detail: 'cut the branch' },
     { title: 'plan', detail: 'Sonnet cuts atomic slices' },
     { title: 'slices', detail: 'one Haiku per slice, in order' },
     { title: 'review', detail: 'Sonnet in a fresh context' },
     { title: 'pr', detail: 'push and open the PR' },
-    { title: 'ci', detail: 'watch checks, fix ladder of 3 tries' },
+    { title: 'ci', detail: 'watch checks, fix ladder of 2 tries' },
   ],
 }
 
 const MODEL = { plan: 'sonnet', slice: 'haiku', review: 'sonnet', run: 'haiku' }
 const MAX_SLICES = 8 // more than this is two tasks, a PR stays near 400 changed lines
-const MAX_SLICER_RUNS = 20 // 8 slices, retries, review and CI fix rounds, escalations, with room to spare
-// A fix gets 2 rounds from Haiku, then one round from Sonnet with the full context, then the run stops and reports.
-const HAIKU_ROUNDS = 2
+const MAX_SLICER_RUNS = 14 // 8 slices plus a few fixes, a backstop against a runaway
+// A fix gets one try from Haiku, then one from Sonnet with the full context, then the run stops and reports.
+const HAIKU_ROUNDS = 1
 const SONNET_ROUNDS = 1
 
 // args is the task as typed, pasted requirements included, or { task, context, planOnly }.
@@ -71,8 +71,7 @@ if (input.planOnly) return { stopped: 'plan only', plan: plan.slices.map(s => s.
 phase('slices')
 for (const s of plan.slices) {
   let done = await slicer(s, s.message)
-  if (!done.ok) done = await slicer(s, s.message + ' (retry)', 'The last attempt failed: ' + done.note)
-  if (!done.ok) done = await slicer(s, s.message + ' (escalated)', 'Haiku failed twice: ' + done.note + '. Take the time you need, read what the slice depends on.', MODEL.plan)
+  if (!done.ok) done = await slicer(s, s.message + ' (escalated)', 'Haiku failed: ' + done.note + '. Take the time you need, read what the slice depends on.', MODEL.plan)
   if (!done.ok) return { stopped: 'slice', slice: s.message, note: done.note, branch: git.branch }
 }
 
@@ -85,7 +84,7 @@ const review = () =>
     { model: MODEL.review, label: 'review', schema: { type: 'object', required: ['clean', 'gaps', 'prBody'], properties: { clean: { type: 'boolean' }, gaps: list, prBody: { type: 'string' } } } },
   )
 
-// Fix ladder: Haiku twice, then Sonnet once. A round only runs while the check is still red.
+// Fix ladder: Haiku once, then Sonnet once. A round only runs while the check is still red.
 const fixModel = round => (round < HAIKU_ROUNDS ? MODEL.slice : MODEL.plan)
 const FIX_ROUNDS = HAIKU_ROUNDS + SONNET_ROUNDS
 

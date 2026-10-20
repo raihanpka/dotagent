@@ -28,11 +28,9 @@ not find.
 ## 2. Install the plugin
 
 ```
-/plugin marketplace add OWNER/dotagent
+/plugin marketplace add raihanpka/dotagent
 /plugin install dotagent@dotagent
 ```
-
-Replace `OWNER` with the GitHub account that hosts this repo.
 
 Options (`/plugin configure dotagent@dotagent`). Unset means the value in brackets.
 

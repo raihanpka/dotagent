@@ -56,8 +56,8 @@
 <rect x="670" y="336" width="360" height="124" rx="14" fill="#ffc9c9" stroke="#c92a2a" stroke-width="2.5" stroke-dasharray="9 6"/>
 <text x="850" y="364" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Fix ladder</text>
 <text x="850" y="388" text-anchor="middle" font-size="14" fill="#343a40">For a failed slice, review gaps, or red CI:</text>
-<text x="850" y="409" text-anchor="middle" font-size="14" fill="#343a40">Tries 1 and 2: a Haiku slicer</text>
-<text x="850" y="430" text-anchor="middle" font-size="14" fill="#343a40">Try 3: a Sonnet slicer, full context</text>
+<text x="850" y="409" text-anchor="middle" font-size="14" fill="#343a40">Try 1: a Haiku slicer</text>
+<text x="850" y="430" text-anchor="middle" font-size="14" fill="#343a40">Try 2: a Sonnet slicer, full context</text>
 <text x="850" y="451" text-anchor="middle" font-size="14" fill="#343a40">Still failing: stop and report</text>
 <polyline points="642,398 670,398" fill="none" stroke="#c92a2a" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#r)"/>
 <polyline points="1080,254 1000,336" fill="none" stroke="#c92a2a" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#r)"/>
