@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   verify:
-    name: Verify main
+    name: Verify {{default-branch}}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     # {{services}}: databases or caches the integration run needs, for example postgres and redis

@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 760" width="1500" height="760" font-family="Helvetica, Arial, sans-serif">
 <defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#343a40"/></marker></defs>
 <rect width="1500" height="760" fill="#ffffff"/>
-<text x="1440" y="52" text-anchor="end" font-size="26" font-weight="700" fill="#212529">harness: /harness:ship</text>
+<text x="1440" y="52" text-anchor="end" font-size="26" font-weight="700" fill="#212529">dotagent: /dotagent:ship</text>
 <rect x="60" y="42" width="26" height="26" rx="6" fill="#a5d8ff" stroke="#343a40" stroke-width="2"/><text x="96" y="62" font-size="18" fill="#212529">Sonnet: plans and reviews</text>
 <rect x="360" y="42" width="26" height="26" rx="6" fill="#b2f2bb" stroke="#343a40" stroke-width="2"/><text x="396" y="62" font-size="18" fill="#212529">Haiku: does one narrow job</text>
 <rect x="660" y="42" width="26" height="26" rx="6" fill="#ffec99" stroke="#343a40" stroke-width="2"/><text x="696" y="62" font-size="18" fill="#212529">fixed step: git, gh, CI</text>

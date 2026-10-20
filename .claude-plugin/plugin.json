@@ -1,5 +1,5 @@
 {
-  "name": "harness",
+  "name": "dotagent",
   "version": "0.1.0",
   "description": "A small agent workflow: plan, atomic slices, review, PR, CI, merge by permission level.",
   "userConfig": {
@@ -29,6 +29,6 @@
     }
   },
   "author": {
-    "name": "raihanpka"
+    "name": "dotagent"
   }
 }

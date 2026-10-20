@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic guards for the harness: commit style, PR title, merge level, em dash, big reads.
+"""Deterministic guards for the dotagent: commit style, PR title, merge level, em dash, big reads.
 
 Reads one hook event as JSON on stdin. Exit 2 with a reason on stderr blocks the tool call.
 Settings come from the plugin options: CLAUDE_PLUGIN_OPTION_SCALE, _MERGE, _EM_DASH.
@@ -29,7 +29,7 @@ def opt(name, default):
 
 def block(reason):
     # Blocks the tool call and tells the agent what to do instead.
-    print("harness: " + reason, file=sys.stderr)
+    print("dotagent: " + reason, file=sys.stderr)
     sys.exit(2)
 
 
@@ -149,7 +149,7 @@ def main():
         return
     if event.get("hook_event_name") == "SessionStart":
         print(
-            f"[harness] scale={opt('SCALE', 'medium')} merge={opt('MERGE', 'off')} "
+            f"[dotagent] scale={opt('SCALE', 'medium')} merge={opt('MERGE', 'off')} "
             f"read-limit={READ_LINES} style={opt('STYLE_SKILLS', 'none')}"
         )
         return

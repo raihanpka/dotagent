@@ -1,6 +1,6 @@
 # {{project}}
 
-{{One line: what this repo is.}} Generic working rules come from the harness, the facts below are this repo's.
+{{One line: what this repo is.}} Generic working rules come from the dotagent, the facts below are this repo's.
 
 ## Commands
 

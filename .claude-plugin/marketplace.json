@@ -1,11 +1,11 @@
 {
-  "name": "harness",
+  "name": "dotagent",
   "owner": {
-    "name": "raihanpka"
+    "name": "dotagent"
   },
   "plugins": [
     {
-      "name": "harness",
+      "name": "dotagent",
       "source": "./",
       "description": "A small agent workflow for plan, slices, review, PR, CI, merge."
     }

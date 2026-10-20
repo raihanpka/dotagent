@@ -1,7 +1,7 @@
 {
  "type": "excalidraw",
  "version": 2,
- "source": "harness",
+ "source": "dotagent",
  "elements": [
   {
    "id": "e1",
@@ -29,8 +29,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "harness: /harness:ship",
-   "originalText": "harness: /harness:ship",
+   "text": "dotagent: /dotagent:ship",
+   "originalText": "dotagent: /dotagent:ship",
    "fontSize": 26,
    "fontFamily": 1,
    "textAlign": "left",

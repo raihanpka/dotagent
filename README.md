@@ -1,4 +1,4 @@
-# harness
+# dotagent
 
 A small agent workflow for Claude Code, packed so you can try it.
 
@@ -13,7 +13,7 @@ repo. The generic parts are here. The parts that depend on your code, you fill i
 
 ## what it is for
 
-harness is for shipping when the requirements are already clear. It plans the change, builds it
+dotagent is for shipping when the requirements are already clear. It plans the change, builds it
 in atomic commits, reviews it in a fresh context, opens the PR, and gives CI two tries.
 
 It is not for ideation, diagrams, or exploring how to improve a codebase. Use other skills for
@@ -29,22 +29,24 @@ that, then bring the result here.
 | python3 | runs the hooks |
 | your repo's toolchain | the build, lint, and test commands |
 | a GitHub remote with Actions | the PR and CI steps |
-| node and jq, optional | only to run harness's own tests |
+| node and jq, optional | only to run dotagent's own tests |
 
 ## install
 ```bash
 claude
-/plugin marketplace add raihanpka/harness
-/plugin install harness@harness
+/plugin marketplace add OWNER/dotagent
+/plugin install dotagent@dotagent
 ```
 
-Then tell your agent: `read SETUP.md and set harness up in this repo`. It checks the
+Replace `OWNER` with the GitHub account that hosts this repo.
+
+Then tell your agent: `read SETUP.md and set dotagent up in this repo`. It checks the
 prerequisites, looks at your repo, asks a few questions, and shows every file before writing it.
-It also writes `docs/HARNESS-SETUP.md`, a checklist you can tick as you review each file.
+It also writes `docs/DOTAGENT-SETUP.md`, a checklist you can tick as you review each file.
 
 ## use it
 ```
-/harness:ship add the overview endpoint. requirements from product: <paste them here>
+/dotagent:ship add the overview endpoint. requirements from product: <paste them here>
 ```
 
 Everything after the command is the task, pasted product requirements included, and the planner
@@ -66,7 +68,7 @@ lines. A rule in a markdown file can be ignored, a hook cannot.
 
 ## skills i use around it
 
-harness is only the shipping step and works alone. For the steps around it, use whatever fits:
+dotagent is only the shipping step and works alone. For the steps around it, use whatever fits:
 [`idea-refine`](https://github.com/addyosmani/agent-skills/tree/main/skills/idea-refine) to shape
 a vague idea, other skills for diagrams or for exploring how to improve a codebase. You can list
 style skills like `caveman` or `ponytail:lite` in the `style_skills` option.
@@ -78,7 +80,7 @@ that fit this flow, so those two are not companions. Credit to Addy Osmani for b
 
 ## structure
 ```
-harness/
+dotagent/
 ├── SETUP.md           # your agent reads this, asks you, then writes your files
 ├── AGENTS.md          # generic working rules, SETUP.md merges them into your repo's file
 ├── .claude-plugin/    # plugin.json and marketplace.json

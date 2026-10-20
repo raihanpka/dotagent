@@ -1,6 +1,6 @@
 # Setup
 
-For the agent reading this. The user asked you to set up harness in their repo. Do it in order,
+For the agent reading this. The user asked you to set up dotagent in their repo. Do it in order,
 ask one question at a time with AskUserQuestion, and show each file before you write it. Never
 overwrite a file that exists: show a diff and ask. Never push or merge anything.
 
@@ -16,7 +16,7 @@ Check each with `command -v` and report what is missing. Do not install anything
 | python3 | runs `hooks/guard.py` | `python3 --version` |
 | the repo's own toolchain | build, lint, and test commands | ask in step 3 |
 | a GitHub remote with Actions | the PR and CI steps | `git remote -v` |
-| node and jq (optional) | only to run harness's own tests | `node --version`, `jq --version` |
+| node and jq (optional) | only to run dotagent's own tests | `node --version`, `jq --version` |
 
 ## 1. Look first, cheaply
 
@@ -28,11 +28,13 @@ not find.
 ## 2. Install the plugin
 
 ```
-/plugin marketplace add raihanpka/harness
-/plugin install harness@harness
+/plugin marketplace add OWNER/dotagent
+/plugin install dotagent@dotagent
 ```
 
-Options (`/plugin configure harness@harness`). Unset means the value in brackets.
+Replace `OWNER` with the GitHub account that hosts this repo.
+
+Options (`/plugin configure dotagent@dotagent`). Unset means the value in brackets.
 
 - `scale` [medium]: `small` for a solo or tiny repo, `medium` for most, `large` for many modules
   or a team.
@@ -56,7 +58,7 @@ Add `Workflow` to `permissions.allow` in `.claude/settings.json` so `ship.js` ca
   slice without reading the rest. Ask what the shared library is called and what may depend on what.
 - **Check the rule against the code.** For every module, grep all its files, tests included, for
   imports of every other module's path. Write the exact command next to your claim in
-  `docs/HARNESS-SETUP.md` so a human can rerun it. Never write that a rule holds without checking.
+  `docs/DOTAGENT-SETUP.md` so a human can rerun it. Never write that a rule holds without checking.
   List each existing violation as an open item and under "Current violations" in
   `ARCHITECTURE.md`, as it is today, not as the user wishes it were.
 - **Boundary check.** A rule in markdown gets ignored, a lint rule fails CI. Suggest the checker
@@ -77,7 +79,7 @@ Add `Workflow` to `permissions.allow` in `.claude/settings.json` so `ship.js` ca
     nothing heavier than the gate.
   Reuse existing workflows when there are any and split them this way. Never add a `push` trigger
   for feature branches. A plain commit on a branch must not start a run.
-- **Style skills.** Optional, harness works without them. Ask which the user already has. They
+- **Style skills.** Optional, dotagent works without them. Ask which the user already has. They
   only change how the agent writes replies. Install commands, only after the user agrees:
   - `caveman` for short replies: `/plugin marketplace add JuliusBrussee/caveman`
   - `ponytail:lite` for the simplest solution: `/plugin marketplace add DietrichGebert/ponytail`
@@ -94,21 +96,21 @@ Add `Workflow` to `permissions.allow` in `.claude/settings.json` so `ship.js` ca
 | `.github/workflows/ci-main.yml` | `templates/ci-main.yml` | only when the repo has heavier checks |
 | `.githooks/commit-msg`, `pre-push` | `templates/githooks/` | when the user said yes |
 | `docs/README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md` | `templates/docs/` | missing files only |
-| `docs/HARNESS-SETUP.md` | `templates/HARNESS-SETUP.md` | always, so a human can track it |
+| `docs/DOTAGENT-SETUP.md` | `templates/DOTAGENT-SETUP.md` | always, so a human can track it |
 | `.claude/settings.json` | allow `Workflow`, deny reads of generated paths | merge into any existing file |
 
 Write each file from what you found in the repo. Never invent a command, a module, or a rule.
 When you cannot find something, leave the `{{...}}` out of the file and add a line to the open
-items in `docs/HARNESS-SETUP.md`.
+items in `docs/DOTAGENT-SETUP.md`.
 
 ## 5. Prove it
 
-Run build, lint, and test once. Run `bash tests/hooks.test.sh` from the harness checkout if it is
+Run build, lint, and test once. Run `bash tests/hooks.test.sh` from the dotagent checkout if it is
 available. Offer one tiny task on `scale=small` as a smoke test.
 
 ## 6. Commit and report
 
 Commit the generated files in atomic commits, one line each, scope required, for example
-`docs(harness): add the PR template and example`. Do not push. Then list what you wrote, what you
-skipped, and what the user must still decide. The user ticks each file in `docs/HARNESS-SETUP.md`
+`docs(dotagent): add the PR template and example`. Do not push. Then list what you wrote, what you
+skipped, and what the user must still decide. The user ticks each file in `docs/DOTAGENT-SETUP.md`
 as they review it.

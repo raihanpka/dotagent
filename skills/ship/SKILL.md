@@ -4,7 +4,7 @@ description: Implement a task end to end, from plan to atomic commits, review, P
 ---
 # ship
 
-Read the `[harness] scale=... merge=... read-limit=... style=...` line from session start.
+Read the `[dotagent] scale=... merge=... read-limit=... style=...` line from session start.
 One task is one branch and one PR, cut from the default branch. Commits are atomic and one
 line, `type(scope): summary`. Hooks enforce the format.
 
@@ -19,7 +19,7 @@ not the steps below.
 - **small**: no plan. Change, run build, lint, test, commit, open the PR.
 - **medium**: spawn `planner` for `tasks/plan.md`. Then spawn one `slicer` per slice, in order,
   and wait for each commit before the next. Spawn `reviewer`. Fix gaps, open the PR.
-- **large**: run the `/harness:ship` workflow. It does the medium steps with the limits and
+- **large**: run the `/dotagent:ship` workflow. It does the medium steps with the limits and
   retries below and returns the PR. Then apply Merge. Pass the user's words as the argument
   `{ task, context, planOnly }`: `task` is one line of what to build, `context` is
   any pasted requirements verbatim, and `planOnly` is true when the user said plan only.

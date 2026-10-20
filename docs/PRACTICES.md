@@ -1,9 +1,9 @@
-# Practices behind the harness and this workflow
+# Practices behind the dotagent and this workflow
 
 Old engineering habits and newer agent habits in this era, side by side. Each row says where the idea comes
-from and where the harness uses it. Figures marked "reported" came from secondary write-ups.
+from and where the dotagent uses it. Figures marked "reported" came from secondary write-ups.
 
-| Practice | Where it comes from | In the harness |
+| Practice | Where it comes from | In the dotagent |
 |---|---|---|
 | Small, self-contained changes, tests with the code, refactors apart from features | [Google engineering practices: small CLs](https://google.github.io/eng-practices/review/developer/small-cls.html) | One slice is one commit. A PR stays near 400 changed lines. The planner puts a refactor in its own slice. |
 | Review quality drops past a few hundred lines | The SmartBear and Cisco review study (reported: 200 to 400 lines per review) | The 8 slice and 400 line limit. Bigger work becomes two tasks. |
@@ -32,4 +32,4 @@ from and where the harness uses it. Figures marked "reported" came from secondar
   reads, `READ_LINES` in `hooks/guard.py`, which saves context and does not judge the code.
 - 8 slices and 400 lines per PR are starting points drawn from the review sources above.
 - Sequential slices trade speed for safety. Parallel slicers need isolated worktrees, which
-  the harness does not set up yet.
+  the dotagent does not set up yet.

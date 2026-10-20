@@ -1,4 +1,4 @@
-# Harness setup
+# Dotagent setup
 
 Written by the setup agent so a human can track and review it. Tick a file once you have read it.
 
