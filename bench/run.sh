@@ -26,7 +26,7 @@ run_one() {
   local dir="$out/work-$label-$n"
   fresh_repo "$dir"
   local start=$(date +%s)
-  claude -p "$PROMPT" --output-format json --model "$MODEL" --permission-mode dontAsk \
+  env ${SCALE:+CLAUDE_PLUGIN_OPTION_SCALE=$SCALE} claude -p "$PROMPT" --output-format json --model "$MODEL" --permission-mode dontAsk \
     --allowedTools "$allow" --setting-sources project "$@" > "$out/$label-$n.json" 2> "$out/$label-$n.err"
   local wall=$(( $(date +%s) - start ))
   local tests=fail slug=fail commits msg
@@ -44,10 +44,12 @@ run_one() {
 : > "$out/rows.jsonl"
 MODEL=sonnet
 for n in $(seq 1 "$runs"); do
-  PROMPT="$task"
+  SCALE="" PROMPT="$task"
   run_one baseline "$n"
-  PROMPT="/harness:ship scale is small, there is no remote so stop after the commit. $task"
-  run_one harness "$n" --plugin-dir "$here"
+  SCALE=small PROMPT="/harness:ship there is no remote, so stop after the commit. $task"
+  run_one harness-small "$n" --plugin-dir "$here"
+  SCALE=medium PROMPT="/harness:ship there is no remote, so stop after the commits. $task"
+  run_one harness-medium "$n" --plugin-dir "$here"
 done
 
 # hook cost: the guard runs before every Bash, Write, Edit, and Read call.
@@ -66,4 +68,5 @@ jq -s -r 'group_by(.label)[] | {label: .[0].label, runs: length,
   wall_s: (map(.wall_s) | add / length), api_s: (map(.api_s) | add / length), turns: (map(.turns) | add / length),
   cost_usd: (map(.cost_usd) | add / length), output: (map(.output) | add / length),
   cache_write: (map(.cache_write) | add / length), cache_read: (map(.cache_read) | add / length),
-  done_ok: (map(select(.tests == "pass" and .slug == "pass" and .commits == 2)) | length)} | @json' "$out/rows.jsonl"
+  done_ok: (map(select(.tests == "pass" and .slug == "pass" and .commits >= 2)) | length),
+  scoped_commit: (map(select(.last_commit | test("^[a-z]+\\([a-zA-Z0-9_.-]+\\): "))) | length)} | @json' "$out/rows.jsonl"

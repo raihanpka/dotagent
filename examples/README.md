@@ -24,10 +24,10 @@ go-backend/
 ├── .githooks/                          # commit-msg and pre-push, for humans
 └── docs/
     ├── README.md  ARCHITECTURE.md  CONVENTIONS.md
-    └── harness-setup.md                # decisions, checks run, open items, review ticks
+    └── HARNESS-SETUP.md                # decisions, checks run, open items, review ticks
 ```
 
-Start with `docs/harness-setup.md`. It lists every file, the command behind every claim about the
+Start with `docs/HARNESS-SETUP.md`. It lists every file, the command behind every claim about the
 code, and what is still open. In this run the agent found that five modules import other modules,
 so it recorded the rule as not holding yet instead of writing that it does.
 

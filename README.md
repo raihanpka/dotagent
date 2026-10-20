@@ -40,7 +40,7 @@ claude
 
 Then tell your agent: `read SETUP.md and set harness up in this repo`. It checks the
 prerequisites, looks at your repo, asks a few questions, and shows every file before writing it.
-It also writes `docs/harness-setup.md`, a checklist you can tick as you review each file.
+It also writes `docs/HARNESS-SETUP.md`, a checklist you can tick as you review each file.
 
 ## use it
 ```
@@ -98,7 +98,7 @@ harness/
 Your commands, your modules, your boundaries, your generated paths, and your commit scopes are
 yours. `SETUP.md` asks for them. Everything else works as is, and you can delete what you do not
 like. `docs/PRACTICES.md` lists where each rule comes from, so you can judge which to keep. Run
-`bash tests/hooks.test.sh` and `node --test tests/` after you change a hook or the workflow.
+`bash tests/hooks.test.sh` and `node --test tests/ship.test.mjs` after you change a hook or the workflow.
 
 ## numbers
 

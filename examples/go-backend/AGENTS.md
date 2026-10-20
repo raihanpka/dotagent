@@ -11,7 +11,7 @@ Go modular monolith for the Acme API (gin, fx, sqlc, asynq), one bounded context
 
 ## Modules
 
-<!-- Checked with the grep in docs/harness-setup.md. Today the rule does not hold, see docs/ARCHITECTURE.md. -->
+<!-- Checked with the grep in docs/HARNESS-SETUP.md. Today the rule does not hold, see docs/ARCHITECTURE.md. -->
 - `internal/modules/<name>`: one bounded context each (ai, auth, billing, calendar, docs, health, home, notifications, onboarding, profile, projects, release, tasks, whatsapp). May import: the shared libs `internal/{db,redis,email,queue,observability,logging,http,config}` and no other module.
 - Public interface of a module: its root package, `module.go`.
 - `internal/app` wires the modules together with fx.

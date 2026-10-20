@@ -26,3 +26,12 @@ Run it yourself with `bash bench/run.sh 3`. It spends real tokens.
 - `workflows/ship.js` was not run. The Workflow tool was not available in a headless session
   here, so the per agent `model` option and the full plan, PR, and CI loop are untested.
 - The benchmark repo has no remote, so the PR and CI steps were never exercised.
+
+## Update: second run, not yet valid
+
+The table above was measured before commits required a scope, so its harness commit message
+(`feat: add slugify`) would now be blocked. A second run added a `harness-medium` condition. It
+did not produce a usable result: the planner finished, but the slicer subagent was denied edits
+under `--permission-mode dontAsk`, so no slice was committed, and one run stopped on a usage
+limit. The `harness-small` rows from that run were mixed (2 of 3 done, scoped commits in 2 of 3).
+Treat the medium path as unmeasured until the benchmark grants subagents edit permission.

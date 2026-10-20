@@ -51,7 +51,7 @@ Add `Workflow` to `permissions.allow` in `.claude/settings.json` so `ship.js` ca
   defines the contract. This lets a subagent edit one slice without reading the rest.
   Check the stated rule against the code: for every module, grep all its files, tests included,
   for imports of every other module's path. Record the exact command next to your claim in
-  `docs/harness-setup.md` so a human can rerun it. Never write that a rule holds without checking. List each existing violation as an open item in `docs/harness-setup.md`
+  `docs/HARNESS-SETUP.md` so a human can rerun it. Never write that a rule holds without checking. List each existing violation as an open item in `docs/HARNESS-SETUP.md`
   and describe it in `ARCHITECTURE.md` as it is today, not as the user wishes it were.
 - **Boundary check.** A rule in markdown gets ignored, a lint rule fails CI. Suggest the checker
   for the language: Dart `import_lint`, Go `internal/` plus `depguard`, TypeScript
@@ -83,12 +83,12 @@ Add `Workflow` to `permissions.allow` in `.claude/settings.json` so `ship.js` ca
 | `.github/workflows/<name>.yml` | `templates/ci.yml` | only when there is no CI |
 | `.githooks/commit-msg`, `pre-push` | `templates/githooks/` | when the user said yes |
 | `docs/README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md` | `templates/docs/` | missing files only |
-| `docs/harness-setup.md` | `templates/harness-setup.md` | always, so a human can track it |
+| `docs/HARNESS-SETUP.md` | `templates/HARNESS-SETUP.md` | always, so a human can track it |
 | `.claude/settings.json` | allow `Workflow`, deny reads of generated paths | merge into any existing file |
 
 Write each file from what you found in the repo. Never invent a command, a module, or a rule.
 When you cannot find something, leave the `{{...}}` out of the file and add a line to the open
-items in `docs/harness-setup.md`.
+items in `docs/HARNESS-SETUP.md`.
 
 ## 5. Prove it
 
@@ -99,5 +99,5 @@ available. Offer one tiny task on `scale=small` as a smoke test.
 
 Commit the generated files in atomic commits, one line each, scope required, for example
 `docs(harness): add the PR template and example`. Do not push. Then list what you wrote, what you
-skipped, and what the user must still decide. The user ticks each file in `docs/harness-setup.md`
+skipped, and what the user must still decide. The user ticks each file in `docs/HARNESS-SETUP.md`
 as they review it.

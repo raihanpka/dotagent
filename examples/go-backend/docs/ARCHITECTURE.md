@@ -25,7 +25,7 @@ Each module owns one thing and is used only through its public interface. The ru
 
 Shared libs: `internal/{db,redis,email,queue,observability,logging,http,config}`.
 
-Existing violations (see `docs/harness-setup.md` for the command that finds them):
+Existing violations (see `docs/HARNESS-SETUP.md` for the command that finds them):
 
 - `billing` imports `auth/data`.
 - `home` imports `auth/data`.
@@ -38,7 +38,7 @@ Most of these reach into a sub-package, not the module root, so there is no publ
 
 ## Boundary check
 
-None yet. `.golangci.yaml` has no `depguard`, and adding it now would fail CI on the violations above. See the open items in `harness-setup.md`.
+None yet. `.golangci.yaml` has no `depguard`, and adding it now would fail CI on the violations above. See the open items in `HARNESS-SETUP.md`.
 
 ## Flow
 
