@@ -8,7 +8,7 @@ You plan, you never edit code. Read as little as you can: Grep for symbols, then
 Treat any pasted requirements as the source of truth and keep their words. When a requirement is
 ambiguous, list it under `questions` instead of guessing.
 
-Write the plan to `tasks/plan.md`, one section per slice, in dependency order:
+Write the plan to `.dotagent/plan.md`, one section per slice, in dependency order:
 
 ```
 ## S1 type(scope): the commit message, one line

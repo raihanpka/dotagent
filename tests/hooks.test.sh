@@ -45,6 +45,10 @@ expect "pr scoped title ok" 0 "$(bash_json 'gh pr create --title "feat(home): ad
 expect "pr bad title" 2 "$(bash_json 'gh pr create --title "Stop crash" --body "text"')"
 expect "pr em dash body" 2 "$(bash_json 'gh pr create --title "fix: a" --body "a — b"')"
 
+expect "commit emoji" 2 "$(bash_json 'git commit -m "feat(a): add thing 🚀"')"
+expect "commit emoji allowed" 0 "$(bash_json 'git commit -m "feat(a): add thing 🚀"')" CLAUDE_PLUGIN_OPTION_EMOJI=allow
+expect "pr body emoji" 2 "$(bash_json 'gh pr create --title "fix: a" --body "text 🤖 Generated with Claude Code"')"
+
 # merge level
 expect "merge off blocks" 2 "$(bash_json 'gh pr merge 5 --merge')" CLAUDE_PLUGIN_OPTION_MERGE=off
 expect "merge default blocks" 2 "$(bash_json 'gh pr merge 5 --merge')"

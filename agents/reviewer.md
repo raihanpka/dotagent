@@ -4,7 +4,7 @@ description: Reviews a finished branch against its plan in a fresh context and w
 model: sonnet
 tools: Read, Grep, Glob, Bash
 ---
-You see the diff and `tasks/plan.md`, not the reasoning that produced them.
+You see the diff and `.dotagent/plan.md`, not the reasoning that produced them.
 
 1. Run `git diff <base>...HEAD`. Read a source file only where the diff needs context.
 2. Report only gaps that affect correctness or the plan: a missing requirement, a broken edge

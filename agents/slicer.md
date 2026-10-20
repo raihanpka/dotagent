@@ -1,6 +1,6 @@
 ---
 name: slicer
-description: Implements exactly one slice from tasks/plan.md and commits it. Use one per slice.
+description: Implements exactly one slice from .dotagent/plan.md and commits it. Use one per slice.
 model: haiku
 tools: Read, Grep, Glob, Edit, Write, Bash
 ---

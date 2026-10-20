@@ -12,7 +12,8 @@ import sys
 
 # Top of the usual file size range (ESLint recommends 100 to 500, Clean Code says 500 at most): see docs/PRACTICES.md.
 READ_LINES = 500
-EM_DASH = "—"
+EM_DASH = chr(0x2014)
+EMOJI = re.compile("[" + chr(0x1F300) + "-" + chr(0x1FAFF) + chr(0x2600) + "-" + chr(0x27BF) + chr(0x1F000) + "-" + chr(0x1F2FF) + "]")
 TYPES = "feat|fix|hotfix|docs|style|refactor|test|chore|perf|revert|ci|build"
 COMMIT = re.compile(rf"^({TYPES})\([a-zA-Z0-9_.-]+\): \S")
 TITLE = re.compile(rf"^({TYPES})(\([a-zA-Z0-9_.-]+\))?: \S")
@@ -59,6 +60,12 @@ def commits_in(tokens):
     return found
 
 
+def no_emoji(text, where):
+    # Refuses an emoji in commit and PR text, unless the user allows emoji.
+    if opt("EMOJI", "block") != "allow" and EMOJI.search(text):
+        block(f"no emoji in {where}.")
+
+
 def check_commit(args):
     # A commit message is one conventional line, no trailer, no em dash.
     messages = flag_values(args, "-m", "--message")
@@ -76,6 +83,7 @@ def check_commit(args):
         block("no Co-Authored-By trailer in commit messages.")
     if EM_DASH in msg:
         block("no em dash in commit messages. Use a comma, period, or parentheses.")
+    no_emoji(msg, "commit messages")
     if not COMMIT.match(msg):
         block("commit message must look like `type(scope): summary` with a scope, for example `fix(auth): stop token reuse`.")
 
@@ -88,6 +96,7 @@ def check_pr_create(tokens):
     for text in flag_values(tokens, "-t", "--title") + flag_values(tokens, "-b", "--body"):
         if EM_DASH in text:
             block("no em dash in PR text. Use a comma, period, or parentheses.")
+        no_emoji(text, "PR text, drop any generated-by line")
 
 
 def check_pr_merge(tokens):

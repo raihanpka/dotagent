@@ -1,53 +1,68 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 760" width="1500" height="760" font-family="Helvetica, Arial, sans-serif">
-<defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#343a40"/></marker></defs>
-<rect width="1500" height="760" fill="#ffffff"/>
-<text x="1440" y="52" text-anchor="end" font-size="26" font-weight="700" fill="#212529">dotagent: /dotagent:ship</text>
-<rect x="60" y="42" width="26" height="26" rx="6" fill="#a5d8ff" stroke="#343a40" stroke-width="2"/><text x="96" y="62" font-size="18" fill="#212529">Sonnet: plans and reviews</text>
-<rect x="360" y="42" width="26" height="26" rx="6" fill="#b2f2bb" stroke="#343a40" stroke-width="2"/><text x="396" y="62" font-size="18" fill="#212529">Haiku: does one narrow job</text>
-<rect x="660" y="42" width="26" height="26" rx="6" fill="#ffec99" stroke="#343a40" stroke-width="2"/><text x="696" y="62" font-size="18" fill="#212529">fixed step: git, gh, CI</text>
-<rect x="60" y="130" width="290" height="120" rx="14" fill="#e9ecef" stroke="#343a40" stroke-width="2.5"/>
-<text x="205" y="168" text-anchor="middle" font-size="22" font-weight="700" fill="#212529">task</text>
-<text x="205" y="200" text-anchor="middle" font-size="18" fill="#343a40">typed prompt, plus pasted</text>
-<text x="205" y="226" text-anchor="middle" font-size="18" fill="#343a40">product requirements</text>
-<rect x="430" y="130" width="290" height="120" rx="14" fill="#b2f2bb" stroke="#343a40" stroke-width="2.5"/>
-<text x="575" y="168" text-anchor="middle" font-size="22" font-weight="700" fill="#212529">branch: Haiku</text>
-<text x="575" y="200" text-anchor="middle" font-size="18" fill="#343a40">cuts feat/&lt;slug&gt; from</text>
-<text x="575" y="226" text-anchor="middle" font-size="18" fill="#343a40">the default branch</text>
-<rect x="800" y="130" width="290" height="120" rx="14" fill="#a5d8ff" stroke="#343a40" stroke-width="2.5"/>
-<text x="945" y="168" text-anchor="middle" font-size="22" font-weight="700" fill="#212529">plan: Sonnet</text>
-<text x="945" y="200" text-anchor="middle" font-size="18" fill="#343a40">writes tasks/plan.md</text>
-<text x="945" y="226" text-anchor="middle" font-size="18" fill="#343a40">8 slices, about 400 lines</text>
-<rect x="1170" y="130" width="290" height="120" rx="14" fill="#b2f2bb" stroke="#343a40" stroke-width="2.5"/>
-<text x="1315" y="168" text-anchor="middle" font-size="22" font-weight="700" fill="#212529">slices: Haiku x N</text>
-<text x="1315" y="200" text-anchor="middle" font-size="18" fill="#343a40">one slicer per slice, in order</text>
-<text x="1315" y="226" text-anchor="middle" font-size="18" fill="#343a40">test, build, lint, one commit</text>
-<rect x="1170" y="400" width="290" height="120" rx="14" fill="#a5d8ff" stroke="#343a40" stroke-width="2.5"/>
-<text x="1315" y="438" text-anchor="middle" font-size="22" font-weight="700" fill="#212529">review: Sonnet</text>
-<text x="1315" y="470" text-anchor="middle" font-size="18" fill="#343a40">fresh context, diff vs plan</text>
-<text x="1315" y="496" text-anchor="middle" font-size="18" fill="#343a40">2 fix rounds</text>
-<rect x="800" y="400" width="290" height="120" rx="14" fill="#b2f2bb" stroke="#343a40" stroke-width="2.5"/>
-<text x="945" y="438" text-anchor="middle" font-size="22" font-weight="700" fill="#212529">pr: Haiku</text>
-<text x="945" y="470" text-anchor="middle" font-size="18" fill="#343a40">push the branch,</text>
-<text x="945" y="496" text-anchor="middle" font-size="18" fill="#343a40">open the PR from the template</text>
-<rect x="430" y="400" width="290" height="120" rx="14" fill="#ffec99" stroke="#343a40" stroke-width="2.5"/>
-<text x="575" y="438" text-anchor="middle" font-size="22" font-weight="700" fill="#212529">ci: watch checks</text>
-<text x="575" y="470" text-anchor="middle" font-size="18" fill="#343a40">gh pr checks --watch</text>
-<text x="575" y="496" text-anchor="middle" font-size="18" fill="#343a40">2 fix rounds</text>
-<rect x="60" y="400" width="290" height="120" rx="14" fill="#ffec99" stroke="#343a40" stroke-width="2.5"/>
-<text x="205" y="438" text-anchor="middle" font-size="22" font-weight="700" fill="#212529">merge: by level</text>
-<text x="205" y="470" text-anchor="middle" font-size="18" fill="#343a40">off: stop at the PR</text>
-<text x="205" y="496" text-anchor="middle" font-size="18" fill="#343a40">on-green or full: merge (#N)</text>
-<line x1="350" y1="190" x2="430" y2="190" stroke="#343a40" stroke-width="3" marker-end="url(#a)"/>
-<line x1="720" y1="190" x2="800" y2="190" stroke="#343a40" stroke-width="3" marker-end="url(#a)"/>
-<line x1="1090" y1="190" x2="1170" y2="190" stroke="#343a40" stroke-width="3" marker-end="url(#a)"/>
-<line x1="1315" y1="250" x2="1315" y2="400" stroke="#343a40" stroke-width="3" marker-end="url(#a)"/>
-<line x1="1170" y1="460" x2="1090" y2="460" stroke="#343a40" stroke-width="3" marker-end="url(#a)"/>
-<line x1="800" y1="460" x2="720" y2="460" stroke="#343a40" stroke-width="3" marker-end="url(#a)"/>
-<line x1="430" y1="460" x2="350" y2="460" stroke="#343a40" stroke-width="3" marker-end="url(#a)"/>
-<rect x="800" y="272" width="290" height="44" rx="10" fill="#ffc9c9" stroke="#c92a2a" stroke-width="2" stroke-dasharray="8 6"/><text x="945" y="300" text-anchor="middle" font-size="17" fill="#212529">too big: stop, split into two tasks</text>
-<rect x="1170" y="542" width="290" height="44" rx="10" fill="#ffc9c9" stroke="#c92a2a" stroke-width="2" stroke-dasharray="8 6"/><text x="1315" y="570" text-anchor="middle" font-size="17" fill="#212529">still not clean: stop and report</text>
-<rect x="430" y="542" width="290" height="44" rx="10" fill="#ffc9c9" stroke="#c92a2a" stroke-width="2" stroke-dasharray="8 6"/><text x="575" y="570" text-anchor="middle" font-size="17" fill="#212529">still red after 2 rounds: stop</text>
-<rect x="60" y="640" width="1400" height="90" rx="14" fill="#f8f9fa" stroke="#343a40" stroke-width="2.5" stroke-dasharray="3 0"/>
-<text x="760" y="678" text-anchor="middle" font-size="19" fill="#212529">hooks guard every step: commit is type(scope): summary, one line, no trailer</text>
-<text x="760" y="706" text-anchor="middle" font-size="19" fill="#212529">PR title format  |  merge level  |  no em dash  |  reads over 350 lines blocked</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1690 810" width="1690" height="810" font-family="Inter, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif">
+<defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#343a40"/></marker><marker id="r" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c92a2a"/></marker></defs>
+<rect width="1690" height="810" fill="#ffffff"/>
+<text x="1630" y="52" text-anchor="end" font-size="26" font-weight="700" fill="#212529">Dotagent: /dotagent:ship</text>
+<rect x="60" y="38" width="26" height="26" rx="6" fill="#a5d8ff" stroke="#343a40" stroke-width="2"/><text x="96" y="58" font-size="17" fill="#212529">Sonnet: plans and reviews</text>
+<rect x="400" y="38" width="26" height="26" rx="6" fill="#b2f2bb" stroke="#343a40" stroke-width="2"/><text x="436" y="58" font-size="17" fill="#212529">Haiku: one narrow job</text>
+<rect x="700" y="38" width="26" height="26" rx="6" fill="#ffec99" stroke="#343a40" stroke-width="2"/><text x="736" y="58" font-size="17" fill="#212529">Fixed step: git, gh, CI</text>
+<rect x="1000" y="38" width="26" height="26" rx="6" fill="#ffc9c9" stroke="#343a40" stroke-width="2"/><text x="1036" y="58" font-size="17" fill="#212529">Escalation, then stop</text>
+<rect x="30" y="90" width="1630" height="176" rx="16" fill="#e7f5ff" stroke="#ced4da" stroke-width="1.5"/><text x="1642" y="120" text-anchor="end" font-size="17" font-weight="700" fill="#495057">Lead: Sonnet plans and reviews</text>
+<rect x="30" y="290" width="1630" height="176" rx="16" fill="#ebfbee" stroke="#ced4da" stroke-width="1.5"/><text x="1642" y="320" text-anchor="end" font-size="17" font-weight="700" fill="#495057">Slicer swarm: one Haiku agent per slice</text>
+<rect x="30" y="490" width="1630" height="176" rx="16" fill="#fff9db" stroke="#ced4da" stroke-width="1.5"/><text x="1642" y="520" text-anchor="end" font-size="17" font-weight="700" fill="#495057">Fixed steps: plain commands, no agent</text>
+<rect x="476" y="358" width="170" height="112" rx="14" fill="#b2f2bb" stroke="#343a40" stroke-width="2"/>
+<rect x="468" y="350" width="170" height="112" rx="14" fill="#b2f2bb" stroke="#343a40" stroke-width="2"/>
+<rect x="60" y="142" width="170" height="112" rx="14" fill="#e9ecef" stroke="#343a40" stroke-width="2.5"/>
+<text x="145" y="172" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Task</text>
+<text x="145" y="198" text-anchor="middle" font-size="15" fill="#343a40">Typed prompt plus</text>
+<text x="145" y="220" text-anchor="middle" font-size="15" fill="#343a40">pasted requirements</text>
+<rect x="260" y="142" width="170" height="112" rx="14" fill="#a5d8ff" stroke="#343a40" stroke-width="2.5"/>
+<text x="345" y="172" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Plan: Sonnet</text>
+<text x="345" y="198" text-anchor="middle" font-size="15" fill="#343a40">Writes the plan file,</text>
+<text x="345" y="220" text-anchor="middle" font-size="15" fill="#343a40">8 slices, 400 lines</text>
+<text x="345" y="242" text-anchor="middle" font-size="15" fill="#343a40">More: stop and split</text>
+<rect x="1060" y="142" width="170" height="112" rx="14" fill="#a5d8ff" stroke="#343a40" stroke-width="2.5"/>
+<text x="1145" y="172" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Review: Sonnet</text>
+<text x="1145" y="198" text-anchor="middle" font-size="15" fill="#343a40">Fresh context, the</text>
+<text x="1145" y="220" text-anchor="middle" font-size="15" fill="#343a40">diff against the plan</text>
+<rect x="460" y="342" width="170" height="112" rx="14" fill="#b2f2bb" stroke="#343a40" stroke-width="2.5"/>
+<text x="545" y="372" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Slices: Haiku</text>
+<text x="545" y="398" text-anchor="middle" font-size="15" fill="#343a40">One agent per slice,</text>
+<text x="545" y="420" text-anchor="middle" font-size="15" fill="#343a40">in order: test, build,</text>
+<text x="545" y="442" text-anchor="middle" font-size="15" fill="#343a40">lint, one commit</text>
+<rect x="60" y="542" width="170" height="112" rx="14" fill="#ffec99" stroke="#343a40" stroke-width="2.5"/>
+<text x="145" y="572" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Branch</text>
+<text x="145" y="598" text-anchor="middle" font-size="15" fill="#343a40">Cut from the</text>
+<text x="145" y="620" text-anchor="middle" font-size="15" fill="#343a40">default branch</text>
+<rect x="1060" y="542" width="170" height="112" rx="14" fill="#ffec99" stroke="#343a40" stroke-width="2.5"/>
+<text x="1145" y="572" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Open PR</text>
+<text x="1145" y="598" text-anchor="middle" font-size="15" fill="#343a40">Push, then gh pr</text>
+<text x="1145" y="620" text-anchor="middle" font-size="15" fill="#343a40">create from template</text>
+<rect x="1260" y="542" width="170" height="112" rx="14" fill="#ffec99" stroke="#343a40" stroke-width="2.5"/>
+<text x="1345" y="572" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Watch CI</text>
+<text x="1345" y="598" text-anchor="middle" font-size="15" fill="#343a40">gh pr checks --watch</text>
+<text x="1345" y="620" text-anchor="middle" font-size="15" fill="#343a40">Red: fix ladder</text>
+<rect x="1460" y="542" width="170" height="112" rx="14" fill="#ffec99" stroke="#343a40" stroke-width="2.5"/>
+<text x="1545" y="572" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Merge by level</text>
+<text x="1545" y="598" text-anchor="middle" font-size="15" fill="#343a40">Off: stop at the PR</text>
+<text x="1545" y="620" text-anchor="middle" font-size="15" fill="#343a40">On-green or full:</text>
+<text x="1545" y="642" text-anchor="middle" font-size="15" fill="#343a40">merge with (#N)</text>
+<polyline points="145,254 145,542" fill="none" stroke="#343a40" stroke-width="3" marker-end="url(#a)"/>
+<polyline points="230,598 317,598 317,254" fill="none" stroke="#343a40" stroke-width="3" marker-end="url(#a)"/>
+<polyline points="373,254 373,398 460,398" fill="none" stroke="#343a40" stroke-width="3" marker-end="url(#a)"/>
+<polyline points="545,342 545,198 1060,198" fill="none" stroke="#343a40" stroke-width="3" marker-end="url(#a)"/>
+<polyline points="1145,254 1145,542" fill="none" stroke="#343a40" stroke-width="3" marker-end="url(#a)"/>
+<polyline points="1230,598 1260,598" fill="none" stroke="#343a40" stroke-width="3" marker-end="url(#a)"/>
+<polyline points="1430,598 1460,598" fill="none" stroke="#343a40" stroke-width="3" marker-end="url(#a)"/>
+<rect x="670" y="336" width="360" height="124" rx="14" fill="#ffc9c9" stroke="#c92a2a" stroke-width="2.5" stroke-dasharray="9 6"/>
+<text x="850" y="364" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Fix ladder</text>
+<text x="850" y="388" text-anchor="middle" font-size="14" fill="#343a40">For a failed slice, review gaps, or red CI:</text>
+<text x="850" y="409" text-anchor="middle" font-size="14" fill="#343a40">Tries 1 and 2: a Haiku slicer</text>
+<text x="850" y="430" text-anchor="middle" font-size="14" fill="#343a40">Try 3: a Sonnet slicer, full context</text>
+<text x="850" y="451" text-anchor="middle" font-size="14" fill="#343a40">Still failing: stop and report</text>
+<polyline points="642,398 670,398" fill="none" stroke="#c92a2a" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#r)"/>
+<polyline points="1080,254 1000,336" fill="none" stroke="#c92a2a" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#r)"/>
+<polyline points="1280,542 960,460" fill="none" stroke="#c92a2a" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#r)"/>
+<rect x="60" y="690" width="1570" height="96" rx="14" fill="#f8f9fa" stroke="#343a40" stroke-width="2.5"/>
+<text x="845" y="730" text-anchor="middle" font-size="17" fill="#212529">Hooks check every step. A commit is type(scope): summary on one line with no trailer.</text>
+<text x="845" y="758" text-anchor="middle" font-size="17" fill="#212529">PR titles follow the same format. The merge level is enforced. No em dash. Whole reads over 500 lines are blocked.</text>
 </svg>

@@ -58,12 +58,16 @@ By `scale`:
 - `medium`: planner, then one slicer per slice, then reviewer.
 - `large`: the `ship.js` workflow does the same as a script, so it can resume.
 
-Limits: 8 slices and about 400 changed lines per PR, one Haiku slicer at a time, one retry per
-slice, 2 review rounds, 2 CI rounds. Bigger work is split into two tasks. Merging has three
+The team: Sonnet leads, planning and reviewing. A swarm of Haiku slicers builds, one agent per
+slice, one slice at a time. Fixed steps (git, `gh`, CI) are plain commands.
+
+Limits: 8 slices and about 400 changed lines per PR. Every fix (a failed slice, review gaps, a red
+CI) gets two tries from Haiku, then one from Sonnet with the full context, then it stops and
+reports. Bigger work is split into two tasks. Merging has three
 levels, `off`, `on-green`, `full`. Start with `off`.
 
 Rules that must always hold are hooks, not prompts: one line `type(scope): summary` commits with
-no trailer, PR title format, the merge level, no em dash, and no whole read of a file over 500
+no trailer, PR title format, the merge level, no em dash or emoji, and no whole read of a file over 500
 lines. A rule in a markdown file can be ignored, a hook cannot.
 
 ## skills i use around it

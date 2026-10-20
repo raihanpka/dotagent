@@ -39,7 +39,8 @@ Options (`/plugin configure dotagent@dotagent`). Unset means the value in bracke
 - `scale` [medium]: `small` for a solo or tiny repo, `medium` for most, `large` for many modules
   or a team.
 - `merge` [off]: `off`, `on-green`, or `full`. Recommend `off` first.
-- `em_dash` [block]: `block` or `allow`.
+- `em_dash` [block] and `emoji` [block]: `block` or `allow`. They stop the agent from writing either into
+  files, commits, and PR text. Generated-by lines in PR bodies count as emoji and are dropped.
 - `style_skills` [none]: skills to invoke at the start of a run, see step 3.
 
 Add `Workflow` to `permissions.allow` in `.claude/settings.json` so `ship.js` can start.
@@ -97,6 +98,7 @@ Add `Workflow` to `permissions.allow` in `.claude/settings.json` so `ship.js` ca
 | `.githooks/commit-msg`, `pre-push` | `templates/githooks/` | when the user said yes |
 | `docs/README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md` | `templates/docs/` | missing files only |
 | `docs/DOTAGENT-SETUP.md` | `templates/DOTAGENT-SETUP.md` | always, so a human can track it |
+| `.gitignore` | add the line `.dotagent/`, where the plan file lives | append, never overwrite |
 | `.claude/settings.json` | allow `Workflow`, deny reads of generated paths | merge into any existing file |
 
 Write each file from what you found in the repo. Never invent a command, a module, or a rule.

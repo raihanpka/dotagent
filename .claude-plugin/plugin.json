@@ -26,9 +26,24 @@
       "title": "Style skills",
       "description": "Comma separated skills to invoke at the start of a run, for example caveman,ponytail:lite, or none",
       "default": "none"
+    },
+    "emoji": {
+      "type": "string",
+      "title": "Emoji",
+      "description": "block (refuse emoji in commit messages and PR text) or allow",
+      "default": "block"
     }
   },
   "author": {
     "name": "dotagent"
-  }
+  },
+  "license": "MIT",
+  "keywords": [
+    "workflow",
+    "pull-request",
+    "ci",
+    "atomic-commits",
+    "agents",
+    "hooks"
+  ]
 }

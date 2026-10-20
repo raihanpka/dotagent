@@ -14,13 +14,20 @@ line, `type(scope): summary`. Hooks enforce the format.
 before you start. Skip `none` or a skill that is not installed. They change how you write replies,
 not the steps below.
 
+## The team
+
+Sonnet leads: the `planner` cuts the work and the `reviewer` checks it in a fresh context. A swarm
+of `slicer` agents on Haiku does the building, one agent per slice, one slice at a time because
+slices share one git index. Fixed steps (git, `gh`, CI) are plain commands, not agents.
+
 ## By scale
 
 - **small**: no plan. Change, run build, lint, test, commit, open the PR.
-- **medium**: spawn `planner` for `tasks/plan.md`. Then spawn one `slicer` per slice, in order,
+- **medium**: spawn `planner` for `.dotagent/plan.md`. Then spawn one `slicer` per slice, in order,
   and wait for each commit before the next. Spawn `reviewer`. Fix gaps, open the PR.
-- **large**: run the `/dotagent:ship` workflow. It does the medium steps with the limits and
-  retries below and returns the PR. Then apply Merge. Pass the user's words as the argument
+- **large**: run the `/dotagent:ship` workflow with the Workflow tool. If that tool is not in your
+  tool list (headless runs, older Claude Code), say so in one line and do the medium steps.
+  The workflow does the medium steps with the limits and retries below and returns the PR. Then apply Merge. Pass the user's words as the argument
   `{ task, context, planOnly }`: `task` is one line of what to build, `context` is
   any pasted requirements verbatim, and `planOnly` is true when the user said plan only.
 
@@ -32,7 +39,8 @@ input to the plan. Never summarize it away, pass it on verbatim.
 - At most 8 slices and about 400 changed lines per PR. When the planner says it needs more,
   stop and propose two tasks.
 - One slicer runs at a time. Slices that touch the same file are never parallel.
-- A slice gets one retry. Review fixes: 2 rounds. CI fixes: 2 rounds. Then stop and report.
+- Every fix (a failed slice, review gaps, a red CI) gets two tries from a Haiku slicer, then one
+  try from a Sonnet slicer with the full context, then you stop and report. Never loop past that.
 
 ## Open the PR
 
