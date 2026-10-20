@@ -58,11 +58,11 @@ expect "write clean" 0 '{"tool_name":"Write","tool_input":{"file_path":"a.md","c
 expect "write em dash allowed" 0 '{"tool_name":"Write","tool_input":{"file_path":"a.md","content":"a — b"}}' CLAUDE_PLUGIN_OPTION_EM_DASH=allow
 
 # large file reads
-seq 1 351 > "$tmp/big.txt"
-seq 1 350 > "$tmp/ok.txt"
+seq 1 501 > "$tmp/big.txt"
+seq 1 500 > "$tmp/ok.txt"
 seq 1 900 > "$tmp/big.g.dart"
 expect "read big blocked" 2 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$tmp/big.txt\"}}"
-expect "read 350 ok" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$tmp/ok.txt\"}}"
+expect "read 500 ok" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$tmp/ok.txt\"}}"
 expect "read big with range ok" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$tmp/big.txt\",\"offset\":10,\"limit\":50}}"
 expect "read generated ok" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$tmp/big.g.dart\"}}"
 expect "read missing ok" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$tmp/none.txt\"}}"

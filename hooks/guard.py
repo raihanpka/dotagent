@@ -10,7 +10,8 @@ import re
 import shlex
 import sys
 
-MAX_LINES = 350
+# Top of the usual file size range (ESLint recommends 100 to 500, Clean Code says 500 at most): see docs/PRACTICES.md.
+READ_LINES = 500
 EM_DASH = "—"
 TYPES = "feat|fix|hotfix|docs|style|refactor|test|chore|perf|revert|ci|build"
 COMMIT = re.compile(rf"^({TYPES})\([a-zA-Z0-9_.-]+\): \S")
@@ -124,7 +125,7 @@ def on_write(tool_input):
 
 
 def on_read(tool_input):
-    # Blocks a whole read of a source file over the line limit, a range read passes.
+    # Blocks a whole read of a source file over the read limit, a range read passes.
     path = tool_input.get("file_path", "")
     if tool_input.get("offset") or tool_input.get("limit") or SKIP_READ.search(path):
         return
@@ -133,9 +134,9 @@ def on_read(tool_input):
             lines = sum(1 for _ in handle)
     except OSError:
         return
-    if lines > MAX_LINES:
+    if lines > READ_LINES:
         block(
-            f"{path} has {lines} lines (limit {MAX_LINES}). Grep for the symbol, then Read with "
+            f"{path} has {lines} lines (whole read limit {READ_LINES}). Grep for the symbol, then Read with "
             "offset and limit, or ask a subagent to summarize it."
         )
 
@@ -148,8 +149,8 @@ def main():
         return
     if event.get("hook_event_name") == "SessionStart":
         print(
-            f"[harness] scale={opt('SCALE', 'medium')} merge={opt('MERGE', 'off')} read-limit={MAX_LINES} "
-            f"plan={opt('PLAN_SKILL', 'none')} build={opt('BUILD_SKILL', 'none')} style={opt('STYLE_SKILLS', 'none')}"
+            f"[harness] scale={opt('SCALE', 'medium')} merge={opt('MERGE', 'off')} "
+            f"read-limit={READ_LINES} style={opt('STYLE_SKILLS', 'none')}"
         )
         return
     tool = event.get("tool_name")
