@@ -78,7 +78,7 @@ run_one() {
 for n in $(seq 1 "$runs"); do
   run_one baseline "$n" 0 "$task"
   run_one rules "$n" 1 "$task"
-  run_one plugin "$n" 1 "/dotagent:ship $task" --plugin-dir "$here"
+  run_one plugin "$n" 1 "/dotagent $task" --plugin-dir "$here"
 done
 
 echo "case: $case_name, runs per condition: $runs"

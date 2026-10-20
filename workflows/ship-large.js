@@ -25,7 +25,7 @@ const SONNET_ROUNDS = 1
 // args is the task as typed, pasted requirements included, or { task, context, planOnly }.
 const input = typeof args === 'string' ? { task: args } : args || {}
 const task = input.task
-if (!task) throw new Error('pass the task as the argument, for example /dotagent:ship add a slugify helper')
+if (!task) throw new Error('pass the task as the argument, for example /dotagent add a slugify helper')
 const context = input.context ? '\nRequirements as given, verbatim:\n' + input.context : ''
 
 let slicerRuns = 0

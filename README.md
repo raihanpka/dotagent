@@ -44,7 +44,7 @@ It also writes `docs/DOTAGENT-SETUP.md`, a checklist you can tick as you review 
 
 ## use it (example)
 ```
-/dotagent:ship add the overview endpoint. requirements from product: <paste them here>
+/dotagent add the overview endpoint. requirements from product: <paste them here>
 ```
 
 Everything after the command is the task, pasted product requirements included, and the planner
@@ -90,7 +90,7 @@ dotagent/
 ├── .claude-plugin/    # plugin.json and marketplace.json
 ├── hooks/             # guard.py: commit, PR title, merge level, em dash, big reads
 ├── agents/            # planner (sonnet), slicer (haiku), reviewer (sonnet)
-├── skills/ship/       # the entry point
+├── skills/dotagent/   # the entry point, /dotagent [scale] task
 ├── workflows/         # ship-large.js: branch, plan, slices, review, PR, CI
 ├── templates/         # PR template and example, PR and main CI, git hooks, docs, AGENTS.md skeleton
 ├── examples/          # what setup generated for a real repo

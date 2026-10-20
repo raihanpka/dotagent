@@ -1,8 +1,16 @@
 ---
-name: ship
-description: Implement a task end to end, from plan to atomic commits, review, PR, CI, and merge. Use when asked to build, fix, or ship a change.
+name: dotagent
+description: Ship a clear task end to end as a clean PR: plan, atomic commits, review, CI, merge by level. Optional first word small, medium, or large sets the scale. Use when asked to build, fix, or ship a change.
 ---
-# ship
+# dotagent
+
+Usage: `/dotagent [small|medium|large] <task>`. The task can carry pasted requirements.
+
+- A first word of `small`, `medium`, or `large` sets the scale for this run only. Strip it from the task.
+- With no scale word, use `scale=` from the session line (the plugin option, `medium` by default).
+- `small`: no plan, for a tiny change. `medium`: plan, one slicer per slice, review. `large`: the
+  same steps run by the `ship-large` workflow, which enforces the limits in code and can resume.
+
 
 Read the `[dotagent] scale=... merge=... read-limit=... style=...` line from session start.
 One task is one branch and one PR, cut from the default branch. Commits are atomic and one
