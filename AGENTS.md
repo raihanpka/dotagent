@@ -16,7 +16,9 @@ repo's own `AGENTS.md`, which wins on any conflict.
 
 - A commit is one line, `type(scope): summary`, no body, no trailer. One commit is one atomic
   change and its message describes the files it touches.
-- The PR describes the whole change. Use the PR template and delete unchecked lines.
+- Tests go with the code they cover. A refactor is its own commit, never mixed with a feature.
+- The PR describes the whole change and stays near 400 changed lines. Use the PR template and
+  delete unchecked lines.
 - Merge only as far as the merge level allows. Merge subject: `<PR title> (#N)`.
 
 ## Code
@@ -25,6 +27,7 @@ repo's own `AGENTS.md`, which wins on any conflict.
 - A source file stays under 350 lines. Split it in its own slice.
 - A module is used through its public interface. Do not import across a module boundary.
 - Do not add a dependency without asking.
+- Never commit code you cannot explain. If a slice is unclear, simplify it first.
 
 ## Context
 
