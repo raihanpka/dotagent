@@ -7,7 +7,7 @@
     {
       "name": "dotagent",
       "source": "./plugin",
-      "description": "A small agent workflow for plan, slices, review, PR, CI, merge."
+      "description": "A minimalistic agent workflow for plan, slices, review, PR, CI, merge."
     }
   ],
   "description": "Agent workflow plugins: plan, atomic slices, review, PR, CI, merge by level."
