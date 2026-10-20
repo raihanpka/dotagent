@@ -1,0 +1,28 @@
+{
+  "name": "harness",
+  "version": "0.1.0",
+  "description": "A small agent workflow: plan, atomic slices, review, PR, CI, merge by permission level.",
+  "userConfig": {
+    "scale": {
+      "type": "string",
+      "title": "Scale",
+      "description": "small (commit and PR directly), medium (plan, atomic commits, one PR), or large (plan document, Haiku per slice, reviewer)",
+      "default": "medium"
+    },
+    "merge": {
+      "type": "string",
+      "title": "Merge level",
+      "description": "off (the agent never merges), on-green (after review and green CI), or full",
+      "default": "off"
+    },
+    "em_dash": {
+      "type": "string",
+      "title": "Em dash",
+      "description": "block (refuse em dashes in written text) or allow",
+      "default": "block"
+    }
+  },
+  "author": {
+    "name": "raihanpka"
+  }
+}
