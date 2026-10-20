@@ -1,6 +1,6 @@
 # dotagent
 
-🚢 A small agent swarms workflow for Claude Code: **clear requirements in, clean pull request out.**
+🚢 A minimalist agent swarm workflow for Claude Code that gets the job done: **clear requirements in, clean pull request out, merge, and ship.**
 
 New skills and plugins show up every week, and most of us maybe feel it: you install five, forget what
 each does, and the setup gets heavier than the work. So I made my own, *small on purpose*, built
@@ -50,9 +50,9 @@ The hooks and agents need Claude Code, the files above work anywhere.
 
 ## use it
 ```
-/dotagent add the overview endpoint. requirements from product: <paste them>
-/dotagent large add the overview endpoint. requirements: <paste them>
+/dotagent add the billing endpoint. requirements from product: <paste them>
 /dotagent fix the grpc connection from backend to the agents in python
+/dotagent implement the new page in home page mobile app from ui designs in figma @(your figma link with mcp)
 ```
 
 Everything after the command is the task, pasted requirements included. Say *plan only* to stop
