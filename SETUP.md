@@ -49,8 +49,9 @@ Add `Workflow` to `permissions.allow` in `.claude/settings.json` so `ship.js` ca
 - **Modules.** A module owns one thing, exposes a small public interface, and imports only what
   you list. No cycles. Cross-module work goes through the interface, or a first slice that
   defines the contract. This lets a subagent edit one slice without reading the rest.
-  Check the stated rule against the code with a grep of the imports. Never write that a rule
-  holds without checking. List each existing violation as an open item in `docs/harness-setup.md`
+  Check the stated rule against the code: for every module, grep all its files, tests included,
+  for imports of every other module's path. Record the exact command next to your claim in
+  `docs/harness-setup.md` so a human can rerun it. Never write that a rule holds without checking. List each existing violation as an open item in `docs/harness-setup.md`
   and describe it in `ARCHITECTURE.md` as it is today, not as the user wishes it were.
 - **Boundary check.** A rule in markdown gets ignored, a lint rule fails CI. Suggest the checker
   for the language: Dart `import_lint`, Go `internal/` plus `depguard`, TypeScript
