@@ -41,9 +41,7 @@ How to fill it (people and agents):
 
 <!-- Keep only the items this PR meets. -->
 
-- [ ] Commit message follows `type(scope): summary`.
-- [ ] No em dashes. Use commas, periods, or parentheses.
-- [ ] No emojis in commits or PR title.
+- [ ] Commit messages and the PR title follow `type(scope): summary` and say what changed, with no milestone, task, or step number and no `(#N)`.
 - [ ] New dependencies are approved (only if the PR adds any).
 - [ ] No secret, key, or connection string is committed or logged.
 

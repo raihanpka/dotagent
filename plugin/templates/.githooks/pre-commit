@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Formats and lints before the commit exists, so CI never goes red for a forgotten format or lint.
+# A commit is also refused with --no-verify by the dotagent hook.
+set -e
+cd "$(git rev-parse --show-toplevel)" || exit 1
+echo "==> format"
+if ! {{format-check}}; then
+  echo "Format first with {{format}}, then git add the files and commit again."
+  exit 1
+fi
+echo "==> lint"
+{{lint}}

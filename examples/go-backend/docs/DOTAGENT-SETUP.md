@@ -7,10 +7,10 @@ Written by the setup agent so a human can track and review it. Tick a file once 
 | Setting | Value | Why |
 |---|---|---|
 | scale | medium | A single repo with 14 modules, worked on by a small team. |
-| merge level | off | Start with a human merging every PR. |
-| em dash | block | Keeps files, commits, and PR text free of em dashes. |
-| emoji | block | Same reason, and the generated-by line in PR bodies is dropped. |
+| merge level | on-green | Merges when the review is clean and the required CI check is green. |
+| em dash and emoji | block | The default, the agent writes neither. |
 | companion skills | none | `style_skills` is none. |
+| git hooks on | yes, `git config core.hooksPath .githooks` | They check every commit and push, by anyone, before CI does. |
 | commit scopes | ai, auth, billing, calendar, docs, health, home, notifications, onboarding, profile, projects, release, tasks, whatsapp, repo, ci | The module names, plus `repo` for root files and `ci` for workflows. |
 | git hooks | enabled | `git config core.hooksPath .githooks` was run in this clone. |
 
@@ -19,15 +19,16 @@ Written by the setup agent so a human can track and review it. Tick a file once 
 | File | Source | Reviewed |
 |---|---|---|
 | `AGENTS.md` | `templates/AGENTS.md` | [ ] |
-| `CLAUDE.md` | one line, `@AGENTS.md` | [ ] |
-| `.github/PULL_REQUEST_TEMPLATE.md` | `templates/PULL_REQUEST_TEMPLATE.md` | [ ] |
-| `.github/PR_EXAMPLE.md` | `templates/PR_EXAMPLE.md` | [ ] |
-| `.github/workflows/ci-pr.yml` | `templates/ci-pr.yml` | [ ] |
-| `.github/workflows/ci-main.yml` | `templates/ci-main.yml` | [ ] |
-| `.githooks/commit-msg`, `.githooks/pre-push` | `templates/githooks/` | [ ] |
+| `CLAUDE.md` | `templates/CLAUDE.md` | [ ] |
+| `.github/PULL_REQUEST_TEMPLATE.md` | `templates/.github/PULL_REQUEST_TEMPLATE.md` | [ ] |
+| `.github/PR_EXAMPLE.md` | `templates/.github/PR_EXAMPLE.md` | [ ] |
+| `.github/workflows/ci-pr.yml` | `templates/.github/workflows/ci-pr.yml` | [ ] |
+| `.github/workflows/ci-main.yml` | `templates/.github/workflows/ci-main.yml` | [ ] |
+| `.githooks/pre-commit`, `commit-msg`, `pre-push` | `templates/.githooks/` | [ ] |
 | `docs/README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md` | `templates/docs/` | [ ] |
-| `.claude/settings.json` | allow `Workflow`, deny reads of generated paths | [ ] |
-| `.gitignore` | added the line `.dotagent/` | [ ] |
+| `.dotagent/config.json` | `templates/.dotagent/config.json`, set with `run.sh`, ignored by git | [ ] |
+| `.claude/settings.json` | `templates/.claude/settings.json`: allow `Workflow` for the large scale | [ ] |
+| `.gitignore` | adds `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, `docs/TODO.md` | [ ] |
 
 ## Proof run
 

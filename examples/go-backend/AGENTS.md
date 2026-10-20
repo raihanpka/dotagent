@@ -5,6 +5,7 @@ Go backend for the Acme productivity app, a lean modular monolith served over RE
 ## Commands
 
 - Build: `make build`
+- Format: `gofmt -w .` (check only: `test -z "$(gofmt -l .)"`)
 - Lint: `make lint`
 - Test: `make test` (one package: `go test -race ./internal/modules/tasks/service -run TestName`)
 
@@ -29,8 +30,7 @@ Go backend for the Acme productivity app, a lean modular monolith served over RE
 ## Rules
 
 - Branch from `main`. One task is one branch and one PR.
-- Commits are one line, `type(scope): summary`, no trailer. Scopes: `ai`, `auth`, `billing`, `calendar`, `docs`, `health`, `home`, `notifications`, `onboarding`, `profile`, `projects`, `release`, `tasks`, `whatsapp`, `repo`, `ci`.
+- Commits are one line, `type(scope): summary`, no trailer, and never a plan label like `milestone-1` or `finishing task-2`, nor `(#N)`. Scopes: `ai`, `auth`, `billing`, `calendar`, `docs`, `health`, `home`, `notifications`, `onboarding`, `profile`, `projects`, `release`, `tasks`, `whatsapp`, `repo`, `ci`.
 - Never edit generated files under `internal/db/sqlc` (not `*_test.go`) or `internal/modules/ai/grpc/acmeaiv1`. Run `make generate` or `make proto` instead.
-- A PR stays near 400 changed lines. Split a bigger task into slices that each build and pass.
+- A PR stays reviewable in one sitting, a few hundred changed lines is typical, a range and not a limit. A bigger task is more PRs that each build and pass.
 - Schema changes go in `internal/db/migrations` and queries in `internal/db/query`, then run `make generate`.
-- No em dashes and no emojis in files, commits, or PR text.

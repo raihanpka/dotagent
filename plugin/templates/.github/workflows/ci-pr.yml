@@ -1,6 +1,6 @@
 # PR Gate. Runs once per pull request and never on a plain push to a feature branch.
 # Make it a required status check in branch protection. Keep it fast: no services, no deploy.
-# Replace every {{...}} with your repo's command. Same commands the slicer runs locally.
+# Replace every {{...}} with your repo's command. Same commands the worker runs locally.
 name: PR Gate
 
 on:

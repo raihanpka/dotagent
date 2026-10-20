@@ -2,7 +2,11 @@
 # Runs the gates CI runs, so a failure shows up here with its file and line, not as a red PR.
 set -e
 cd "$(git rev-parse --show-toplevel)" || exit 1
+echo "==> format"
+test -z "$(gofmt -l .)"
 echo "==> lint"
 make lint
+echo "==> build"
+make build
 echo "==> test"
 make test
