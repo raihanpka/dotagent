@@ -147,7 +147,10 @@ def main():
     except json.JSONDecodeError:
         return
     if event.get("hook_event_name") == "SessionStart":
-        print(f"[harness] scale={opt('SCALE', 'medium')} merge={opt('MERGE', 'off')} read-limit={MAX_LINES}")
+        print(
+            f"[harness] scale={opt('SCALE', 'medium')} merge={opt('MERGE', 'off')} read-limit={MAX_LINES} "
+            f"plan={opt('PLAN_SKILL', 'none')} build={opt('BUILD_SKILL', 'none')} style={opt('STYLE_SKILLS', 'none')}"
+        )
         return
     tool = event.get("tool_name")
     tool_input = event.get("tool_input") or {}

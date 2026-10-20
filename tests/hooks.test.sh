@@ -68,8 +68,8 @@ expect "read generated ok" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_pat
 expect "read missing ok" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$tmp/none.txt\"}}"
 
 # session start prints the active settings
-out="$(printf '{"hook_event_name":"SessionStart"}' | env CLAUDE_PLUGIN_OPTION_SCALE=large CLAUDE_PLUGIN_OPTION_MERGE=full python3 "$guard")"
-case "$out" in *"scale=large"*"merge=full"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL session start: $out" ;; esac
+out="$(printf '{"hook_event_name":"SessionStart"}' | env CLAUDE_PLUGIN_OPTION_SCALE=large CLAUDE_PLUGIN_OPTION_MERGE=full CLAUDE_PLUGIN_OPTION_STYLE_SKILLS=caveman python3 "$guard")"
+case "$out" in *"scale=large"*"merge=full"*"style=caveman"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL session start: $out" ;; esac
 
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]

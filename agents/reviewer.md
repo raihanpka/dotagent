@@ -11,5 +11,5 @@ You see the diff and `tasks/plan.md`, not the reasoning that produced them.
    case, a test that proves nothing, a change outside the plan, a crossed module boundary,
    a file above 350 lines. Skip style preferences.
 3. Answer `clean` or a numbered list of gaps, each with `path:line` and the fix.
-4. When clean, write the PR body from `templates/pr.md`: tick only what was done and delete
+4. When clean, write the PR body from `templates/PULL_REQUEST_TEMPLATE.md`: tick only what was done and delete
    every unchecked line.

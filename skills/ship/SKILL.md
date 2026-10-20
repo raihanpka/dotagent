@@ -4,34 +4,52 @@ description: Implement a task end to end, from plan to atomic commits, review, P
 ---
 # ship
 
-Read the `[harness] scale=... merge=...` line from session start. One task is one branch and one
-PR, cut from the default branch. Commits are atomic and one line (hooks enforce the format).
+Read the `[harness] scale=... merge=... plan=... build=... style=...` line from session start.
+One task is one branch and one PR, cut from the default branch. Commits are atomic and one
+line, `type(scope): summary`. Hooks enforce the format.
+
+## Companion skills
+
+They are optional and set in the plugin options. Skip any that is `none` or not installed.
+
+- `style=`: invoke each listed skill once with the Skill tool before you start.
+- `plan=`: invoke it for the planning step and let it shape `tasks/plan.md`.
+- `build=`: each slicer invokes it for its slice.
+
+Subagents do not see the session line. Copy the `plan=` and `build=` values into the prompt of
+every `planner` and `slicer` you spawn.
 
 ## By scale
 
 - **small**: no plan. Change, run build, lint, test, commit, open the PR.
-- **medium**: spawn `planner` for `tasks/plan.md`. Then spawn `slicer` once per slice, in order,
+- **medium**: spawn `planner` for `tasks/plan.md`. Then spawn one `slicer` per slice, in order,
   and wait for each commit before the next. Spawn `reviewer`. Fix gaps, open the PR.
 - **large**: run the `/harness:ship` workflow with the task as its argument. It does the
-  medium steps with the retries below built in and returns the PR. Do not plan by hand. Then
-  apply Merge.
+  medium steps with the limits and retries below and returns the PR. Then apply Merge.
+
+## Limits
+
+- At most 8 slices and about 400 changed lines per PR. When the planner says it needs more,
+  stop and propose two tasks.
+- One slicer runs at a time. Slices that touch the same file are never parallel.
+- A slice gets one retry. Review fixes: 2 rounds. CI fixes: 2 rounds. Then stop and report.
 
 ## Open the PR
 
-Push the branch, then `gh pr create` with the planner's title and `templates/pr.md` filled by
-the reviewer. Tick only what was done and delete every unchecked line.
+Push the branch, then `gh pr create` with the planner's title and
+`templates/PULL_REQUEST_TEMPLATE.md` filled by the reviewer. Tick only what was done and
+delete every unchecked line.
 
 ## CI
 
-After the push run `gh pr checks --watch`. On a failure, read the failing log, fix it with one
-more slice, push, and watch again. At most 2 fix rounds, then stop and report the failing
-check. Never skip, weaken, or delete a check to get green.
+After the push run `gh pr checks --watch`. On a failure read the failing log, fix it with one
+more slice, push, and watch again. Never skip, weaken, or delete a check to get green.
 
 ## Merge
 
 - **off**: stop at the open PR and say it is ready. The hook blocks `gh pr merge` anyway.
 - **on-green**: merge only when the reviewer said `clean` and CI is green.
-- **full**: as on-green, and also fix review gaps yourself (2 rounds) before merging.
+- **full**: as on-green, and also fix review gaps yourself before merging.
 
 Merge with `gh pr merge <n> --merge --delete-branch --subject "<PR title> (#<n>)"`. Then switch
 to the default branch and pull.
@@ -39,4 +57,4 @@ to the default branch and pull.
 ## Done condition
 
 Use this with `/goal` for an unattended run: `PR is open, CI is green, reviewer said clean, or
-2 CI fix rounds were used and the failure is reported`.
+a limit above was reached and the failure is reported`.

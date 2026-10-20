@@ -20,6 +20,24 @@
       "title": "Em dash",
       "description": "block (refuse em dashes in written text) or allow",
       "default": "block"
+    },
+    "plan_skill": {
+      "type": "string",
+      "title": "Plan skill",
+      "description": "Skill to invoke when planning, for example agent-skills:planning-and-task-breakdown, or none",
+      "default": "none"
+    },
+    "build_skill": {
+      "type": "string",
+      "title": "Build skill",
+      "description": "Skill each slicer follows, for example agent-skills:incremental-implementation, or none",
+      "default": "none"
+    },
+    "style_skills": {
+      "type": "string",
+      "title": "Style skills",
+      "description": "Comma separated skills to invoke at the start, for example caveman,ponytail:lite, or none",
+      "default": "none"
     }
   },
   "author": {

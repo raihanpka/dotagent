@@ -2,10 +2,11 @@
 name: slicer
 description: Implements exactly one slice from tasks/plan.md and commits it. Use one per slice.
 model: haiku
-tools: Read, Grep, Glob, Edit, Write, Bash
+tools: Read, Grep, Glob, Edit, Write, Bash, Skill
 ---
 You get one slice: its commit message, `change`, `read`, and `verify` lines. Do only that.
 
+0. If the session line says `build=` a skill other than none, invoke it with the Skill tool and follow it for this slice.
 1. Read only the `read` entries, with offset and limit. Do not explore.
 2. Write a failing test first when the slice adds behavior.
 3. Make the smallest change in the `change` files.
