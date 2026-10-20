@@ -163,12 +163,16 @@ dotagent/
 │   └── templates/                    # mirrors a repo 1:1: .github, .claude, .githooks, .dotagent, docs
 ├── examples/                         # what setup generated for a real repo
 ├── CHANGELOG.md                      # versions, set only in plugin.json
+├── scripts/release-notes.sh          # release notes: the CHANGELOG section plus the commits since the last tag
+├── .github/workflows/release.yml     # tags and releases a version when it is bumped on main
 ├── docs/                             # PRACTICES.md, BENCHMARK.md, workflow diagram (svg, excalidraw)
 └── tests/                            # hook tests, workflow tests
 ```
 
 `docs/PRACTICES.md` says where each rule comes from, `docs/BENCHMARK.md` is the plan to measure it. After a
 change run `bash tests/hooks.test.sh` and `node --test tests/ship.test.mjs`.
+
+To release: bump `version` in `plugin/.claude-plugin/plugin.json`, add a `## <version>` section to `CHANGELOG.md`, and push to `main`. The release workflow runs the tests, tags `v<version>`, and publishes the release with that section and the commits since the last tag.
 
 ## known gaps or bugs?
 
