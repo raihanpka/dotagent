@@ -3,6 +3,28 @@
 Versions follow [semver](https://semver.org). The version lives only in `plugin/.claude-plugin/plugin.json`.
 Claude Code caches a plugin per version, so bump it on every change users should receive.
 
+## 0.2.1
+
+Hotfix for `/dotagent:setup`: it must not overwrite what the repo already has.
+
+- Every file in step 4 is checked against `git ls-files` and the disk first. A file that exists is merged or shown as a diff and asked about, also the rows marked "always".
+- Existing CI is never rewritten, renamed, or deleted. A workflow that already gates `pull_request` is kept and recorded in `AGENTS.md`, and a same-name `ci-pr.yml` or `ci-default.yml` is a diff, not a replacement.
+- Git hooks: setup leaves `core.hooksPath` alone when the repo uses its own hooks (`core.hooksPath`, husky, lefthook, pre-commit), and shows a diff when `.githooks` exists.
+- An existing `docs/ARCHITECTURE.md`, `CONVENTIONS.md`, or `README.md` is extended with the setup answers after approval, not skipped silently and not replaced. A PR template under another name counts as existing.
+- `.gitignore`: skips lines already present and paths that have tracked files, so a team `.claude/settings.json` is not hidden. `.claude/settings.json` is merged after a diff.
+- The setup commit stages explicit paths only, so the user's other uncommitted work stays out.
+- Setup matches docs by meaning, not by file name: `architectures.md`, `arsitektur.md`, or an `architecture/` folder counts as the architecture doc, in any language, and new content goes in the existing doc's own language and structure.
+- Setup reads the repo's own habit first (last commit subjects, merged PR titles, branch names) and follows it. It asks before it changes a habit the hook cannot accept.
+- Setup asks which branch PRs target and never writes `main` unless the repo says so. The main check is now `ci-default.yml` (was `ci-main.yml`), and its trigger is the default branch.
+- Setup asks whether to turn on a CI workflow that exists but does not run on pull requests, and shows the exact diff first.
+- CI titles are `Pull Request {{ }} Gate` and `Default Branch {{ }} Check`, the agent fills the slot with one plain word. The PR gate lists what a PR check usually holds: format, lint, build, test, a dependency scan, a secret scan, under about 10 minutes.
+
+### Benchmark and example
+
+- `examples/go-backend` is now `examples/taskboard-backend`: a small gin task board with real code and a green `make ci`, plus the files setup writes. It is the base app of the benchmark.
+- New `benchmark/`: 5 tasks with hidden graders, `run.sh` (one run, plain or `/dotagent:ship small|medium|large`), `report.py`, and `check-graders.sh`. `run-all.sh` runs the matrix. `docs/BENCHMARK.md` describes the method, the limits, and the first results: 60 runs, all resolved, dotagent costs about 1.6x to 1.8x plain Claude Code on these small tasks and never adds a trailer or a wrong commit subject, where plain added a trailer in 8 of 15.
+- Shorter `ship` and `planner` prompts: the naming rule is stated once per file, not four times.
+
 ## 0.2.0
 
 Upgrading: the old `/plugin configure` options are ignored. Run `/dotagent:scale` and `/dotagent:merge` once, or edit `.dotagent/config.json`.
