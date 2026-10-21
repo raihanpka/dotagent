@@ -1,6 +1,6 @@
-# PR Gate. Runs once per pull request and never on a plain push to a feature branch.
+# Pull Request Go Gate. Runs once per pull request and never on a plain push to a feature branch.
 # Make it a required status check in branch protection. Keep it fast: no services, no deploy.
-name: PR Gate
+name: Pull Request Go Gate
 
 on:
   pull_request:
@@ -22,14 +22,10 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
       - name: Format
-        run: test -z "$(gofmt -l .)"
+        run: make fmt-check
       - name: Lint
         run: make lint
-      - name: Vet
-        run: make vet
       - name: Build
         run: make build
       - name: Test

@@ -14,7 +14,7 @@ The task list endpoint now accepts a `due_before` query parameter, so the app ca
 
 ## Changes
 
-- Add the `due_before` filter to the tasks list query in `internal/db/query` and regenerate sqlc.
+- Add the `due_before` filter to the tasks list in `internal/modules/tasks`.
 - Pass the filter through the tasks service and the http handler.
 - Cover the filter with a service test.
 
@@ -25,6 +25,6 @@ The task list endpoint now accepts a `due_before` query parameter, so the app ca
 - [x] `make test` passes
 
 ```text
-ok  	github.com/acme/api/internal/modules/tasks/service	1.204s
+ok  	github.com/raihanpka/taskboard/internal/modules/tasks	1.204s
 0 issues.
 ```

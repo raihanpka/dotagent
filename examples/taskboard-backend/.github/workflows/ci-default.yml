@@ -1,6 +1,6 @@
-# Main branch check. Runs after a merge, never on a feature branch push.
-# Build only: this copy has no migrations or services to exercise.
-name: Production Check
+# Default branch check. Runs after a merge, never on a feature branch push.
+# Build and test: the app has no services to boot.
+name: Default Branch Go Check
 
 on:
   push:
@@ -24,3 +24,5 @@ jobs:
           cache: true
       - name: Build
         run: make build
+      - name: Test
+        run: make test
