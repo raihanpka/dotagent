@@ -1,6 +1,6 @@
 # Measuring the Workflow
 
-Not run yet. This is the plan, so a claim like "cheaper" or "faster" has a number behind it.
+The harness is in `benchmark/` and ran once (results below), so a claim like "cheaper" or "faster" has a number behind it.
 
 ## What Others Measure
 
@@ -20,13 +20,74 @@ Sources are blog posts and preprints, I did not verify their figures.
 - **Your own task set beats a leaderboard.** 20 to 40 tasks from your merged PRs, in a harness such as
   Harbor ([developertoolkit.ai](https://developertoolkit.ai/en/ecosystem/models/benchmarks/)).
 
-## Plan for dotagent
+## How a skill workflow is usually tested
 
-1. **Tasks.** 5 merged PRs from one repo, each with its requirement text and its tests as the grader.
-2. **Arms.** Same model for all: plain Claude Code, `/dotagent:ship small`, `medium`, `large`.
-3. **Per run, record:** resolved (tests pass), CI green, tokens in and out, cost, wall clock,
-   worker runs, review gaps found, PR size in changed lines.
-4. **Repeat** each task 3 times. Report resolved rate, cost per resolved task, and p50 wall clock
-   per arm, with the spread.
-5. **Decide.** Keep a rule (planner, reviewer, one worker per subtask) only if it raises resolved rate
-   or cuts cost per resolved task. Otherwise remove it.
+Common to the sources above and to the skill-creator guides ([Pillitteri](https://pasqualepillitteri.it/en/news/341/claude-code-skills-2-0-evals-benchmarks-guide), [Conduction](https://conduction.nl/academy/claude-skills-tutorial-3-skill-evals), [skill-benchmark](https://www.skills.sh/workersio/skills/skill-benchmark)):
+
+- **With and without.** The same prompt, same model, once with the skill and once without. Compare pass rate, time, and tokens.
+- **Deterministic grader first.** A test or a script decides pass or fail. An LLM judge only for what code cannot check.
+- **Isolated run.** A fresh copy of the repo per run, so one run cannot leak into the next.
+- **Several trials.** A single run is noise. Report the spread, not only the mean.
+- **Watch both warning signs.** The skill matches the baseline (it adds little), or it scores below it (too prescriptive).
+- **Cost per resolved task**, not cost per task. A configuration that fails early looks cheap ([Braintrust](https://www.braintrust.dev/blog/hf-agent-traces)).
+- **Trigger tests.** A skill must also start when it should and stay quiet when it should not.
+
+## What is built
+
+- **App.** `examples/taskboard-backend`, a gin task board with 3 modules and a green `make ci`.
+- **Tasks.** 5 in `benchmark/tasks/`, each a `prompt.md` and a hidden `bench_test.go` grader that is copied in only after the run:
+
+| Task | Kind | Shape |
+|---|---|---|
+| `t1-board-leak` | bug fix | one function, find the root cause |
+| `t2-due-dates` | feature | 2 modules, parsing, a filter |
+| `t3-pagination` | feature | one endpoint, validation, a header |
+| `t4-archive` | feature | cross module state, 409 rules, an unrelated bug to leave alone |
+| `t5-comments` | feature | a new module, wiring, tests |
+
+- **Arms.** `plain` (Claude Code alone), `small`, `medium`, `large` (`/dotagent:ship <scale>`). Same model for all, `MODEL=sonnet` by default.
+- **Run.** `bash benchmark/run.sh <arm> <task> <trial>` copies the app to a temp dir, runs `claude -p` with `--output-format json`, then grades. The dotagent arms load the working tree plugin with `--plugin-dir plugin`.
+- **Per run it records:** resolved (hidden test passes), gate green (`make ci`), cost, wall clock, turns, tokens (input, output, cache), commits, bad commit subjects and trailers, changed lines.
+- **Report.** `python3 benchmark/report.py` prints, per arm, resolved rate, cost per resolved task, p50 wall clock with its range, and a per task table.
+- **Before a run.** `bash benchmark/check-graders.sh` proves every grader fails on the untouched app.
+
+```
+for t in benchmark/tasks/*/; do for a in plain small medium large; do for i in 1 2 3; do
+  bash benchmark/run.sh $a $(basename $t) $i; done; done; done      # 60 runs, spends real money, cap with BUDGET
+python3 benchmark/report.py
+```
+
+`bash benchmark/run-all.sh` runs the matrix (`JOBS=4` at once). Try one first: `bash benchmark/run.sh plain t1-board-leak 1`. `report.py` skips a run the API refused (a session limit), so rerun those.
+
+## Results, run 1 (2026-10-21)
+
+Sonnet 5.5 for every arm, 5 tasks x 4 arms x 3 trials = 60 valid runs, about $13.8 in total. Ten runs hit a session limit mid-matrix and were rerun.
+
+| Arm | Resolved | `make ci` green | Cost per run | p50 wall | Output tokens per run | Commits | Changed lines | Trailers |
+|---|---|---|---|---|---|---|---|---|
+| plain | 15/15 | 15/15 | $0.15 | 43 s | 4.7k | 1 | 154 | 8 |
+| small | 15/15 | 15/15 | $0.24 | 66 s | 7.1k | 2 | 171 | 0 |
+| medium | 15/15 | 15/15 | $0.27 | 77 s | 13.6k | 2 | 197 | 0 |
+| large | 15/15 | 15/15 | $0.26 | 75 s | 11.1k | 2 | 195 | 0 |
+
+What it says, and no more:
+
+- **No arm resolved more.** All 60 runs passed the hidden test and the gate. These 5 tasks are too easy to separate the arms, so there is no evidence yet that planning or review raises the resolved rate.
+- **The workflow costs more here.** About 1.6x to 1.8x the cost and 1.5x to 1.8x the wall clock of plain Claude Code. `medium` and `large` cost the same, and `small` is a little cheaper than both.
+- **Hygiene is where it differs.** Plain Claude Code added a `Co-Authored-By` trailer in 8 of 15 runs, which the repo forbids. No dotagent run did, and every commit subject matched `type(scope): summary`.
+- **Outlier.** One `medium` run on `t5-comments` took 1257 s for $0.43, so the p50 is the number to read, not the mean.
+- **Decide.** By the rule below, no planner, reviewer, or worker rule has earned its cost on these tasks. That is a reason to run harder tasks, not to remove them yet: the point of the workflow is larger, riskier work than a one endpoint change.
+
+Next run: tasks that need several PRs, an ambiguous requirement, or a bug with a non obvious cause, and the same arms.
+
+## Limits to keep in mind
+
+- The work copy has no GitHub remote, so the dotagent arms stop after the review and local commits. PR, CI, and merge time and cost are not measured.
+- `total_cost_usd` from `claude -p` should include subagents. Confirm that on the first run, because the Haiku workers are where dotagent saves money.
+- `--setting-sources project,local` keeps your user plugins out of the run, but the plain arm still has the machine's login and model defaults.
+- `t5` cannot observe that comments are deleted with their task over HTTP, so the grader checks reachability only.
+- 5 small tasks show a direction. A claim needs more tasks from real merged PRs.
+
+## Decide
+
+Keep a rule (planner, reviewer, one worker per subtask) only if it raises resolved rate or cuts cost per resolved task. Otherwise remove it.
