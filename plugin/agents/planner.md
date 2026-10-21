@@ -44,11 +44,9 @@ Requirements: when there is more than one point, number them `R1`, `R2` and give
 ("R3 has no PR, add one or drop it?"). One point or none: no numbers and no `covers:`. Return the
 PR's `covers`.
 
-Names: a commit message, the PR title, and the branch say what changed. Never put where the work
-sits in the plan into a name: no `milestone-1`, `task-2`, `slice 3`, `step 4`, `phase`, `wip`, and
-no `finishing task` summary. The scope is the module or area the files belong to, such as
-`billing`. `feat(milestone-1): add login` is wrong, `feat(auth): add the login route` is right. A
-hook refuses the wrong ones.
+Names: a commit message, the PR title, and the branch say what changed, never where the work sits in the
+plan (`milestone-1`, `task-2`, `slice 3`, `step 4`, `phase`, `wip`, "finishing task"). The scope is the module,
+such as `billing`. A hook refuses the wrong ones.
 
 Planning (from the incremental-implementation practice):
 - Vertical first: one thin path through the stack that works end to end. For work across layers,

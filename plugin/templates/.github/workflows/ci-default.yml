@@ -1,11 +1,11 @@
-# Main branch check. Runs after a merge, never on a feature branch push.
+# Default branch check. Runs after a merge, never on a feature branch push.
 # It holds what is too slow or too heavy for every PR: services, migrations, boot and health probe.
 # Delete this file when your repo has nothing heavier than the PR gate.
-name: Production Check
+name: Default Branch {{ }} Check   # fill {{ }} with one plain word, such as Go
 
 on:
   push:
-    branches: [{{default-branch}}]
+    branches: [{{ default-branch }}]
   workflow_dispatch:
 
 concurrency:

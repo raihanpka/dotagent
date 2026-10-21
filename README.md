@@ -54,7 +54,7 @@ Copy from `plugin/` and edit. Fill every `{{...}}`. `plugin/SETUP.md` lists the 
 | `hooks/guard.py`, `hooks/run.sh` | `.dotagent/` | nothing |
 | `templates/.claude/settings.json` | `.claude/settings.json` | nothing |
 | `templates/.github/PULL_REQUEST_TEMPLATE.md`, `PR_EXAMPLE.md` | `.github/` | the check commands |
-| `templates/.github/workflows/ci-pr.yml`, `ci-main.yml` | `.github/workflows/` | setup step, commands |
+| `templates/.github/workflows/ci-pr.yml`, `ci-default.yml` | `.github/workflows/` | setup step, commands |
 | `templates/.githooks/` | `.githooks/` | then `git config core.hooksPath .githooks` |
 | `templates/docs/` (`README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md`, `DOTAGENT-SETUP.md`, `TODO.md`) | `docs/` | architecture, conventions |
 

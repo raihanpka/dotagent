@@ -1,6 +1,6 @@
 {
   "name": "dotagent",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A minimalist agent swarm workflow: plan, atomic commits, review, PR, CI, merge by level.",
   "author": {
     "name": "Raihan Putra Kirana",

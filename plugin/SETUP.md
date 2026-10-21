@@ -2,7 +2,9 @@
 
 For the agent reading this. The user asked you to set up dotagent in their repo. Do it in order,
 and show each file before you write it. Never overwrite a file that exists: show a diff and ask.
-Never push or merge anything.
+This holds for every row in step 4, also the rows marked "always", which means the file is offered,
+not forced. An existing CI workflow, git hook, template, or doc belongs to the user. Never push or
+merge anything.
 
 Steps 0 to 3 only read and ask. Do not enter Claude Code plan mode, it would block the files you
 write later. Write nothing until the user has answered the rounds in step 3.
@@ -31,6 +33,19 @@ Grep and read ranges, not whole files. Find: language and toolchain, default bra
 lint, and test commands, an existing `AGENTS.md`, `CLAUDE.md`, CI file, PR template, git hooks,
 docs, generated paths, and whether the repo is one module or many. Ask only about what you could
 not find.
+
+Match by meaning, not by file name. People name things differently and in other languages, so
+`ARCHITECTURE.md`, `architectures.md`, `docs/architecture/`, `arsitektur.md`, and `design/` can all be the
+architecture doc, and one folder may hold the architecture, the conventions, and more. Open the
+index or the first lines of a candidate before you decide it is, or is not, what a role needs.
+Do this for docs, the PR template, CI, and hooks. A role that is covered already is not generated again.
+
+Also read how the repo names things, because an established repo has a habit and it wins: the subjects
+of the last 30 commits (`git log --format=%s -n 30`), merged PR titles
+(`gh pr list --state merged -L 30 --json title,headRefName`), and branch names (`git branch -r`).
+Note the scope words, the branch prefix, and whether PR titles carry a type. Also read the CI
+inventory: every file in `.github/workflows/`, its `on:` triggers, `gh workflow list --all` for
+disabled ones, and commented or `if: false` jobs.
 
 ## 2. Install the plugin
 
@@ -106,27 +121,51 @@ Round 2 (needs the architecture and the commands):
   two modules share goes in a shared library. Cross-module work goes through the interface, or a
   first PR that defines the contract. This is what lets a subagent edit one subtask without reading
   the rest. Ask what the shared library is called and what may depend on what.
-- **Commit scopes.** A short list, usually the module names. The format stays
-  `type(scope): summary`, the scope is required. A scope or summary never carries a plan label:
-  no `milestone-1`, `task-2`, `slice 3`, and no "finishing task". Say what changed. Tell the user.
+- **Naming.** Follow what step 1 found: the repo's scope words, branch prefix, and PR title style, as
+  the recommended answer, and record them in `AGENTS.md`. Only a new repo gets a fresh list, usually the
+  module names. The hook needs `type(scope): summary` for a commit and `type: summary` or
+  `type(scope): summary` for a PR title. If the repo's habit does not fit that, say so and ask
+  whether to adopt it, do not silently change the habit. A name never carries a plan label: no
+  `milestone-1`, `task-2`, `slice 3`, and no "finishing task". Say what changed. Tell the user.
 - **Trailers.** Do not ask. A commit or PR carries no Co-Authored-By trailer and no "Generated with" line, the hook and `.githooks/commit-msg` refuse them.
 - **Generated files.** Path patterns and the command that regenerates them. They are never edited by
   hand, the rule goes in `AGENTS.md`. Do not block reading them, debugging needs it.
+- **Default branch.** Find it (`git symbolic-ref refs/remotes/origin/HEAD`, or `gh repo view --json defaultBranchRef`).
+  A repo may merge PRs into another branch such as `dev`: ask which branch PRs target and use that
+  one as `{{default-branch}}` everywhere. Never write `main` unless the repo says so.
 - **CI.** Two workflows, each with one trigger, so a branch push never runs CI twice:
-  - `ci-pr.yml` runs on `pull_request` only. It is the gate: format, lint, build, test, and a
-    vulnerability scan if the stack has one. No services and no deploy, so it stays fast. Tell the
-    user to make it a required status check in branch protection.
-  - `ci-main.yml` runs on `push` to the default branch only. It holds what is too heavy for every
+  - `ci-pr.yml` runs on `pull_request` only. It is the gate. What a PR check usually holds, in order
+    of cost: format check, lint (and type check where the language has one), build, unit tests, a
+    dependency vulnerability scan, and a secret scan (for example gitleaks). Format, lint, build, and
+    test are the minimum. Add the scans when the stack has a tool, and record the ones left out as
+    open items. Keep it under about 10 minutes, with no services and no deploy. Slow, flaky, or
+    secret-dependent checks go to the default branch workflow. Tell the user to make it a required
+    status check in branch protection, with "require branches to be up to date".
+  - `ci-default.yml` runs on `push` to the default branch only. It holds what is too heavy for every
     PR: services, migrations, boot and health probe, integration tests. Skip it when the repo has
     nothing heavier than the gate.
-  Reuse existing workflows when there are any and split them this way. Never add a `push` trigger
+  - **Titles.** The workflow `name:` has a fixed prefix and suffix and one `{{ }}` slot you fill:
+    `Pull Request {{ }} Gate` and `Default Branch {{ }} Check`. Fill the slot with one plain word
+    for the stack or the product (`Go`, `Web`, `Billing`), never a joke or a slogan.
+  Existing CI is the user's. Never rewrite, rename, or delete a workflow. When one already runs on
+  `pull_request` with format, lint, build, and test, it is the gate: say so, recommend not adding
+  `ci-pr.yml`, and record its name in `AGENTS.md`. When a file of the same name exists, show a diff
+  and ask. Suggest a trigger change as a diff, never apply it unasked. Never add a `push` trigger
   for feature branches. A plain commit on a branch must not start a run.
+  **Ask about activation.** When step 1 found a workflow that exists but does not run on pull
+  requests (no `pull_request` trigger, disabled in `gh workflow list --all`, or its jobs commented out),
+  ask with AskUserQuestion whether to turn it on for PRs. Recommend yes when it already runs format,
+  lint, and test. Show the exact diff (the `on:` block, or `gh workflow enable`), and apply it only after
+  the answer. Say which jobs would then become required checks.
 - **Format.** The command that fixes formatting and the one that only checks it. Both are used: the worker runs the fixer, the git hook and CI run the checker.
 - **Git hooks, part of setup.** Recommend all three, and recommend turning them on: `.githooks/pre-commit`
   (format check and lint), `commit-msg`, and `pre-push` (format, lint, build, test). Unlike the agent hook, git
   hooks check every commit and push by anyone: the agent, a person, a script, another tool. That is the
   protection for everything outside the agent's own edits, so a forgotten format or lint is caught before the
-  commit and the push, and CI stays green. Turning them on runs `git config core.hooksPath .githooks`, a local
+  commit and the push, and CI stays green. First check `git config core.hooksPath`, `.husky/`,
+  `lefthook.yml`, and `.pre-commit-config.yaml`. When one exists, the repo has its own hooks: do
+  not change `core.hooksPath` and do not write `.githooks`, add an open item instead. When
+  `.githooks` exists, show a diff per file. Turning them on runs `git config core.hooksPath .githooks`, a local
   and reversible change, so confirm it once with the answer (Recommended) first. Say that a repo that ships
   `.githooks` but has them off gets no check at all, and that every later `/dotagent` run checks this again.
 
@@ -152,6 +191,11 @@ After the rounds, write the workflow settings with `sh hooks/run.sh set scale <v
 
 ## 4. Generate, then show
 
+Check every target path first, `git ls-files` and the disk, and check the role by meaning too (step 1).
+If a file or a doc that fills the role exists, do not write ours: merge or show a diff and ask. Put new
+content in the existing doc's own language and structure. A PR template under another name or folder
+(`pull_request_template.md`, `docs/`, repo root) counts as existing.
+
 `plugin/templates/` mirrors the target repo path for path: the template for `.github/workflows/ci-pr.yml` is
 `templates/.github/workflows/ci-pr.yml`, and so on. Generate each file from the template at its own path.
 
@@ -162,13 +206,13 @@ After the rounds, write the workflow settings with `sh hooks/run.sh set scale <v
 | `.github/PULL_REQUEST_TEMPLATE.md` | `templates/.github/PULL_REQUEST_TEMPLATE.md` | always, with the real commands |
 | `.github/PR_EXAMPLE.md` | `templates/.github/PR_EXAMPLE.md` | always, filled with a plausible finished example |
 | `.github/workflows/ci-pr.yml` | `templates/.github/workflows/ci-pr.yml` | always, the PR gate |
-| `.github/workflows/ci-main.yml` | `templates/.github/workflows/ci-main.yml` | only when the repo has heavier checks |
+| `.github/workflows/ci-default.yml` | `templates/.github/workflows/ci-default.yml` | only when the repo has heavier checks |
 | `.githooks/pre-commit`, `commit-msg`, `pre-push` | `templates/.githooks/` | when the user said yes |
-| `docs/README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md` | `templates/docs/` | missing files only |
+| `docs/README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md` | `templates/docs/` | only a role the repo does not cover yet, matched by meaning (see step 1), so an `architectures/` folder or an `arsitektur.md` counts as the architecture doc. For one that exists, show the new section (architecture style, coupling, current violations) as an addition and ask, never replace |
 | `docs/DOTAGENT-SETUP.md` | `templates/docs/DOTAGENT-SETUP.md` | always, so a human can track it |
 | `.dotagent/config.json` | `templates/.dotagent/config.json`, written with `run.sh set` | always |
-| `.gitignore` (repo root) | append `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, and `docs/TODO.md`, so none of dotagent's own files show up as untracked and nobody has to be shy about them. Do it without asking, then tell the user which lines you added | append, never overwrite |
-| `.claude/settings.json` | `templates/.claude/settings.json`: allow `Workflow` for the large scale | merge into any existing file |
+| `.gitignore` (repo root) | append `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, and `docs/TODO.md`, so none of dotagent's own files show up as untracked and nobody has to be shy about them. Skip a line already present, and skip any path that has tracked files (`git ls-files <path>`), such as a team `.claude/settings.json`. Do it without asking, then tell the user which lines you added and which you skipped | append, never overwrite |
+| `.claude/settings.json` | `templates/.claude/settings.json`: allow `Workflow` for the large scale | merge into any existing file, show the diff first, keep every existing key |
 
 `docs/TODO.md` is not generated here. The planner writes it for each task from `templates/docs/TODO.md`:
 one section per PR, each with subtasks that the workers tick. It is ignored by git on purpose, a scratch report.
@@ -186,6 +230,7 @@ if it is available. Offer one tiny task on `scale=small` as a smoke test.
 ## 6. Commit and report
 
 Commit the generated files in atomic commits, one line each, scope required, for example
-`docs(dotagent): add the PR template and example`. Do not push. Then list what you wrote, what you
+`docs(dotagent): add the PR template and example`. Stage by explicit path, never `git add -A`, so
+the user's own uncommitted work stays out. Ignored files are not committed. Do not push. Then list what you wrote, what you
 skipped, and what the user must still decide. The user ticks each file in `docs/DOTAGENT-SETUP.md`
 as they review it.

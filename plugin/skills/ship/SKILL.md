@@ -55,12 +55,9 @@ are plain commands, not agents.
 
 ## Names
 
-A commit message, a PR title, and a merge subject say what changed. They never say where the work
-sits in the plan: no `milestone-1`, `task-2`, `slice 3`, `step 4`, `phase`, `wip`, and no
-"finishing task" summary. The scope is the module or area the files belong to.
-`feat(milestone-1): add login` and `fix(api): finishing task-1` are wrong. `feat(auth): add the
-login route` is right. Never write the PR number `(#N)` in a commit or a PR title either, GitHub adds
-it when it merges. A hook refuses the wrong ones, so write the right one the first time.
+A commit message, PR title, and merge subject say what changed, never where the work sits in the plan
+(`milestone-1`, `task-2`, `slice 3`, `step 4`, `phase`, `wip`, "finishing task"), and never `(#N)`.
+`feat(auth): add the login route` is right. A hook refuses the wrong ones, so write the right one first.
 
 ## The plan is read only
 
@@ -184,5 +181,4 @@ default branch and pull.
 
 ## Done condition
 
-Use this with `/goal` for an unattended run: `every PR in docs/TODO.md is merged, or a stop above was
-reached and reported`.
+For `/goal`: `every PR in docs/TODO.md is merged, or a stop above was reached and reported`.
