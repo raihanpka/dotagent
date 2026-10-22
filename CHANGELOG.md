@@ -7,6 +7,13 @@ Claude Code caches a plugin per version, so bump it on every change users should
 
 Not tagged yet: `plugin.json` stays at 0.2.1, so no new release. Claude Code caches a plugin per version, so installed copies get this only after the next bump.
 
+### Commands and first run
+
+- `/dotagent` alone now does what `/dotagent:scale` does: it shows the scale, or saves it when you add `small`, `medium`, or `large`. Any other words are a task and go to `ship`. To resume unfinished work, say `continue` or run `/dotagent:ship`.
+- The session line is the "learn" step. It prints on a new session, after `/clear`, and after a compact, read from the project config file, so the agent gets the saved scale, merge level, style skills, and protected paths back in one line, with no memory file and no extra context. Unfinished PRs are announced the same way.
+- First run: when the config file does not exist yet, the hook adds one line with the number of tracked files and top-level folders. `ship` then tells you in two lines the scale it uses and why, that each PR merges by itself when the review is clean and CI is green and the run goes on until every PR is merged or a stop, and how to change it. It saves both choices and goes straight to the task.
+- `/dotagent:merge` and `/dotagent:scale` are the place for the merge rule and the scale. They are saved for every later run, so `ship` does not repeat them.
+
 ### Guardrails and proof for big repos
 
 - Receipt: a hook logs every subagent spawn, and `sh hooks/run.sh receipt` prints `subagents: planner 1, worker 4, reviewer 1` for the session. `ship` puts it in its report, so a run that built everything itself is visible. In the 60 benchmark runs the workers ran in only 5 of 30 `medium` and `large` runs and Haiku was about 2% of the spend, so this is how the claim gets checked.
