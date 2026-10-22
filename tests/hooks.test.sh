@@ -247,5 +247,14 @@ printf '{"hook_event_name":"SessionStart"}' | sh "$guard" >/dev/null
 out="$(sh "$guard" receipt)"
 case "$out" in "subagents: none") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL receipt reset: $out" ;; esac
 
+# first run line and protected in the session line
+rm -f "$tmp/proj/.dotagent/config.json"
+out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
+case "$out" in *"first run"*"scale=medium, merge=on-green"*"tracked files"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL first run line: $out" ;; esac
+cfg '{"protected":"go.sum"}'
+out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
+case "$out" in *"first run"*) fail=$((fail + 1)); echo "FAIL first run shown with a config: $out" ;; *"protected=go.sum"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL protected in line: $out" ;; esac
+cfg '{}'
+
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]

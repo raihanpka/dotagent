@@ -177,6 +177,23 @@ def pr_files():
     return [g.strip() for g in found.group(1).split(",") if g.strip()] if found else []
 
 
+def first_run():
+    # No config file yet: the defaults apply. The ship skill tells the user once what that means, then saves them.
+    try:
+        files = subprocess.run(
+            ["git", "-C", project_dir(), "ls-files"], capture_output=True, text=True, timeout=5
+        ).stdout.split()
+    except (OSError, subprocess.SubprocessError):
+        files = []
+    folders = len({f.split("/")[0] for f in files if "/" in f})
+    return (
+        f"[dotagent] first run: no .dotagent/config.json, so the defaults apply (scale=medium, merge=on-green) to a repo of "
+        f"{len(files)} tracked files in {folders} top-level folders. The first time the ship skill runs, say in two lines: the "
+        "scale and why, that each PR merges by itself when the review is clean and CI is green and the run goes on until every "
+        "PR is merged or a stop, and that /dotagent:scale and /dotagent:merge change it. Then save both with run.sh set."
+    )
+
+
 def log_spawn(tool_input):
     # Records one subagent spawn so a run can show what really ran. Never blocks.
     path = os.path.join(project_dir(), RUNS)
@@ -476,8 +493,10 @@ def main():
             pass
         print(
             f"[dotagent] scale={opt('SCALE')} merge={opt('MERGE')} "
-            f"read-limit={READ_LINES} style={opt('STYLE_SKILLS')}"
+            f"read-limit={READ_LINES} style={opt('STYLE_SKILLS')}" + (f" protected={opt('PROTECTED')}" if opt("PROTECTED") else "")
         )
+        if not os.path.exists(config_path()):
+            print(first_run())
         if git_hooks() == "off":
             print(
                 "[dotagent] git hooks are off: .githooks exists but git does not use it, so format, lint, and name checks "
