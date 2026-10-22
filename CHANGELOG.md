@@ -7,6 +7,17 @@ Claude Code caches a plugin per version, so bump it on every change users should
 
 Not tagged yet: `plugin.json` stays at 0.2.1, so no new release. Claude Code caches a plugin per version, so installed copies get this only after the next bump.
 
+### Guardrails and proof for big repos
+
+- Receipt: a hook logs every subagent spawn, and `sh hooks/run.sh receipt` prints `subagents: planner 1, worker 4, reviewer 1` for the session. `ship` puts it in its report, so a run that built everything itself is visible. In the 60 benchmark runs the workers ran in only 5 of 30 `medium` and `large` runs and Haiku was about 2% of the spend, so this is how the claim gets checked.
+- Scope: the planner writes a `files:` line per PR, and while building a hook refuses an edit outside it. It catches accidental drift, not a determined agent, since the TODO stays writable.
+- Protected paths: the `protected` setting (globs, set with `run.sh set protected`) is refused for any edit, in any phase. Setup asks for migrations, CODEOWNERS, lockfiles, and similar. Shell writes are not covered.
+- Scoped checks: `AGENTS.md` gets a one-module lint and test line and entry points per module. Workers verify only their module, `ship` runs the full gate once before the PR, and setup suggests a `pre-commit` that checks staged files only.
+- Fresh context per PR: `hooks/loop.sh` runs one `claude -p` per unfinished PR, resumed from `docs/TODO.md`. A subagent cannot start subagents, so a PR cannot be handed to one.
+- Speed: the agents and `ship` name the native tools (Grep, Glob, Read ranges, parallel calls, `Explore` for a wide read, background CI watch) instead of shell.
+- Hook tests: 128 cases. `ship` grew from 11.0 to 12.8 KB.
+- The benchmark app grew to 6 modules (`labels`, `profile`, `webhooks` added) and three harder tasks, `t6-members-roles`, `t7-task-labels`, `t8-list-race`. Graders run with `-race`. Not run, the weekly quota is spent.
+
 ### Merge is a squash
 
 - The only merge is `gh pr merge --squash`. A merge commit and a rebase are refused by the hook. Before, squash was refused because it folds the atomic commits.
