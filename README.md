@@ -95,7 +95,7 @@ In the `/` menu the commands appear as `/dotagent:dotagent`, `/dotagent:ship`, `
 - Everything after the command is the task, pasted requirements included.
 - Say *plan only* to stop after the plan and read `docs/TODO.md`.
 - A big task becomes several PRs and one run ships all of them, in order, until everything is merged or something stops it.
-- To go on after a stop, say `continue` in plain words, or run `/dotagent` with no task. With a new task while an old one is unfinished, it asks you first whether to finish the old one (recommended) or drop it.
+- To go on after a stop, say `continue` in plain words, or run `/dotagent:ship` with no task. With a new task while an old one is unfinished, it asks you first whether to finish the old one (recommended) or drop it.
 
 ### scale
 

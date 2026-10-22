@@ -5,8 +5,8 @@ argument-hint: "[small|medium|large] <task>"
 # dotagent ship
 
 Usage: `/dotagent:ship [small|medium|large] <task>`, or `/dotagent <task>` for the same with the saved
-settings. The task can carry pasted requirements. With no task, or when the user only says `continue`
-(any wording), carry on with the unfinished work, see Start.
+settings (`/dotagent` alone only shows the scale, like `/dotagent:scale`). The task can carry pasted requirements.
+With no task, or when the user only says `continue` (any wording), carry on with the unfinished work, see Start.
 
 - A first word of `small`, `medium`, or `large` sets the scale for this run only. Strip it from the task.
 - With no scale word, use `scale=` from the session line (saved with `/dotagent:scale`, `medium` by default).
@@ -14,7 +14,11 @@ settings. The task can carry pasted requirements. With no task, or when the user
   same steps run by the `ship-large` workflow, which enforces the limits in code.
 - A run goes on by itself until the whole plan is merged or something stops it. It does not wait between PRs.
 
-Read the `[dotagent] scale=... merge=... read-limit=... style=...` line from session start. It comes from
+Read the `[dotagent] scale=... merge=... read-limit=... style=...` line from session start (it may end with `protected=...`).
+If a `[dotagent] first run` line is there, do what it says before anything else: tell the user the scale (medium unless they gave
+one) and why, that each PR merges by itself when the review is clean and CI is green and the run goes on until every PR is
+merged or a stop, and how to change it. Then save both with `sh "$RUN" set scale <scale>` and `set merge on-green` and go straight to
+the task. Do not ask. It comes from
 `.dotagent/config.json`, and `merge=on-green` is the default. If it also says `unfinished`, `docs/TODO.md`
 holds work that is not done yet.
 A task is one or more PRs, each cut from the default branch. Commits are atomic and one
@@ -45,7 +49,7 @@ by anyone, which the agent hook cannot, so do not skip this. `RUN` is `${CLAUDE_
 
 Then look at `docs/TODO.md`. A PR is unfinished when it has an unticked subtask or an empty `done:` line.
 
-- **Unfinished work and no new task** (`/dotagent` alone, or `continue`): resume it, see Resume.
+- **Unfinished work and no new task** (`/dotagent:ship` alone, or `continue`): resume it, see Resume.
 - **Unfinished work and a new task:** do not start the new one yet. Ask the user once with AskUserQuestion:
   finish the old task first (Recommended, say what is left in one line), or drop it and start the new one.
   Finishing first means resume the old task, then start the new one by itself. Dropping means the planner

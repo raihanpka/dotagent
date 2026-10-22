@@ -1,6 +1,9 @@
 ---
 name: dotagent
-description: Ship a task as a clean PR with your saved settings. Same as /dotagent:ship.
-argument-hint: "<task>"
+description: Show or set the scale like /dotagent:scale, or ship a task with the saved settings.
+argument-hint: "[small|medium|large | <task>]"
 ---
-Invoke the `ship` skill with the Skill tool and pass the user's words as its args, unchanged.
+- No arguments, or only `small`, `medium`, or `large`: do what `/dotagent:scale` does. With the word run
+  `sh "${CLAUDE_SKILL_DIR}/../../hooks/run.sh" set scale <word>`, with none run `... show`. Reply with the output only. If the
+  session line says `unfinished`, add one line: say `continue` to carry on.
+- Anything else is a task: invoke the `ship` skill with the Skill tool and pass the user's words as its args, unchanged.
