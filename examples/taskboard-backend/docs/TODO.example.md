@@ -16,6 +16,7 @@
 branch: feat/task-comments
 needs: none
 covers: R1, R2, R3
+files: internal/modules/comments/**, internal/app/app.go
 read: internal/modules/tasks/module.go#Module, internal/app/app.go#New
 
 - [x] 1.1 (S) `feat(comments): add the comments store`. New `internal/modules/comments/module.go` with `Comment`, the mutex guarded store, and the `Tasks` interface it needs. Verify: gofmt -w ., make build, make lint, make test.

@@ -34,7 +34,7 @@ Common to the sources above and to the skill-creator guides ([Pillitteri](https:
 
 ## What is built
 
-- **App.** `examples/taskboard-backend`, a gin task board with 3 modules and a green `make ci`.
+- **App.** `examples/taskboard-backend`, a gin task board with 6 modules and a green `make ci`.
 - **Tasks.** 5 in `benchmark/tasks/`, each a `prompt.md` and a hidden `bench_test.go` grader that is copied in only after the run:
 
 | Task | Kind | Shape |
@@ -44,6 +44,11 @@ Common to the sources above and to the skill-creator guides ([Pillitteri](https:
 | `t3-pagination` | feature | one endpoint, validation, a header |
 | `t4-archive` | feature | cross module state, 409 rules, an unrelated bug to leave alone |
 | `t5-comments` | feature | a new module, wiring, tests |
+| `t6-members-roles` | feature, several PRs | roles across boards, tasks, and a new module, and it only passes if the `GET /boards` leak is fixed too |
+| `t7-task-labels` | feature, several PRs | links two modules through their interfaces, filter, cascade delete |
+| `t8-list-race` | bug | a data race found with `go test -race`, the fix is at the source (the list returns pointers it encodes after unlocking) |
+
+`t6` to `t8` were added after run 1 to force the planner, workers, and reviewer onto the full path. They are not run yet, and grading now uses `-race`.
 
 - **Arms.** `plain` (Claude Code alone), `small`, `medium`, `large` (`/dotagent:ship <scale>`). Same model for all, `MODEL=sonnet` by default.
 - **Run.** `bash benchmark/run.sh <arm> <task> <trial>` copies the app to a temp dir, runs `claude -p` with `--output-format json`, then grades. The dotagent arms load the working tree plugin with `--plugin-dir plugin`.

@@ -13,6 +13,9 @@
 | `internal/modules/auth` | users, tokens, the auth middleware | `httpx` | `Module`, `Middleware`, `UserID` |
 | `internal/modules/boards` | boards and their owner | auth, `httpx` | `Module`, `Owns` |
 | `internal/modules/tasks` | tasks on a board | auth, `httpx`, boards through `tasks.Boards` | `Module` |
+| `internal/modules/labels` | labels of a board | auth, `httpx`, boards through `labels.Boards` | `Module` |
+| `internal/modules/profile` | display name of a user | auth, `httpx` | `Module` |
+| `internal/modules/webhooks` | stored callback URLs | auth, `httpx` | `Module` |
 
 `internal/app` wires them in `New()`. Routes under `/api/v1` need a bearer token except `signup` and `login`.
 
@@ -25,7 +28,7 @@ P=github.com/raihanpka/taskboard/internal/modules
 for m in $(ls internal/modules); do grep -rnoE "\"$P/[a-z0-9/]+\"" internal/modules/$m --include="*.go" | grep -vE "\"$P/$m[/\"]"; done
 ```
 
-It prints the imports of `auth` by `boards` and `tasks`, both of the root package, so none reaches an inner package. No cycles: boards and tasks depend on auth, and tasks reaches boards only through an interface.
+It prints only imports of the `auth` root package, so no module reaches an inner package. No cycles: every module depends on auth, and `tasks` and `labels` reach boards only through an interface.
 
 ## Boundary check
 

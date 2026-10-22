@@ -11,8 +11,9 @@ Written by the setup agent so a human can track and review it. Tick a file once 
 | em dash and emoji | block | The default, the agent writes neither. |
 | companion skills | none | `style_skills` is none. |
 | git hooks on | yes, `git config core.hooksPath .githooks` | They check every commit and push, by anyone, before CI does. |
-| commit scopes | auth, boards, tasks, app, httpx, config, repo, ci | The module names, plus `repo` for root files and `ci` for workflows. |
+| commit scopes | auth, boards, tasks, labels, profile, webhooks, app, httpx, config, repo, ci | The module names, plus `repo` for root files and `ci` for workflows. |
 | git hooks | enabled | `git config core.hooksPath .githooks` was run in this clone. |
+| protected paths | go.mod, go.sum | A new dependency needs the user, so no agent edits them. |
 
 ## Generated files
 

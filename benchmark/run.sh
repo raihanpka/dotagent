@@ -39,7 +39,7 @@ mkdir -p "$out/raw"; cp "$work/claude.json" "$out/raw/${arm}__${task}__${trial}.
 # Grade: the hidden test plus the repo's own gate. Uncommitted work counts, so commit nothing for the agent.
 cp "$tdir/bench_test.go" internal/app/bench_test.go
 resolved=false; gate=false
-go test ./internal/app -run TestBench >/dev/null 2>&1 && resolved=true
+go test -race ./internal/app -run TestBench >/dev/null 2>&1 && resolved=true
 rm internal/app/bench_test.go
 make ci >/dev/null 2>&1 && gate=true
 

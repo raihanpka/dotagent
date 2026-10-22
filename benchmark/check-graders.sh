@@ -7,7 +7,7 @@ for t in "$root"/benchmark/tasks/*/; do
   id="$(basename "$t")"
   rm -rf "$tmp/app"; cp -R "$root/examples/taskboard-backend" "$tmp/app"
   cp "$t/bench_test.go" "$tmp/app/internal/app/bench_test.go"
-  if (cd "$tmp/app" && go test ./internal/app -run TestBench >/dev/null 2>&1); then
+  if (cd "$tmp/app" && go test -race ./internal/app -run TestBench >/dev/null 2>&1); then
     echo "FAIL $id: grader passes on the base app"; exit 1
   fi
   echo "ok   $id: grader fails on the base app"
