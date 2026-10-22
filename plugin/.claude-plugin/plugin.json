@@ -1,7 +1,7 @@
 {
   "name": "dotagent",
   "version": "0.2.1",
-  "description": "A minimalist agent swarm workflow: plan, atomic commits, review, PR, CI, merge by level.",
+  "description": "A minimalist agent swarm workflow: plan, atomic commits, review, PR, CI, squash merge by level, with hook guardrails (file scope, protected paths) and a receipt of the subagents that ran.",
   "author": {
     "name": "Raihan Putra Kirana",
     "url": "https://github.com/raihanpka"

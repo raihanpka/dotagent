@@ -1,5 +1,5 @@
 ---
-description: Ship a clear task as clean PRs, all the way to merge. Minimalist agent swarm workflow.
+description: Ship a clear task as clean PRs, all the way to a squash merge, with guardrails. Minimalist agent swarm workflow.
 argument-hint: "[small|medium|large] <task>"
 ---
 # dotagent ship

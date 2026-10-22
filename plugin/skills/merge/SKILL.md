@@ -1,5 +1,5 @@
 ---
-description: Save the merge level (off, on-green, full) for this repo, or show it.
+description: Save the merge level for every run (off, on-green, full), or show it. on-green and full merge each PR and carry on to the next.
 argument-hint: "off|on-green|full"
 disable-model-invocation: true
 ---
