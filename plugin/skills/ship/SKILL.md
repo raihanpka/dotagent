@@ -164,20 +164,25 @@ more subtask, push, and watch again. Never skip, weaken, or delete a check to ge
 - **full**: as on-green, and also fix review gaps yourself before merging.
 - **off**: stop at the open PR and say it is ready. The hook blocks `gh pr merge` anyway.
 
-Merge with a merge commit or a rebase, never a squash: squash folds the atomic commits into one. A merge
-commit is the default, `--rebase` only when the user asks. You write the merge commit message yourself,
-as one line:
+Merge with a squash, always: one commit on the default branch per PR. The atomic commits stay traceable
+because the squash body lists each one with its hash. Do it in this order:
 
-- merge commit: `gh pr merge <n> --merge --delete-branch --subject "<PR title> (#<n>)" --body ""`. The
-  subject ends with this PR's number, so the history says which PR a commit came from. The body stays
-  empty (`--body ""`): a description would be a second line or a trailer, and the merge commit is one line.
-- `--rebase`: `gh pr merge <n> --rebase --delete-branch`. The commits are replayed as they are, so there
-  is no subject, no body, and no number. GitHub still links them to the PR.
+1. Read the PR commits: `gh pr view <n> --json commits -q '.commits[] | "- \(.oid[0:7]) \(.messageHeadline)"'`.
+   Also check `gh pr view <n> --json commits -q '.commits[].messageBody'` shows no `Co-Authored-By`,
+   `Signed-off-by`, or "Generated with" line. If one is there, stop and report: do not merge, because
+   GitHub copies such a trailer into the squash commit and it cannot be removed from the default branch
+   afterwards.
+2. Merge with the lines from step 1 pasted into the body, as text, never as a shell variable (the hook reads
+   the command as typed): `gh pr merge <n> --squash --delete-branch --subject "<PR title> (#<n>)" --body "<lines>"`.
+   The subject ends with this PR's number. The body is only those lines, `- <short hash> <commit subject>`,
+   one per commit, oldest first. No prose, no trailer, no tool name.
+3. Switch to the default branch, pull, and check `git log -1 --format=%B` has no `Co-authored-by`. If it
+   does, report it to the user, never rewrite the default branch.
 
-Only the merge subject carries `(#<n>)`. A commit message and a PR title never do, GitHub adds it, and a
-hook refuses it, and `--squash`, `--admin`, and a merge body. The subject's number must be the PR you are
-merging. Never bypass a required check or a required review to merge, report it instead. Then switch to the
-default branch and pull.
+A commit message and a PR title never carry `(#<n>)`, GitHub adds it. A hook refuses it, and `--merge`,
+`--rebase`, `--admin`, a body that is not a commit list, and any trailer. The subject's number must be
+the PR you are merging. Never bypass a required check or a required review to merge, report it instead.
+If the repo does not allow squash merging (`gh repo view --json squashMergeAllowed`), stop and say so.
 
 ## Done condition
 

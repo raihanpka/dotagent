@@ -3,6 +3,19 @@
 Versions follow [semver](https://semver.org). The version lives only in `plugin/.claude-plugin/plugin.json`.
 Claude Code caches a plugin per version, so bump it on every change users should receive.
 
+## Unreleased
+
+Not tagged yet: `plugin.json` stays at 0.2.1, so no new release. Claude Code caches a plugin per version, so installed copies get this only after the next bump.
+
+### Merge is a squash
+
+- The only merge is `gh pr merge --squash`. A merge commit and a rebase are refused by the hook. Before, squash was refused because it folds the atomic commits.
+- The squash body lists every commit, one line each, `- <short hash> <commit subject>`, taken from `gh pr view --json commits`. The hook refuses any other body line, a body file, an empty body, and any trailer.
+- The subject is still `<PR title> (#N)` with this PR's number.
+- No AI co-author in the squash commit: `ship` first checks that no commit of the PR carries `Co-Authored-By`, `Signed-off-by`, or a "Generated with" line, and does not merge if one does, because GitHub copies such a trailer into the squash commit and it cannot be removed from the default branch afterwards. After the merge it checks `git log -1 --format=%B` and reports a trailer instead of rewriting history.
+- Setup checks that the repo allows squash merging.
+- Hook tests: 113 cases.
+
 ## 0.2.1
 
 Hotfix for `/dotagent:setup`: it must not overwrite what the repo already has.

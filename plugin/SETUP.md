@@ -24,7 +24,7 @@ Check each with `command -v` and report what is missing. Do not install anything
 | GitHub CLI `gh`, signed in | the agent opens PRs, watches CI, and merges | `gh auth status` |
 | Python 3.8 or newer | runs `hooks/guard.py` through `hooks/run.sh`, which tries `python3`, `python`, then `py` | `python3 --version` or `python --version` |
 | The repo's own toolchain | build, lint, and test commands | ask in step 3 |
-| A GitHub remote with Actions | the PR and CI steps | `git remote -v` |
+| A GitHub remote with Actions, squash merging allowed | the PR and CI steps, and the merge is always a squash | `git remote -v`, `gh repo view --json squashMergeAllowed` |
 | Node and jq (optional) | only to run dotagent's own tests | `node --version`, `jq --version` |
 
 ## 1. Look first, cheaply

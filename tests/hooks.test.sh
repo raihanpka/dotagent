@@ -53,7 +53,7 @@ expect "commit todo scope" 2 "$(bash_json 'git commit -m "feat(todo): add login"
 expect "commit real task word ok" 0 "$(bash_json 'git commit -m "feat(tasks): add the task list endpoint"')"
 expect "commit milestone feature ok" 0 "$(bash_json 'git commit -m "feat(billing): add milestone payments"')"
 expect "pr title label" 2 "$(bash_json 'gh pr create --title "feat(milestone-2): add overview" --body "text"')"
-expect "merge subject label" 2 "$(bash_json 'gh pr merge 5 --merge --subject "feat: finish task 3 (#5)" --body ""')"
+expect "merge subject label" 2 "$(bash_json 'gh pr merge 5 --squash --subject "feat: finish task 3 (#5)" --body "- 1a2b3c4 fix(a): x"')"
 
 # the git hooks format and lint, so they are never skipped
 expect "commit no-verify" 2 "$(bash_json 'git commit --no-verify -m "feat(a): add x"')"
@@ -87,28 +87,33 @@ expect "pr body emoji" 2 "$(bash_json 'gh pr create --title "fix: a" --body "tex
 
 # merge level
 cfg '{"merge":"off"}'
-expect "merge off blocks" 2 "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#5)" --body ""')"
+expect "merge off blocks" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
 cfg '{"merge":"on_green"}'
-expect "merge typo blocks" 2 "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#5)" --body ""')"
+expect "merge typo blocks" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
 cfg 'not json'
-expect "merge bad file blocks" 2 "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#5)" --body ""')"
+expect "merge bad file blocks" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
 cfg '{"scale":"large"}'
-expect "merge key missing is on-green" 0 "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#5)" --body ""')"
+expect "merge key missing is on-green" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
 rm "$tmp/proj/.dotagent/config.json"
-expect "merge default is on-green" 0 "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#5)" --body ""')"
-expect "merge admin is refused" 2 "$(bash_json 'gh pr merge 5 --merge --admin --subject "fix: a (#5)" --body ""')"
+expect "merge default is on-green" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
+expect "merge admin is refused" 2 "$(bash_json 'gh pr merge 5 --squash --admin --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
 cfg '{"merge":"on-green"}'
-expect "merge on-green ok" 0 "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#5)" --body ""')"
+expect "merge on-green ok" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
 cfg '{"merge":"full"}'
-expect "merge commit ok" 0 "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#5)" --body ""')"
-expect "merge wrong number" 2 "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#6)" --body ""')"
-expect "squash is never used" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body ""')"
-expect "merge commit needs a subject" 2 "$(bash_json 'gh pr merge 5 --merge --body ""')"
-expect "merge commit needs an empty body flag" 2 "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#5)"')"
-expect "merge commit body is refused" 2 "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#5)" --body "long text"')"
-expect "merge body file is refused" 2 "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#5)" --body-file b.md')"
-expect "rebase needs no subject or body" 0 "$(bash_json 'gh pr merge 5 --rebase')"
-expect "merge subject needs number" 2 "$(bash_json 'gh pr merge 5 --merge --subject "fix: a" --body ""')"
+expect "merge commit ok" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
+expect "merge wrong number" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#6)" --body "- 1a2b3c4 fix(a): x"')"
+expect "merge commit is refused" 2 "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
+expect "rebase is refused" 2 "$(bash_json 'gh pr merge 5 --rebase')"
+expect "squash needs a subject" 2 "$(bash_json 'gh pr merge 5 --squash --body "- 1a2b3c4 fix(a): x"')"
+expect "squash needs a body" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)"')"
+expect "squash empty body is refused" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body ""')"
+expect "squash prose body is refused" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "long text"')"
+expect "squash body with a co-author is refused" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x
+Co-Authored-By: X <x@y.z>"')"
+expect "squash body with many commits ok" 0 "$(bash_json 'gh pr merge 5 --squash --delete-branch --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x
+- 5d6e7f8 test(a): y"')"
+expect "squash body file is refused" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body-file b.md')"
+expect "merge subject needs number" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a" --body "- 1a2b3c4 fix(a): x"')"
 cfg '{}'
 
 # em dash in written files

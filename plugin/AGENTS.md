@@ -27,8 +27,8 @@ repo's own `AGENTS.md`, which wins on any conflict.
   is typical and a range, not a limit. Use the PR template and
   delete unchecked lines.
 - Merge only as far as the merge level allows. A commit and a PR title never carry `(#N)`, GitHub adds it.
-  Merge with a merge commit or a rebase, never a squash. A merge commit is one line, `<PR title> (#N)`,
-  with this PR's number and no body. A rebase has no subject.
+  Merge with a squash. The subject is `<PR title> (#N)` with this PR's number, and the body is one line per
+  commit, `- <short hash> <commit subject>`, with no trailer.
 
 ## Code
 

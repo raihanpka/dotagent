@@ -131,16 +131,16 @@ One file, `.dotagent/config.json`, local and ignored by git (setup adds `.dotage
 - **Team:** Sonnet plans and reviews. Haiku workers build, one subagent per subtask, one at a time. Git, `gh`, and CI are plain commands.
 - **Size is a range, not a limit:** a PR is reviewable in one sitting, usually 3 to 8 subtasks and a few hundred changed lines. A bigger task becomes more PRs.
 - **Fixes:** a failure gets one Haiku try, then one Sonnet try, then it stops and reports.
-- **Merge levels:** `on-green` (default, merge when the review is clean and CI is green), `full` (also fixes review gaps itself), `off` (stop at the open PR). A merge commit or a rebase, never a squash, and never `--admin`.
+- **Merge levels:** `on-green` (default, merge when the review is clean and CI is green), `full` (also fixes review gaps itself), `off` (stop at the open PR). Always a squash merge, and never `--admin`. The squash body lists every commit with its hash, so the atomic commits stay traceable.
 - **Git hooks are part of setup:** setup writes `pre-commit`, `commit-msg`, and `pre-push` and turns them on (`git config core.hooksPath .githooks`). They check every commit and push by anyone, the agent, a person, or a script, which the agent hook cannot. Every run and every new session checks they are still on, and warns when the repo ships them but git does not use them.
 - **Format and lint before CI:** the `pre-commit` git hook checks format and lint, `pre-push` runs format, lint, build, and test, and the worker formats before it commits. A red CI is then a real failure, not a forgotten lint.
 - **Continue:** `docs/TODO.md` and git are the state. A new session announces unfinished work, so `continue` resumes where it stopped.
 - **Hooks, not prompts, enforce:**
   - one-line `type(scope): summary` commits with no trailer
-  - the PR title format and the merge level, and a merge commit is one line ending with this PR's `(#N)` and no body (a commit or PR title never writes it, GitHub adds it). Squash is refused, rebase is allowed
+  - the PR title format and the merge level, and the merge is a squash whose subject ends with this PR's `(#N)` (a commit or PR title never writes it, GitHub adds it) and whose body is only `- <hash> <subject>` lines. A merge commit and a rebase are refused
   - **names say what changed, never where the work sits in the plan:** no `milestone-1`, `task-2`, `slice 3`, `wip`, or "finishing task" in a commit, PR title, or merge subject. `feat(auth): add the login route`, never `feat(milestone-1): add login`
   - no em dash or emoji, unless you set them to `allow` (see Settings)
-  - no `Co-Authored-By` trailer and no "Generated with" line in a commit or the PR body
+  - no `Co-Authored-By` trailer and no "Generated with" line in a commit, the PR body, or the squash body. A PR whose commits already carry one is not merged
   - no `--no-verify` on `git commit` or `git push`, so the git hooks always run
   - no whole read of a file over 500 lines
 

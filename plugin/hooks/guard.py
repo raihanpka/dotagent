@@ -20,6 +20,7 @@ TYPES = "feat|fix|hotfix|docs|style|refactor|test|chore|perf|revert|ci|build"
 COMMIT = re.compile(rf"^({TYPES})\([a-zA-Z0-9_.-]+\): \S")
 TITLE = re.compile(rf"^({TYPES})(\([a-zA-Z0-9_.-]+\))?: \S")
 MERGE_SUBJECT = re.compile(r"\(#(\d+)\)$")
+COMMIT_LINE = re.compile(r"^- [0-9a-f]{7,40} \S")  # one line per commit in a squash body: `- 1a2b3c4 feat(auth): add login`
 # GitHub adds the PR number on merge, so a commit or PR title never writes it: only the merge subject ends with it.
 PR_NUMBER = re.compile(r"\(#\d+\)")
 # A name says what changed, never where it sits in the plan: no "milestone-1", "task 2", "slice-3", "finishing task", "(wip)".
@@ -279,25 +280,29 @@ def check_pr_create(tokens):
 
 
 def check_pr_merge(tokens):
-    # Merging obeys the configured level. A merge commit is one line that ends with this PR's number, no body.
-    # A rebase replays the commits as they are and has no subject. Squash is never used, it folds the atomic commits.
+    # Merging obeys the configured level. The only merge is a squash: the subject ends with this PR's number and
+    # the body lists every commit as `- <hash> <subject>`, so the atomic commits stay traceable. No trailer.
     if opt("MERGE") == "off":
         block("merge level is off. Leave the merge to the user.")
     if "--admin" in tokens:
         block("do not merge with --admin, it skips the branch protection and the required checks.")
-    if {"-s", "--squash"} & set(tokens):
-        block("do not squash, it folds the atomic commits into one. Merge with --merge, or --rebase.")
+    if {"-m", "--merge", "-r", "--rebase"} & set(tokens) or not {"-s", "--squash"} & set(tokens):
+        block("merge with --squash. The body keeps the commit list, so nothing is lost.")
     number = next((t for t in tokens if t.isdigit()), None)
     subjects = flag_values(tokens, "-t", "--subject")
-    rebase = bool({"-r", "--rebase"} & set(tokens))
-    if not rebase:
-        bodies = flag_values(tokens, "-b", "--body")
-        if "-F" in tokens or "--body-file" in tokens or any(b.strip() for b in bodies):
-            block("a merge commit is one line, no body. Pass --body \"\".")
-        if not bodies:
-            block("pass --body \"\" so the merge commit is one line, with no description and no trailer.")
-    if not subjects and not rebase:
-        block("pass --subject \"<PR title> (#N)\" so the merge commit ends with the PR number. Rebase has no subject.")
+    if "-F" in tokens or "--body-file" in tokens:
+        block("pass the commit list with --body, not --body-file.")
+    bodies = flag_values(tokens, "-b", "--body")
+    if not any(b.strip() for b in bodies):
+        block("pass --body with one line per commit, `- <short hash> <subject>`, from `gh pr view <n> --json commits`.")
+    for body in bodies:
+        if TRAILER.search(body):
+            block("no generated-by line or Co-Authored-By in the squash body. List only the commits.")
+        for line in body.splitlines():
+            if line.strip() and not COMMIT_LINE.match(line):
+                block("every squash body line is `- <short hash> <commit subject>`, nothing else.")
+    if not subjects:
+        block("pass --subject \"<PR title> (#N)\" so the squash commit ends with the PR number.")
     for subject in subjects:
         found = MERGE_SUBJECT.search(subject)
         if not found:
