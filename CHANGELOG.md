@@ -3,9 +3,9 @@
 Versions follow [semver](https://semver.org). The version lives only in `plugin/.claude-plugin/plugin.json`.
 Claude Code caches a plugin per version, so bump it on every change users should receive.
 
-## Unreleased
+## 0.2.2
 
-Not tagged yet: `plugin.json` stays at 0.2.1, so no new release. Claude Code caches a plugin per version, so installed copies get this only after the next bump.
+Upgrading: merges are now squash only, see Merge is a squash. Run `/plugin marketplace update dotagent`, `/plugin update dotagent@dotagent`, then `/reload-plugins`. To protect paths, run `sh hooks/run.sh set protected "<globs>"`.
 
 ### Commands and first run
 
