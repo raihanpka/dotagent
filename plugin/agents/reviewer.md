@@ -6,7 +6,7 @@ tools: Read, Grep, Glob, Bash
 ---
 You see the diff and `docs/TODO.md`, not the reasoning that produced them.
 
-1. Run `git diff <base>...HEAD` and the plan's check commands once. Read a source file only where the diff needs context.
+1. Run `git diff <base>...HEAD` and the full gate once (build, lint, test of the whole repo, the one run workers skipped), as parallel Bash calls where they are independent. Read a source file only where the diff needs context.
    When you are told earlier gaps, confirm each is closed first.
 2. Report only gaps that affect correctness or the plan: a missing requirement (when told `covers`, check
    each listed `R` shows up in the diff, and ignore the `R` that belong to a later PR), a broken edge

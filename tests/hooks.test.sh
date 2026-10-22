@@ -217,5 +217,35 @@ printf '# TODO: x\n\n## PR 1: feat(a): add a\n\n- [x] 1.1 (S) `feat(a): add a`. 
 out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
 case "$out" in *"unfinished: 1 PR(s)"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL an unmerged PR is not unfinished: $out" ;; esac
 
+# protected paths, per-PR file scope, subagent receipt
+cfg '{"protected":"db/migrations/**,.github/CODEOWNERS"}'
+expect "protected path blocks" 2 '{"tool_name":"Edit","tool_input":{"file_path":"db/migrations/001_a.sql","new_string":"x"}}'
+expect "protected exact file blocks" 2 '{"tool_name":"Write","tool_input":{"file_path":".github/CODEOWNERS","content":"x"}}'
+expect "unprotected path ok" 0 '{"tool_name":"Write","tool_input":{"file_path":"src/a.go","content":"x"}}'
+cfg '{}'
+printf '# TODO: x\n\n## PR 1: feat(a): add a\nfiles: internal/a/**, internal/app/app.go\n\n- [ ] 1.1 (S) `feat(a): add a`. x.\n\ndone:\n' > "$tmp/proj/docs/TODO.md"
+sh "$guard" phase build >/dev/null
+expect "scope allows a listed folder" 0 '{"tool_name":"Edit","tool_input":{"file_path":"internal/a/x/y.go","new_string":"x"}}'
+expect "scope allows a listed file" 0 '{"tool_name":"Edit","tool_input":{"file_path":"internal/app/app.go","new_string":"x"}}'
+expect "scope blocks an unlisted file" 2 '{"tool_name":"Edit","tool_input":{"file_path":"internal/b/z.go","new_string":"x"}}'
+expect "scope allows the TODO" 0 '{"tool_name":"Edit","tool_input":{"file_path":"docs/TODO.md","new_string":"x"}}'
+sh "$guard" phase done >/dev/null
+expect "scope is off outside a build" 0 '{"tool_name":"Edit","tool_input":{"file_path":"internal/b/z.go","new_string":"x"}}'
+printf '# TODO: x\n\n## PR 1: feat(a): add a\n\n- [ ] 1.1 (S) `feat(a): add a`. x.\n\ndone:\n' > "$tmp/proj/docs/TODO.md"
+sh "$guard" phase build >/dev/null
+expect "no files line means no scope" 0 '{"tool_name":"Edit","tool_input":{"file_path":"internal/b/z.go","new_string":"x"}}'
+sh "$guard" phase done >/dev/null
+printf '{"hook_event_name":"SessionStart"}' | sh "$guard" >/dev/null
+expect "agent spawn is never blocked" 0 '{"tool_name":"Agent","tool_input":{"subagent_type":"dotagent:worker"}}'
+expect "second spawn" 0 '{"tool_name":"Agent","tool_input":{"subagent_type":"dotagent:worker"}}'
+expect "reviewer spawn" 0 '{"tool_name":"Agent","tool_input":{"subagent_type":"dotagent:reviewer"}}'
+out="$(sh "$guard" receipt)"
+case "$out" in "subagents: worker 2, reviewer 1") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL receipt: $out" ;; esac
+out="$(sh "$guard" status)"
+case "$out" in 1) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL status: $out" ;; esac
+printf '{"hook_event_name":"SessionStart"}' | sh "$guard" >/dev/null
+out="$(sh "$guard" receipt)"
+case "$out" in "subagents: none") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL receipt reset: $out" ;; esac
+
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]

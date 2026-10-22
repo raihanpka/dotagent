@@ -116,6 +116,7 @@ One file, `.dotagent/config.json`, local and ignored by git (setup adds `.dotage
 | `em_dash` | `block` | `block`, `allow` (set `allow` only when you want em dashes) |
 | `emoji` | `block` | `block`, `allow` (set `allow` only when you want emoji) |
 | `style_skills` | `none` | comma separated skills, such as `caveman,ponytail:lite` |
+| `protected` | empty | comma separated globs no agent may edit, such as `db/migrations/**,.github/CODEOWNERS`. A hook refuses the edit. Set it with `sh hooks/run.sh set protected "<globs>"` |
 
 - Change `scale` and `merge` with the commands above. Any key: `sh run.sh set <key> <value>`, or edit the file.
 - A missing file or key means the default. A wrong value or a broken file means `merge` off, so a typo never turns merging on.
@@ -143,6 +144,8 @@ One file, `.dotagent/config.json`, local and ignored by git (setup adds `.dotage
   - no `Co-Authored-By` trailer and no "Generated with" line in a commit, the PR body, or the squash body. A PR whose commits already carry one is not merged
   - no `--no-verify` on `git commit` or `git push`, so the git hooks always run
   - no whole read of a file over 500 lines
+  - while building, no edit outside the PR's `files:` list in `docs/TODO.md`, and none in a `protected` path
+  - a receipt: `sh hooks/run.sh receipt` prints which subagents really ran (`planner 1, worker 4, reviewer 1`)
 
 ## skills i use around it
 

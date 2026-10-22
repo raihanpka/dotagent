@@ -37,6 +37,7 @@ WRITE = re.compile(
     r"|\bgit\s+((apply|restore|reset|stash|add|rm|clean|am|cherry-pick|merge|rebase)\b|checkout\s+--)"
 )
 TODO = os.path.join("docs", "TODO.md")
+RUNS = os.path.join(".dotagent", "runs.jsonl")  # one line per subagent spawned this session
 PHASE = os.path.join(".dotagent", "phase")
 PHASE_TTL = 3600  # a forgotten plan marker must never lock a repo for long
 SKIP_READ = re.compile(
@@ -103,6 +104,8 @@ def load(base=None):
             values[key] = allowed[0]
     skills = raw.get("style_skills")
     values["style_skills"] = skills if isinstance(skills, str) and skills else "none"
+    protected = raw.get("protected")
+    values["protected"] = protected if isinstance(protected, str) else ""
     return values
 
 
@@ -120,8 +123,8 @@ def git_hooks():
     return "on" if found.replace("\\", "/").rstrip("/").endswith(".githooks") else "off"
 
 
-def unfinished():
-    # Titles of the PRs in docs/TODO.md that still have an unticked subtask or no done: line.
+def todo_prs():
+    # The PRs in docs/TODO.md that still have an unticked subtask or no done: line, as (title, body).
     try:
         with open(os.path.join(project_dir(), TODO), encoding="utf-8") as handle:
             text = handle.read()
@@ -130,8 +133,75 @@ def unfinished():
     left = []
     for found in re.finditer(r"(?ms)^## PR \d+:\s*(.+?)\n(.*?)(?=^## |\Z)", text):
         if "- [ ]" in found.group(2) or not re.search(r"(?m)^done:[ \t]*\S", found.group(2)):
-            left.append(found.group(1).strip())
+            left.append((found.group(1).strip(), found.group(2)))
     return left
+
+
+def unfinished():
+    return [title for title, _ in todo_prs()]
+
+
+def glob_re(pattern):
+    # `**` crosses folders, `*` and `?` stay inside one.
+    out, i = "", 0
+    while i < len(pattern):
+        if pattern.startswith("**/", i):
+            out, i = out + "(?:.*/)?", i + 3
+        elif pattern.startswith("**", i):
+            out, i = out + ".*", i + 2
+        elif pattern[i] == "*":
+            out, i = out + "[^/]*", i + 1
+        elif pattern[i] == "?":
+            out, i = out + "[^/]", i + 1
+        else:
+            out, i = out + re.escape(pattern[i]), i + 1
+    return re.compile("^" + out + "$")
+
+
+def matches(rel, patterns):
+    return any(glob_re(p.strip()).match(rel) for p in patterns if p.strip())
+
+
+def rel_path(path):
+    # The path relative to the project, with forward slashes.
+    try:
+        return os.path.relpath(path, project_dir()).replace(os.sep, "/") if os.path.isabs(path) else path.replace(os.sep, "/")
+    except ValueError:
+        return path.replace(os.sep, "/")
+
+
+def pr_files():
+    # The `files:` globs of the first unfinished PR, empty when the plan lists none.
+    prs = todo_prs()
+    found = re.search(r"(?m)^files:[ \t]*(.+)$", prs[0][1]) if prs else None
+    return [g.strip() for g in found.group(1).split(",") if g.strip()] if found else []
+
+
+def log_spawn(tool_input):
+    # Records one subagent spawn so a run can show what really ran. Never blocks.
+    path = os.path.join(project_dir(), RUNS)
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "a", encoding="utf-8", newline="\n") as handle:
+            handle.write(json.dumps({"t": int(time.time()), "agent": tool_input.get("subagent_type") or "general"}) + "\n")
+    except OSError:
+        pass
+
+
+def receipt():
+    # `planner 1, worker 4, reviewer 1` for this session, or `none`.
+    counts = {}
+    try:
+        with open(os.path.join(project_dir(), RUNS), encoding="utf-8") as handle:
+            for line in handle:
+                try:
+                    name = json.loads(line)["agent"].split(":")[-1]
+                except (ValueError, KeyError, AttributeError):
+                    continue
+                counts[name] = counts.get(name, 0) + 1
+    except OSError:
+        pass
+    return ", ".join(f"{k} {v}" for k, v in counts.items()) or "none"
 
 
 def opt(name):
@@ -148,6 +218,12 @@ def cli(args):
     if args[:1] == ["hooks"]:
         print(git_hooks())
         return
+    if args[:1] == ["receipt"]:
+        print("subagents: " + receipt())
+        return
+    if args[:1] == ["status"]:
+        print(len(unfinished()))
+        return
     if len(args) == 2 and args[0] == "phase" and args[1] in ("plan", "build", "done"):
         path = os.path.join(project_dir(), PHASE)
         if args[1] == "done":
@@ -159,12 +235,12 @@ def cli(args):
         print("phase=" + args[1])
         return
     if len(args) != 3 or args[0] != "set":
-        sys.exit("usage: guard.py show | hooks | set <key> <value> | phase plan|build|done")
+        sys.exit("usage: guard.py show | hooks | receipt | status | set <key> <value> | phase plan|build|done")
     key, value = args[1], args[2]
     if key in CHOICES and value not in CHOICES[key]:
         sys.exit(f"{key} must be one of: {', '.join(CHOICES[key])}")
-    if key not in CHOICES and key != "style_skills":
-        sys.exit("unknown key, use: " + ", ".join(list(CHOICES) + ["style_skills"]))
+    if key not in CHOICES and key not in ("style_skills", "protected"):
+        sys.exit("unknown key, use: " + ", ".join(list(CHOICES) + ["style_skills", "protected"]))
     path = config_path()
     try:
         with open(path, encoding="utf-8") as handle:
@@ -346,6 +422,17 @@ def on_write(tool_input):
         block("planning is read-only. Only docs/TODO.md may change until the plan is settled.")
     if is_path(path, CONFIG):
         block("do not edit .dotagent/config.json. Ask the user to run /dotagent:scale or /dotagent:merge.")
+    rel = rel_path(path)
+    if matches(rel, opt("PROTECTED").split(",")):
+        block(f"{rel} is a protected path (`protected` in .dotagent/config.json). Leave it and tell the user what needs to change.")
+    # While building, a worker edits only the files the plan lists for the PR, so a stray edit shows up at once.
+    if phase() == "build" and not is_path(path, TODO):
+        allowed = pr_files()
+        if allowed and not matches(rel, allowed):
+            block(
+                f"{rel} is outside this PR's `files:` in docs/TODO.md ({', '.join(allowed)}). Stop and tell the lead, "
+                "who adds the path to `files:` only when the task needs it."
+            )
     # Refuses an em dash in text the agent writes, unless the user allowed it.
     if opt("EM_DASH") == "allow":
         return
@@ -383,6 +470,10 @@ def main():
         return
     if event.get("hook_event_name") == "SessionStart":
         clear_phase()
+        try:
+            os.remove(os.path.join(project_dir(), RUNS))
+        except OSError:
+            pass
         print(
             f"[dotagent] scale={opt('SCALE')} merge={opt('MERGE')} "
             f"read-limit={READ_LINES} style={opt('STYLE_SKILLS')}"
@@ -407,6 +498,8 @@ def main():
         on_write(tool_input)
     elif tool == "Read":
         on_read(tool_input)
+    elif tool in ("Agent", "Task"):
+        log_spawn(tool_input)
 
 
 if __name__ == "__main__":

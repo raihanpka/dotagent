@@ -9,6 +9,7 @@
 - Format: `{{format}}` (check only: `{{format-check}}`)
 - Lint: `{{lint}}`
 - Test: `{{test}}` (one file: `{{test-one}}`)
+- One module, for a repo with many (a worker checks with these, the full gate above runs once before the PR): lint `{{lint-module}}`, test `{{test-module}}`
 
 ## Architecture
 
@@ -18,13 +19,14 @@
 ## Modules
 
 <!-- One line per module: what it owns, its public interface, and what it may depend on. -->
-- `{{path}}`: {{owns}}. Public interface: {{file}}. May depend on: {{allowed}}.
+- `{{path}}`: {{owns}}. Public interface: {{file}}. May depend on: {{allowed}}. Entry points: {{main files}}.
 
 ## Rules
 
 - Branch from `{{default-branch}}`. One task is one branch and one PR.
 - Commits are one line, `type(scope): summary`, no trailer. Scopes: {{scopes}}.
 - Names say what changed. Never a plan label such as `milestone-1`, `task-2`, `slice 3`, or "finishing task", and never `(#N)`, in a commit message, PR title, or branch.
+- Never edit protected paths (`protected` in `.dotagent/config.json`: {{migrations, CODEOWNERS, lockfiles}}), a hook refuses it.
 - Never edit generated files under `{{generated}}`. Run `{{codegen}}` instead.
 - A PR stays reviewable in one sitting, a few hundred changed lines is typical, a range and not a limit. A bigger task is more PRs that each build and pass.
 - {{a rule that differs from the language defaults, one per line}}

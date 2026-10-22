@@ -20,6 +20,13 @@ holds work that is not done yet.
 A task is one or more PRs, each cut from the default branch. Commits are atomic and one
 line, `type(scope): summary`. Hooks enforce the format and the names.
 
+## Tools and speed
+
+Use the harness tools, they are faster than shell: Grep and Glob to find, Read with offset and limit to read, and
+several independent calls in one turn. For a big repo, send the `Explore` agent first for a wide read and give the
+planner its summary as `context`. Run `gh pr checks --watch` in the background and carry on, or watch it with Monitor.
+Agents cannot start agents, so only you (the lead) spawn.
+
 ## Style skills
 
 `style=` lists skills such as `caveman` or `ponytail:lite`. Invoke each once with the Skill tool
@@ -183,6 +190,16 @@ A commit message and a PR title never carry `(#<n>)`, GitHub adds it. A hook ref
 `--rebase`, `--admin`, a body that is not a commit list, and any trailer. The subject's number must be
 the PR you are merging. Never bypass a required check or a required review to merge, report it instead.
 If the repo does not allow squash merging (`gh repo view --json squashMergeAllowed`), stop and say so.
+
+## Receipt and guardrails
+
+- End every run, and every stop, with `sh "$RUN" receipt`, and put its line in your report. It lists the subagents that really
+  ran (`subagents: planner 1, worker 4, reviewer 1`). A plan with subtasks and no `worker` means you built it yourself: say so.
+- Before `gh pr create`, run the full gate once (the repo's build, lint, and test). Workers checked only their module.
+- A hook refuses an edit outside the PR's `files:` and any path in `protected`. Do not work around either: add the path to `files:`
+  only when the task needs it, and tell the user when a protected path needs a change.
+- To keep the lead context small on a long plan, the user can run `sh "${CLAUDE_SKILL_DIR}/../../hooks/loop.sh"`: one fresh
+  `claude -p` per PR, resumed from `docs/TODO.md`.
 
 ## Done condition
 

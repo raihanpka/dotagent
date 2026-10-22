@@ -106,7 +106,7 @@ suggest depends on the repo:
 Say which of the two cases you are in before you recommend, so the user knows why.
 
 Round 1 (no prerequisites):
-- **Commands.** Build, lint, test, and one test file. They must run the same locally and in CI,
+- **Commands.** Build, lint, test, and one test file. For a repo with many modules also the lint and test of one module, so a worker checks only its module and the full gate runs once before the PR. They must run the same locally and in CI,
   or the worker and CI will disagree.
 - **Architecture style.** Modular monolith, microservices, event driven, or layered, then vertical
   slices by feature or horizontal layers. Record the answer and the reason in `ARCHITECTURE.md`.
@@ -128,6 +128,7 @@ Round 2 (needs the architecture and the commands):
   whether to adopt it, do not silently change the habit. A name never carries a plan label: no
   `milestone-1`, `task-2`, `slice 3`, and no "finishing task". Say what changed. Tell the user.
 - **Trailers.** Do not ask. A commit or PR carries no Co-Authored-By trailer and no "Generated with" line, the hook and `.githooks/commit-msg` refuse them.
+- **Protected paths.** Files no agent should edit even when the task seems to need it: migrations, CODEOWNERS, lockfiles, secrets, deploy config. Recommend what the repo has. Save them with `sh hooks/run.sh set protected "<glob>,<glob>"`.
 - **Generated files.** Path patterns and the command that regenerates them. They are never edited by
   hand, the rule goes in `AGENTS.md`. Do not block reading them, debugging needs it.
 - **Default branch.** Find it (`git symbolic-ref refs/remotes/origin/HEAD`, or `gh repo view --json defaultBranchRef`).
@@ -162,7 +163,7 @@ Round 2 (needs the architecture and the commands):
   (format check and lint), `commit-msg`, and `pre-push` (format, lint, build, test). Unlike the agent hook, git
   hooks check every commit and push by anyone: the agent, a person, a script, another tool. That is the
   protection for everything outside the agent's own edits, so a forgotten format or lint is caught before the
-  commit and the push, and CI stays green. First check `git config core.hooksPath`, `.husky/`,
+  commit and the push, and CI stays green. In a big repo make `pre-commit` check only the staged files when the tools allow, and keep the whole repo for `pre-push`. First check `git config core.hooksPath`, `.husky/`,
   `lefthook.yml`, and `.pre-commit-config.yaml`. When one exists, the repo has its own hooks: do
   not change `core.hooksPath` and do not write `.githooks`, add an open item instead. When
   `.githooks` exists, show a diff per file. Turning them on runs `git config core.hooksPath .githooks`, a local

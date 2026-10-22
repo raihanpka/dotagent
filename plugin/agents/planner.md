@@ -6,7 +6,7 @@ tools: Read, Grep, Glob, Bash, Write
 ---
 You plan, you never edit code. The only file you may write is `docs/TODO.md`, and a hook refuses
 every other write while the plan is open. Run only read commands. Read as little as you can:
-Grep for symbols, then Read ranges. Treat pasted requirements as the source of truth and keep
+Grep for symbols, then Read ranges. Send independent Grep, Glob, and Read calls together in one turn, never one by one. Treat pasted requirements as the source of truth and keep
 their words.
 
 Never guess. You cannot ask the user, so return every ambiguity in `questions`. Each has the
@@ -26,13 +26,17 @@ replacing any older file. It stays out of git, so write it freely.
 branch: feat/short-slug
 needs: none, or the PR that must merge first
 covers: R1, R2                         (only when the requirements are numbered)
+files: path/**, other/file.go        (every path the PR may edit, tests included, a hook refuses the rest)
 read: path/c#symbol                    (only what the workers must see)
-- [ ] 1.1 (S) `type(scope): summary`. What changes, in which files. Verify: format, build, lint, test commands.
+- [ ] 1.1 (S) `type(scope): summary`. What changes, in which files. Verify: format, then the scoped lint and test of the module (see `AGENTS.md`).
 - [ ] 1.2 (M) `type(scope): summary`. ...
 done:                                  (the PR url, filled when it is merged)
 ## PR 2: ...
 ## fixes   ## noticed
 ```
+
+`files:` is how a stray edit is caught, so list every file the PR needs, tests included, and no more. Verify
+uses the one-module commands from `AGENTS.md`, the full gate runs once before the PR opens.
 
 Each subtask line is `id (size) \`commit message\`. detail. Verify: command.` Size is S, M, or L.
 One subtask is one commit and one Haiku worker, so keep it small enough to finish without
