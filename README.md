@@ -1,6 +1,6 @@
 # dotagent
 
-🚢 A **minimalist agent swarm workflow** for Claude Code that gets the job done: **clear requirements in, clean pull request out, merge, and ship.**
+🚢 A **minimalist agent swarm workflow** for Claude Code and other AI coding agents (Codex, Antigravity, Cursor, and more) that gets the job done: **clear requirements in, clean pull request out, merge, and ship.**
 
 New skills and plugins show up every week, and most of us feel it: you install five skills, forget what
 each does, the setup gets heavier than the work, so you end up overwhelmed. 
@@ -37,9 +37,31 @@ claude
 - `/dotagent:setup` reads your repo, then interviews you in rounds like [grill-me](https://www.aihero.dev/skills-grill-me), with a recommended answer per question. It shows every file before writing it, never overwrites one, and ends with `docs/DOTAGENT-SETUP.md`, a checklist to tick as you review.
 - Skip it and `/dotagent:ship <task>` still works. The first run says which defaults it uses, asks once whether to set up first or go on with only a TODO, and saves your answer.
 - See `examples/` for what setup writes.
-- Not on Claude Code? Codex, Antigravity, or another agent: tell it to read `plugin/SETUP.md` first. Its section for other agents covers the install and what the git hooks still check.
+- Using another AI coding agent (Codex, Antigravity, Cursor, or others)? Install the ship skill, then set up the repo with the guide below.
   - Codex: `codex plugin marketplace add raihanpka/dotagent`, then install dotagent from `/plugins`.
   - Antigravity CLI or any agent with the skills CLI: `npx skills add raihanpka/dotagent --skill dotagent-ship -a codex -a antigravity-cli -y`.
+
+<details>
+<summary>setup by agent, for Codex, Antigravity, Cursor, or any other agent</summary>
+
+For Humans:
+Copy and paste this prompt to your LLM agent (Codex, Antigravity, Cursor, etc.):
+
+```
+Set up dotagent in this repo by following the instructions here:
+https://raw.githubusercontent.com/raihanpka/dotagent/main/docs/SETUP-AGENT.md
+```
+
+For LLM Agents:
+Fetch the setup guide and follow it:
+
+```bash
+curl -s https://raw.githubusercontent.com/raihanpka/dotagent/main/docs/SETUP-AGENT.md
+```
+
+The guide has every file it needs as a raw link, so the agent does not read the rest of this README. It asks in plain text when the agent has no question tool, and it commits locally but never pushes.
+
+</details>
 
 <details>
 <summary>install by hand, no plugin</summary>
