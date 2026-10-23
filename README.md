@@ -27,22 +27,19 @@ repo. The generic parts are here, the parts that depend on your code are yours t
 
 ## install
 
-Pick one path. Both write the same files and the same `.dotagent/config.json`.
-
-### with the plugin (easier to set up, needs claude code)
-
 ```bash
 claude
 /plugin marketplace add raihanpka/dotagent
 /plugin install dotagent@dotagent
-/dotagent:setup     # once per repo
+/dotagent:setup     # once per repo, optional
 ```
 
-- `/dotagent:setup` runs once. It reads your repo, then interviews you in rounds like [grill-me](https://www.aihero.dev/skills-grill-me), with a recommended answer per question (if you are unsure, for example about the architecture, it describes what your code already shows in an established repo, and recommends a simple best practice only in a new one): commands, architecture and coupling, scale, merge level, commit scopes, CI, git hooks.
-- It shows each file before writing it, then ends with `docs/DOTAGENT-SETUP.md`, a checklist to tick as you review the setup.
-- See `examples/` for the output.
+- `/dotagent:setup` reads your repo, then interviews you in rounds like [grill-me](https://www.aihero.dev/skills-grill-me), with a recommended answer per question. It shows every file before writing it, never overwrites one, and ends with `docs/DOTAGENT-SETUP.md`, a checklist to tick as you review.
+- Skip it and `/dotagent:ship <task>` still works. The first run says which defaults it uses, asks once whether to set up first or go on with only a TODO, and saves your answer.
+- See `examples/` for what setup writes.
 
-### by hand (easier to set up, but no plugin)
+<details>
+<summary>install by hand, no plugin</summary>
 
 Copy from `plugin/` and edit. Fill every `{{...}}`. `plugin/SETUP.md` lists the questions worth answering.
 
@@ -50,7 +47,7 @@ Copy from `plugin/` and edit. Fill every `{{...}}`. `plugin/SETUP.md` lists the 
 |---|---|---|
 | `templates/AGENTS.md` (and `AGENTS.md`, the generic rules) | `AGENTS.md` | commands, modules, scopes |
 | `templates/CLAUDE.md` | `CLAUDE.md` | nothing |
-| `templates/.dotagent/config.json` | `.dotagent/config.json` | scale, merge, and the rest |
+| `templates/.dotagent/config.json` | `.dotagent/config.json` | scale, workflow, and the rest |
 | `hooks/guard.py`, `hooks/run.sh` | `.dotagent/` | nothing |
 | `templates/.claude/settings.json` | `.claude/settings.json` | nothing |
 | `templates/.github/PULL_REQUEST_TEMPLATE.md`, `PR_EXAMPLE.md` | `.github/` | the check commands |
@@ -71,84 +68,97 @@ Copy from `plugin/` and edit. Fill every `{{...}}`. `plugin/SETUP.md` lists the 
 }
 ```
 
-- Add `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, and `docs/TODO.md` to your `.gitignore`, the plugin path does it for you.
+- Ignore `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, and `docs/TODO.md` (the plugin path does it for you).
 - Without Claude Code, the files above and the git hooks still work. The agents and `.claude` hooks need it.
 
-## how to use it
+</details>
+
+## update
+
+```
+/plugin marketplace update dotagent
+/plugin update dotagent@dotagent
+/reload-plugins
+```
+
+- Claude Code caches a plugin per version, so you get a change when the version in `plugin.json` goes up. `CHANGELOG.md` says what changed.
+- To try the repo as it is: `claude --plugin-dir ./plugin`.
+- From 0.2.x: `merge` became `workflow` (`on-green` and `full` are now `autopilot`, `off` is now `checkpoint`), and a merge is always a squash.
+
+## use
 
 | Command | What it does |
 |---|---|
-| `/dotagent` | Shows the scale and settings, like `/dotagent:scale`. With `small`, `medium`, or `large` it saves that scale. |
-| `/dotagent <task>` | Ship the task with your saved settings. Same as `/dotagent:ship`. |
-| `/dotagent:ship [small\|medium\|large] <task>` | Ship the task. The scale word applies to this run only. |
-| `/dotagent:scale small\|medium\|large` | Save the default scale. No argument shows the settings. |
-| `/dotagent:workflow autopilot\|checkpoint\|adapt` | Save how a run ends, for every run. `autopilot` merges each PR by itself and goes on, `checkpoint` asks for your yes before any push, PR, or merge, `adapt` stays local. No argument shows the settings. |
+| `/dotagent <task>` | Ship the task with your saved settings. Alone it shows the settings, like `/dotagent:scale`. |
+| `/dotagent:ship [small\|medium\|large] <task>` | Ship the task. The size word is for this run only. `continue` resumes unfinished work. |
+| `/dotagent:workflow autopilot\|checkpoint\|adapt` | Save how a run ends, for every run. |
+| `/dotagent:scale small\|medium\|large` | Save the size of a run. |
 | `/dotagent:setup` | Set dotagent up in this repo, once. |
 
-In the `/` menu the commands appear as `/dotagent:dotagent`, `/dotagent:ship`, `/dotagent:scale`, `/dotagent:workflow`, and `/dotagent:setup`, and the bare `/dotagent` also runs the first one.
-
-First time in a repo with no saved settings, `ship` says which defaults it uses (scale `medium`, merge `on-green`) and why, saves them, and goes straight to the task. On every new session, `/clear`, or compact, one session line brings the saved settings back, so nothing is repeated or re-read.
+Without an argument `workflow` and `scale` show the saved settings. In the `/` menu the first one is `/dotagent:dotagent`.
 
 ```
 /dotagent add the billing endpoint. requirements from product: <paste them>
 /dotagent:ship large add the billing endpoint. requirements: <paste them>
-/dotagent fix the grpc connection from backend to the agents in python
 ```
 
-- Everything after the command is the task, pasted requirements included.
-- Say *plan only* to stop after the plan and read `docs/TODO.md`.
-- A big task becomes several PRs and one run ships all of them, in order, until everything is merged or something stops it.
-- To go on after a stop, say `continue` in plain words, or run `/dotagent:ship` with no task. With a new task while an old one is unfinished, it asks you first whether to finish the old one (recommended) or drop it.
+- Everything after the command is the task, pasted requirements included. Say *plan only* to stop after the plan.
+- A big task becomes several PRs and one run ships all of them in order. To go on after a stop, say `continue`.
+- Each new session, `/clear`, and compact prints one line with your saved settings, so nothing is repeated.
+
+### workflow
+
+| Mode | What happens |
+|---|---|
+| `autopilot` *(default)* | Runs the whole TODO. Pushes, opens each PR, watches CI, rebases, squash merges when the review is clean and CI is green, goes on to the next PR. |
+| `checkpoint` | The same run and local commits, but it asks for your yes in the chat ("yes", "approve", "ya") before any push, PR, or merge. |
+| `adapt` | Asks first, sets up the minimum (no CI files, no PR template, git hooks stay), puts the whole TODO on one local branch, never pushes. |
 
 ### scale
 
-| Scale | For | What happens |
+| Size | For | What happens |
 |---|---|---|
-| `small` | a tiny diff | No plan. Change, check, commit, PR. |
-| `medium` *(default)* | most features | Planner writes the PRs, one Haiku worker per subtask, reviewer, PR. |
-| `large` | many modules, a team, unattended | The `ship-large` workflow runs the same steps with the limits enforced in code. *Not yet tried on a big repo. Falls back to `medium` without the Workflow tool.* |
+| `small` | a tiny diff | No plan. Change, check, commit. |
+| `medium` *(default)* | most features | Planner writes the PRs, one Haiku worker per subtask, reviewer. |
+| `large` | many modules, a team | The `ship-large` workflow, limits enforced in code. *Untried on a big repo. Falls back to `medium` without the Workflow tool.* |
 
 ### settings
 
-One file, `.dotagent/config.json`, local and ignored by git (setup adds `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, and `docs/TODO.md` to your `.gitignore`, so nothing of dotagent shows up in your repo).
+One file, `.dotagent/config.json`, per machine and ignored by git (written by `run.sh set`, which adds it to `.git/info/exclude`).
 
 | Key | Default | Values |
 |---|---|---|
+| `workflow` | `autopilot` | `autopilot`, `checkpoint`, `adapt` |
 | `scale` | `medium` | `small`, `medium`, `large` |
-| `merge` | `on-green` | `on-green`, `off`, `full` |
-| `em_dash` | `block` | `block`, `allow` (set `allow` only when you want em dashes) |
-| `emoji` | `block` | `block`, `allow` (set `allow` only when you want emoji) |
+| `em_dash`, `emoji` | `block` | `block`, `allow` |
 | `style_skills` | `none` | comma separated skills, such as `caveman,ponytail:lite` |
-| `protected` | empty | comma separated globs no agent may edit, such as `db/migrations/**,.github/CODEOWNERS`. A hook refuses the edit. Set it with `sh hooks/run.sh set protected "<globs>"` |
+| `protected` | empty | globs no agent may edit, such as `db/migrations/**,.github/CODEOWNERS` |
+| `setup`, `hooks`, `big_plan` | unset | answers you gave once, saved so they are not asked twice |
 
-- Change `scale` and `merge` with the commands above. Any key: `sh run.sh set <key> <value>`, or edit the file.
-- A missing file or key means the default. A wrong value or a broken file means `merge` off, so a typo never turns merging on.
+- `/dotagent:workflow` and `/dotagent:scale` set two of them. Any key: `sh hooks/run.sh set <key> <value>`.
+- A missing key means the default. A wrong value or a broken file means `adapt`, so a typo never turns pushing on.
 - The agent cannot edit this file, only you can.
 
 ### how a run works
 
-1. **Task, PR, subtask:** the planner turns your task into one or more PRs, and each PR into subtasks (edit this file, add that test). One run goes through every PR by itself.
-2. **Plan first, read only:** the planner reads the repo and writes only `docs/TODO.md`. A hook refuses any other write, `git commit`, and `git push` until the plan is settled. It does not use Claude Code plan mode, which would block the TODO.
-3. **Nothing gets lost between PRs:** with several requirements the planner numbers them `R1`, `R2`, and each PR says what it `covers`. The reviewer checks those, and an uncovered one comes back as a question.
-4. **Ambiguity is asked, never guessed:** the planner hands back each open question with options and a recommended answer plus the reason. You agree or choose, and it plans again until nothing is open.
-5. **`docs/TODO.md` is the report:** each Haiku worker ticks its own subtask when it finishes. A new task replaces the file. It is ignored by git, so nobody has to be shy about it.
-6. **Team:** Sonnet plans and reviews. Haiku workers build, one subagent per subtask, one at a time. Git, `gh`, and CI are plain commands.
-7. **Size is a range, not a limit:** a PR is reviewable in one sitting, usually 3 to 8 subtasks and a few hundred changed lines. A bigger task becomes more PRs.
-8. **Fixes:** a failure gets one Haiku try, then one Sonnet try, then it stops and reports.
-9. **Merge levels:** `on-green` (default, merge when the review is clean and CI is green), `full` (also fixes review gaps itself), `off` (stop at the open PR). Always a squash merge, and never `--admin`. The squash body lists every commit with its hash, so the atomic commits stay traceable.
-10. **Git hooks are part of setup:** setup writes `pre-commit`, `commit-msg`, and `pre-push` and turns them on (`git config core.hooksPath .githooks`). They check every commit and push by anyone, the agent, a person, or a script, which the agent hook cannot. Every run and every new session checks they are still on, and warns when the repo ships them but git does not use them.
-11. **Format and lint before CI:** the `pre-commit` git hook checks format and lint, `pre-push` runs format, lint, build, and test, and the worker formats before it commits. A red CI is then a real failure, not a forgotten lint.
-12. **Continue:** `docs/TODO.md` and git are the state. A new session announces unfinished work, so `continue` resumes where it stopped.
-13. **Hooks, not prompts, enforce:**
-  - one-line `type(scope): summary` commits with no trailer
-  - the PR title format and the merge level, and the merge is a squash whose subject ends with this PR's `(#N)` (a commit or PR title never writes it, GitHub adds it) and whose body is only `- <hash> <subject>` lines. A merge commit and a rebase are refused
-  - **names say what changed, never where the work sits in the plan:** no `milestone-1`, `task-2`, `slice 3`, `wip`, or "finishing task" in a commit, PR title, or merge subject. `feat(auth): add the login route`, never `feat(milestone-1): add login`
-  - no em dash or emoji, unless you set them to `allow` (see Settings)
-  - no `Co-Authored-By` trailer and no "Generated with" line in a commit, the PR body, or the squash body. A PR whose commits already carry one is not merged
-  - no `--no-verify` on `git commit` or `git push`, so the git hooks always run
-  - no whole read of a file over 500 lines
-  - while building, no edit outside the PR's `files:` list in `docs/TODO.md`, and none in a `protected` path
-  - a receipt: `sh hooks/run.sh receipt` prints which subagents really ran (`planner 1, worker 4, reviewer 1`)
+- The planner turns the task into PRs and each PR into subtasks, read only: it writes only `docs/TODO.md`. Ambiguity comes back as a question with a recommended answer, never a guess.
+- Sonnet plans and reviews, Haiku workers build one subtask each, one at a time. A failure gets one Haiku try, then one Sonnet try, then it stops.
+- A PR is reviewable in one sitting, 3 to 8 subtasks. `docs/TODO.md` is the report and the state, so a new session announces unfinished work.
+- Git hooks (`pre-commit`, `commit-msg`, `pre-push`) check every commit and push by anyone, so CI stays green.
+- A merge is a rebase onto the latest default branch, then a squash whose body lists each commit with its hash.
+
+<details>
+<summary>what the hooks enforce</summary>
+
+- one-line `type(scope): summary` commits, and names that say what changed, never `milestone-1`, `task-2`, `wip`, or `(#N)`
+- no `Co-Authored-By` or "Generated with" trailer in a commit, the PR body, or the squash body, and a PR whose commits carry one is not merged
+- no em dash or emoji unless you set `allow`, no `--no-verify`, no `--force` (only `--force-with-lease`), no `--admin`
+- push, PR, and merge follow the workflow: `checkpoint` asks first, `adapt` refuses
+- while building, no edit outside the PR's `files:` list in `docs/TODO.md`, and none in a `protected` path
+- no whole read of a file over 500 lines
+- `sh hooks/run.sh receipt` prints which subagents really ran (`planner 1, worker 4, reviewer 1`)
+
+</details>
 
 ## skills i use around it
 
@@ -164,7 +174,7 @@ dotagent/
 ├── .claude-plugin/marketplace.json   # points at plugin/, only plugin/ is downloaded
 ├── plugin/                           # everything that installs
 │   ├── SETUP.md  AGENTS.md           # setup interview, generic working rules
-│   ├── hooks/  agents/  skills/      # guard.py, planner/worker/reviewer, dotagent ship scale merge setup
+│   ├── hooks/  agents/  skills/      # guard.py, planner/worker/reviewer, dotagent ship scale workflow setup
 │   ├── workflows/                    # ship-large.js
 │   └── templates/                    # mirrors a repo 1:1: .github, .claude, .githooks, .dotagent, docs
 ├── examples/                         # what setup generated for a real repo
