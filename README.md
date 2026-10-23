@@ -82,10 +82,10 @@ Copy from `plugin/` and edit. Fill every `{{...}}`. `plugin/SETUP.md` lists the 
 | `/dotagent <task>` | Ship the task with your saved settings. Same as `/dotagent:ship`. |
 | `/dotagent:ship [small\|medium\|large] <task>` | Ship the task. The scale word applies to this run only. |
 | `/dotagent:scale small\|medium\|large` | Save the default scale. No argument shows the settings. |
-| `/dotagent:merge off\|on-green\|full` | Save the merge level for every run. With `on-green` or `full` each PR merges by itself and the run goes on to the next, `off` stops at each open PR. No argument shows the settings. |
+| `/dotagent:workflow autopilot\|checkpoint\|adapt` | Save how a run ends, for every run. `autopilot` merges each PR by itself and goes on, `checkpoint` asks for your yes before any push, PR, or merge, `adapt` stays local. No argument shows the settings. |
 | `/dotagent:setup` | Set dotagent up in this repo, once. |
 
-In the `/` menu the commands appear as `/dotagent:dotagent`, `/dotagent:ship`, `/dotagent:scale`, `/dotagent:merge`, and `/dotagent:setup`, and the bare `/dotagent` also runs the first one.
+In the `/` menu the commands appear as `/dotagent:dotagent`, `/dotagent:ship`, `/dotagent:scale`, `/dotagent:workflow`, and `/dotagent:setup`, and the bare `/dotagent` also runs the first one.
 
 First time in a repo with no saved settings, `ship` says which defaults it uses (scale `medium`, merge `on-green`) and why, saves them, and goes straight to the task. On every new session, `/clear`, or compact, one session line brings the saved settings back, so nothing is repeated or re-read.
 

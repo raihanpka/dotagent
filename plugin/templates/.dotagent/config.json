@@ -1,6 +1,6 @@
 {
   "scale": "medium",
-  "merge": "on-green",
+  "workflow": "autopilot",
   "em_dash": "block",
   "emoji": "block",
   "style_skills": "none"

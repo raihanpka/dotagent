@@ -7,7 +7,7 @@ Written by the setup agent so a human can track and review it. Tick a file once 
 | Setting | Value | Why |
 |---|---|---|
 | scale | {{small, medium, or large}} | {{reason}} |
-| merge level | {{off, on-green, or full}} | {{reason}} |
+| workflow | {{autopilot, checkpoint, or adapt}} | {{reason}} |
 | em dash and emoji | {{block (default) or allow}} | {{reason}} |
 | companion skills | {{plan, build, style skills, or none}} | {{reason}} |
 | commit scopes | {{list}} | {{reason}} |

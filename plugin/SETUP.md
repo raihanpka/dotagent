@@ -10,7 +10,7 @@ Steps 0 to 3 only read and ask. Do not enter Claude Code plan mode, it would blo
 write later. Write nothing until the user has answered the rounds in step 3.
 
 Setup runs once. If `.dotagent/config.json` and `docs/DOTAGENT-SETUP.md` both exist, stop and say:
-already set up, change settings with `/dotagent:scale` and `/dotagent:merge` or edit the file, and
+already set up, change settings with `/dotagent:scale` and `/dotagent:workflow` or edit the file, and
 delete both files to run setup again.
 
 ## 0. Prerequisites
@@ -56,11 +56,11 @@ disabled ones, and commented or `if: false` jobs.
 
 Settings live in one file, `.dotagent/config.json`, local to the machine and ignored by git. Setup writes it with
 `sh hooks/run.sh set <key> <value>`, the same command behind `/dotagent:scale` and
-`/dotagent:merge`. Unset means the value in brackets.
+`/dotagent:workflow`. Unset means the value in brackets.
 
 - `scale` [medium]: `small` for a solo or tiny repo, `medium` for most, `large` for many modules
   or a team.
-- `merge` [on-green]: `on-green`, `off`, or `full`. `on-green` merges by itself when the review is clean and CI is green, so a multi PR plan runs to the end. Say so, and say `off` stops at every open PR.
+- `workflow` [autopilot]: `autopilot`, `checkpoint`, or `adapt`, see round 1. Say what each does in a sentence.
 - `em_dash` [block] and `emoji` [block]: the agent writes neither, the default. Set `allow` only when the user asks. It stops the
   agent from writing either into files, commits, and PR text.
   No skill or template states this as a rule, the config is the only place.
@@ -99,7 +99,7 @@ suggest depends on the repo:
   on it (usually a modular monolith with vertical slices for one team, split services only when the
   need is proven). Give the best practice and the reason in two lines, and ask whether they agree. They
   can change it, record what they choose.
-- **Any other question they cannot answer** (scale, merge level, CI split, scopes): give the
+- **Any other question they cannot answer** (scale, workflow, CI split, scopes): give the
   recommended option from the repo and the best practice behind it, and go on. A guess goes to open items
   in `docs/DOTAGENT-SETUP.md` when it is a guess and not something you checked.
 
@@ -113,7 +113,7 @@ Round 1 (no prerequisites):
   If the user is unsure, see When the user is unsure: describe what the code shows in an established
   repo, recommend a simple architecture in a new one.
 - **Scale.** `small`, `medium`, or `large` (the default for runs). Recommend `medium`.
-- **Merge level.** `on-green`, `off`, or `full`. Recommend `on-green` only when `ci-pr.yml` is a required status check, else `off`.
+- **Workflow.** `autopilot` (pushes, opens each PR, merges when the review is clean and CI is green, goes on), `checkpoint` (the same, but asks for a yes in the chat before any push, PR, or merge), or `adapt` (asks first, minimal setup, one local branch, never pushes). Recommend `autopilot` only when `ci-pr.yml` is a required status check, else `checkpoint`.
 
 Round 2 (needs the architecture and the commands):
 - **Coupling.** Aim for low coupling and high cohesion: a module owns one thing, hides its
@@ -188,7 +188,7 @@ Between rounds, run the checks the answers make possible:
   `eslint-plugin-boundaries` or `dependency-cruiser`, Python `import-linter`, Java ArchUnit.
 
 After the rounds, write the workflow settings with `sh hooks/run.sh set scale <v>` and
-`set merge <v>` (and `set style_skills <list>` when chosen).
+`set workflow <v>` (and `set style_skills <list>` when chosen).
 
 ## 4. Generate, then show
 

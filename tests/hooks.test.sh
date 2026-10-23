@@ -86,21 +86,21 @@ cfg '{"em_dash":"block","emoji":"block"}'
 expect "pr body emoji" 2 "$(bash_json 'gh pr create --title "fix: a" --body "text 🤖 Generated with Claude Code"')"
 
 # merge level
-cfg '{"merge":"off"}'
-expect "merge off blocks" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
-cfg '{"merge":"on_green"}'
-expect "merge typo blocks" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
+cfg '{"workflow":"adapt"}'
+expect "adapt blocks a merge" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
+cfg '{"workflow":"autopilott"}'
+expect "workflow typo blocks" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
 cfg 'not json'
 expect "merge bad file blocks" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
 cfg '{"scale":"large"}'
-expect "merge key missing is on-green" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
+expect "workflow key missing is autopilot" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
 rm "$tmp/proj/.dotagent/config.json"
-expect "merge default is on-green" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
+expect "workflow default is autopilot" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
 expect "merge admin is refused" 2 "$(bash_json 'gh pr merge 5 --squash --admin --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
-cfg '{"merge":"on-green"}'
-expect "merge on-green ok" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
-cfg '{"merge":"full"}'
-expect "merge commit ok" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
+cfg '{"workflow":"autopilot"}'
+expect "autopilot merge ok" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
+cfg '{"workflow":"autopilot"}'
+expect "autopilot merge ok again" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
 expect "merge wrong number" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#6)" --body "- 1a2b3c4 fix(a): x"')"
 expect "merge commit is refused" 2 "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
 expect "rebase is refused" 2 "$(bash_json 'gh pr merge 5 --rebase')"
@@ -141,9 +141,9 @@ expect "config edit blocked" 2 "{\"tool_name\":\"Write\",\"tool_input\":{\"file_
 expect "a config copy in a subfolder is not the config" 0 "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$tmp/proj/examples/x/.dotagent/config.json\",\"content\":\"{}\"}}"
 
 # set validates and writes the config
-set_out="$(sh "$guard" set merge on-green)"
-[ "$set_out" = "merge=on-green" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set merge: $set_out"; }
-sh "$guard" set merge sometimes >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL set accepts a bad value"; } || pass=$((pass + 1))
+set_out="$(sh "$guard" set workflow adapt)"
+[ "$set_out" = "workflow=adapt" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set merge: $set_out"; }
+sh "$guard" set workflow sometimes >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL set accepts a bad value"; } || pass=$((pass + 1))
 sh "$guard" set color red >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL set accepts a bad key"; } || pass=$((pass + 1))
 cfg '{}'
 
@@ -176,7 +176,7 @@ sh "$guard" phase done >/dev/null
 expect "config redirect blocked" 2 "$(bash_json 'echo {} > .dotagent/config.json')"
 expect "config sed blocked" 2 "$(bash_json 'sed -i s/off/full/ .dotagent/config.json')"
 expect "config read ok" 0 "$(bash_json 'cat .dotagent/config.json')"
-expect "config set via run.sh ok" 0 "$(bash_json 'sh /p/hooks/run.sh set merge off')"
+expect "config set via run.sh ok" 0 "$(bash_json 'sh /p/hooks/run.sh set workflow off')"
 
 # large file reads
 seq 1 501 > "$tmp/big.txt"
@@ -191,7 +191,7 @@ expect "read missing ok" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\
 # session start prints the active settings
 cfg '{"scale":"large","merge":"full","style_skills":"caveman"}'
 out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
-case "$out" in *"scale=large"*"merge=full"*"style=caveman"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL session start: $out" ;; esac
+case "$out" in *"scale=large"*"workflow=autopilot"*"style=caveman"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL session start: $out" ;; esac
 
 # git hooks: shipped and on, shipped and off, or not shipped
 g="$tmp/gitproj"
@@ -251,7 +251,7 @@ case "$out" in "subagents: none") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); e
 # first run line and protected in the session line
 rm -f "$tmp/proj/.dotagent/config.json"
 out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
-case "$out" in *"first run"*"scale=medium, merge=on-green"*"tracked files"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL first run line: $out" ;; esac
+case "$out" in *"first run"*"scale=medium, workflow=autopilot"*"tracked files"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL first run line: $out" ;; esac
 cfg '{"scale":"medium","protected":"go.sum"}'
 out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
 case "$out" in *"first run"*) fail=$((fail + 1)); echo "FAIL first run shown with a config: $out" ;; *"protected=go.sum"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL protected in line: $out" ;; esac
@@ -271,6 +271,42 @@ CLAUDE_PROJECT_DIR=$x sh "$guard" set scale medium >/dev/null
 [ "$(grep -c '^.dotagent/$' "$x/.git/info/exclude")" = "1" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL exclude line is not written once"; }
 out="$(printf '{"hook_event_name":"SessionStart"}' | CLAUDE_PROJECT_DIR=$x sh "$guard")"
 case "$out" in *"first run"*) fail=$((fail + 1)); echo "FAIL first run after saving the scale: $out" ;; *) pass=$((pass + 1)) ;; esac
+
+# workflow modes: autopilot, checkpoint, adapt
+SQ='--squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"'
+cfg '{"workflow":"autopilot"}'
+expect "autopilot pushes" 0 "$(bash_json 'git push origin feat/a')"
+expect "autopilot opens a PR" 0 "$(bash_json 'gh pr create --title "fix: a" --body "text"')"
+cfg '{"workflow":"adapt"}'
+expect "adapt never pushes" 2 "$(bash_json 'git push origin feat/a')"
+expect "adapt never opens a PR" 2 "$(bash_json 'gh pr create --title "fix: a" --body "text"')"
+expect "adapt never merges on the remote" 2 "$(bash_json "gh pr merge 5 $SQ")"
+expect "adapt keeps local commits" 0 "$(bash_json 'git commit -m "feat(a): add a"')"
+expect "adapt allows a local squash" 0 "$(bash_json 'git merge --squash feat/a')"
+cfg '{"workflow":"checkpoint"}'
+ask_out() { printf '%s' "$1" | sh "$guard" 2>/dev/null; }
+out="$(ask_out "$(bash_json 'git push origin feat/a')")"
+case "$out" in *'"permissionDecision": "ask"'*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL checkpoint push does not ask: $out" ;; esac
+expect "checkpoint asks, it does not block" 0 "$(bash_json 'git push origin feat/a')"
+expect "checkpoint commits locally" 0 "$(bash_json 'git commit -m "feat(a): add a"')"
+sh "$guard" approve >/dev/null
+out="$(ask_out "$(bash_json 'git push origin feat/a')")"
+case "$out" in *'"permissionDecision"'*) fail=$((fail + 1)); echo "FAIL checkpoint asks after a yes: $out" ;; *) pass=$((pass + 1)) ;; esac
+expect "checkpoint merges after a yes" 0 "$(bash_json "gh pr merge 5 $SQ")"
+out="$(ask_out "$(bash_json "gh pr merge 5 $SQ")")"
+case "$out" in *'"permissionDecision": "ask"'*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a yes covers more than one PR: $out" ;; esac
+# the old merge key is read once
+cfg '{"merge":"on-green"}'
+case "$(sh "$guard" show)" in *"workflow=autopilot"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old on-green: $(sh "$guard" show)" ;; esac
+cfg '{"merge":"full"}'
+case "$(sh "$guard" show)" in *"workflow=autopilot"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old full: $(sh "$guard" show)" ;; esac
+cfg '{"merge":"off"}'
+case "$(sh "$guard" show)" in *"workflow=checkpoint"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old off: $(sh "$guard" show)" ;; esac
+cfg '{"merge":"sometimes"}'
+case "$(sh "$guard" show)" in *"workflow=adapt"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old typo: $(sh "$guard" show)" ;; esac
+cfg 'not json'
+case "$(sh "$guard" show)" in *"workflow=adapt"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL broken file: $(sh "$guard" show)" ;; esac
+cfg '{}'
 
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]

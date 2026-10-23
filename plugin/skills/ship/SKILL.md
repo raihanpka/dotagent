@@ -14,12 +14,12 @@ With no task, or when the user only says `continue` (any wording), carry on with
   same steps run by the `ship-large` workflow, which enforces the limits in code.
 - A run goes on by itself until the whole plan is merged or something stops it. It does not wait between PRs.
 
-Read the `[dotagent] scale=... merge=... read-limit=... style=...` line from session start (it may end with `protected=...`).
+Read the `[dotagent] scale=... workflow=... read-limit=... style=...` line from session start (it may end with `protected=...`).
 If a `[dotagent] first run` line is there, do what it says before anything else: tell the user the scale (medium unless they gave
 one) and why, that each PR merges by itself when the review is clean and CI is green and the run goes on until every PR is
-merged or a stop, and how to change it. Then save both with `sh "$RUN" set scale <scale>` and `set merge on-green` and go straight to
+merged or a stop, and how to change it. Then save both with `sh "$RUN" set scale <scale>` and `set workflow autopilot` and go straight to
 the task. Do not ask. It comes from
-`.dotagent/config.json`, and `merge=on-green` is the default. If it also says `unfinished`, `docs/TODO.md`
+`.dotagent/config.json`, and `workflow=autopilot` is the default. If it also says `unfinished`, `docs/TODO.md`
 holds work that is not done yet.
 A task is one or more PRs, each cut from the default branch. Commits are atomic and one
 line, `type(scope): summary`. Hooks enforce the format and the names.
@@ -113,7 +113,7 @@ Stop the loop, run `sh "$RUN" phase done`, and report when:
 
 - a fix ladder ran out (a failed subtask, review gaps, or a red CI after one Haiku and one Sonnet try),
 - the planner or the user left a question open,
-- the merge level is `off`, or the PR cannot merge (a conflict, a required review): leave the PR open and
+- the workflow is `checkpoint` and the user has not said yes, or the PR cannot merge (a conflict, a required review): leave the PR open and
   say what is needed, then the user says `continue`,
 - the next PR `needs` a PR that is not merged.
 
@@ -171,9 +171,10 @@ more subtask, push, and watch again. Never skip, weaken, or delete a check to ge
 
 ## Merge
 
-- **on-green** (the default): merge only when the reviewer said `clean` and CI is green.
-- **full**: as on-green, and also fix review gaps yourself before merging.
-- **off**: stop at the open PR and say it is ready. The hook blocks `gh pr merge` anyway.
+- **autopilot** (the default): push, open the PR, and merge when the reviewer said `clean` and CI is green. Fix review gaps first.
+- **checkpoint**: build and commit locally as in autopilot, but before any push, PR, or merge ask the user in the chat and wait for a
+  yes ("yes", "approve", "ya"). After a yes run `sh "$RUN" approve` (it covers one PR), then go on. Without it the hook asks the user itself.
+- **adapt**: never push, open a PR, or merge. See By workflow.
 
 Merge with a squash, always: one commit on the default branch per PR. The atomic commits stay traceable
 because the squash body lists each one with its hash. Do it in this order:

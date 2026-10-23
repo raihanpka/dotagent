@@ -1,8 +1,8 @@
-"""Deterministic guards for the dotagent: commit style, PR title, no plan labels in names, merge level, read-only planning, big reads.
+"""Deterministic guards for the dotagent: commit style, PR title, no plan labels in names, the workflow mode, read-only planning, big reads.
 
 Reads one hook event as JSON on stdin. Exit 2 with a reason on stderr blocks the tool call.
 Settings live in one file, .dotagent/config.json in the project. Edit it by hand or run
-`sh run.sh set <key> <value>` (the /dotagent:scale and /dotagent:merge commands do).
+`sh run.sh set <key> <value>` (the /dotagent:scale and /dotagent:workflow commands do).
 """
 import json
 import os
@@ -39,6 +39,7 @@ WRITE = re.compile(
 TODO = os.path.join("docs", "TODO.md")
 RUNS = os.path.join(".dotagent", "runs.jsonl")  # one line per subagent spawned this session
 PHASE = os.path.join(".dotagent", "phase")
+APPROVED = os.path.join(".dotagent", "approved")  # written by `run.sh approve` after the user said yes in the chat
 PHASE_TTL = 3600  # a forgotten plan marker must never lock a repo for long
 SKIP_READ = re.compile(
     r"(\.(g|freezed|pb)\.\w+$|\.(lock|min\.js|min\.css|png|jpe?g|gif|webp|pdf|ipynb|svg)$|"
@@ -49,7 +50,7 @@ SKIP_READ = re.compile(
 # Allowed values per setting, the first one is the default. A missing or invalid value falls back to it.
 CHOICES = {
     "scale": ("medium", "small", "large"),
-    "merge": ("on-green", "off", "full"),
+    "workflow": ("autopilot", "checkpoint", "adapt"),
     "em_dash": ("block", "allow"),
     "emoji": ("block", "allow"),
 }
@@ -104,8 +105,8 @@ def load(base=None):
     for key, allowed in CHOICES.items():
         if key in raw and raw[key] in allowed:
             values[key] = raw[key]
-        elif key == "merge" and (broken or key in raw):
-            values[key] = "off"
+        elif key == "workflow":
+            values[key] = workflow_mode(raw, broken)
         else:
             values[key] = allowed[0]
     skills = raw.get("style_skills")
@@ -115,6 +116,19 @@ def load(base=None):
     for key, allowed in ANSWERS.items():
         values[key] = raw[key] if raw.get(key) in allowed else ""
     return values
+
+
+def workflow_mode(raw, broken):
+    # autopilot pushes and merges by itself, checkpoint asks before anything leaves the machine, adapt never pushes.
+    # A wrong value or a broken file means adapt, the mode that sends nothing, so a typo never turns pushing on.
+    # The old `merge` key is read once: on-green and full were autopilot, off stopped before the merge (checkpoint).
+    if broken:
+        return "adapt"
+    if "workflow" in raw:
+        return raw["workflow"] if raw["workflow"] in CHOICES["workflow"] else "adapt"
+    if "merge" in raw:
+        return {"on-green": "autopilot", "full": "autopilot", "off": "checkpoint"}.get(raw["merge"], "adapt")
+    return "autopilot"
 
 
 def raw_config():
@@ -236,10 +250,10 @@ def first_run():
         files = []
     folders = len({f.split("/")[0] for f in files if "/" in f})
     return (
-        f"[dotagent] first run: no .dotagent/config.json, so the defaults apply (scale=medium, merge=on-green) to a repo of "
+        f"[dotagent] first run: no .dotagent/config.json, so the defaults apply (scale=medium, workflow=autopilot) to a repo of "
         f"{len(files)} tracked files in {folders} top-level folders. The first time the ship skill runs, say in two lines: the "
         "scale and why, that each PR merges by itself when the review is clean and CI is green and the run goes on until every "
-        "PR is merged or a stop, and that /dotagent:scale and /dotagent:merge change it. Then save both with run.sh set."
+        "PR is merged or a stop, and that /dotagent:scale and /dotagent:workflow change it. Then save both with run.sh set."
     )
 
 
@@ -290,6 +304,14 @@ def cli(args):
     if args[:1] == ["status"]:
         print(len(unfinished()))
         return
+    if args[:1] == ["approve"]:
+        path = os.path.join(project_dir(), APPROVED)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write("yes")
+        ensure_ignored()
+        print("approved: the next push, pull request, or merge goes through once")
+        return
     if len(args) == 2 and args[0] == "phase" and args[1] in ("plan", "build", "done"):
         path = os.path.join(project_dir(), PHASE)
         if args[1] == "done":
@@ -302,7 +324,7 @@ def cli(args):
         print("phase=" + args[1])
         return
     if len(args) != 3 or args[0] != "set":
-        sys.exit("usage: guard.py show | hooks | receipt | status | set <key> <value> | phase plan|build|done")
+        sys.exit("usage: guard.py show | hooks | receipt | status | approve | set <key> <value> | phase plan|build|done")
     key, value = args[1], args[2]
     if key in CHOICES and value not in CHOICES[key]:
         sys.exit(f"{key} must be one of: {', '.join(CHOICES[key])}")
@@ -358,10 +380,37 @@ def commits_in(tokens):
 
 
 def clear_phase():
+    # Ends the run: the plan marker and any approval go with it.
+    for name in (PHASE, APPROVED):
+        try:
+            os.remove(os.path.join(project_dir(), name))
+        except OSError:
+            pass
+
+
+def approved():
+    # True while a yes the user gave in the chat is on record (written by `run.sh approve`), for one hour at most.
+    path = os.path.join(project_dir(), APPROVED)
     try:
-        os.remove(os.path.join(project_dir(), PHASE))
+        return time.time() - os.path.getmtime(path) < PHASE_TTL
     except OSError:
-        pass
+        return False
+
+
+def ask(reason):
+    # Lets the user decide: Claude Code shows its own permission prompt. In a headless run nobody can answer, so it is a no.
+    print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask",
+                                              "permissionDecisionReason": "dotagent: " + reason}}))
+    sys.exit(0)
+
+
+def gate(kind):
+    # Push, pull request, and merge follow the workflow mode.
+    mode = opt("WORKFLOW")
+    if mode == "adapt":
+        block(f"workflow is adapt: nothing leaves this machine, so no {kind}. Keep the commits local and tell the user.")
+    if mode == "checkpoint" and not approved():
+        ask(f"workflow is checkpoint: the {kind} needs your yes. Ask in the chat first, and after a yes run `sh run.sh approve`.")
 
 
 def no_label(text, where):
@@ -426,10 +475,8 @@ def check_pr_create(tokens):
 
 
 def check_pr_merge(tokens):
-    # Merging obeys the configured level. The only merge is a squash: the subject ends with this PR's number and
+    # Merging obeys the workflow mode. The only merge is a squash: the subject ends with this PR's number and
     # the body lists every commit as `- <hash> <subject>`, so the atomic commits stay traceable. No trailer.
-    if opt("MERGE") == "off":
-        block("merge level is off. Leave the merge to the user.")
     if "--admin" in tokens:
         block("do not merge with --admin, it skips the branch protection and the required checks.")
     if {"-m", "--merge", "-r", "--rebase"} & set(tokens) or not {"-s", "--squash"} & set(tokens):
@@ -456,6 +503,11 @@ def check_pr_merge(tokens):
         if number and found.group(1) != number:
             block(f"merge subject ends with (#{found.group(1)}) but the PR is #{number}.")
         no_label(subject, "merge subjects")
+    gate("merge")
+    try:
+        os.remove(os.path.join(project_dir(), APPROVED))  # a yes covers one PR
+    except OSError:
+        pass
 
 
 def on_bash(command):
@@ -470,28 +522,30 @@ def on_bash(command):
         if WRITE.search(command) and "TODO.md" not in command:
             block("planning is read-only. Only docs/TODO.md may change, and no shell command may write.")
     if re.search(r"\.dotagent[/\\]config\.json", command) and WRITE.search(command) and "run.sh" not in command:
-        block("do not edit .dotagent/config.json from the shell. Ask the user to run /dotagent:scale or /dotagent:merge.")
+        block("do not edit .dotagent/config.json from the shell. Ask the user to run /dotagent:scale or /dotagent:workflow.")
     for args in commits_in(tokens):
         no_skip(args, "commit")
         check_commit(args)
     for i in range(len(tokens) - 1):
         if tokens[i] == "git" and tokens[i + 1] == "push":
             no_skip(tokens[i + 2 :], "push")
+            gate("push")
     for i in range(len(tokens) - 2):
         if tokens[i] == "gh" and tokens[i + 1] == "pr":
             if tokens[i + 2] == "create":
                 check_pr_create(tokens[i + 3 :])
+                gate("pull request")
             elif tokens[i + 2] == "merge":
                 check_pr_merge(tokens[i + 3 :])
 
 
 def on_write(tool_input):
-    # The config is the user's: the agent changes it only through /dotagent:scale and /dotagent:merge.
+    # The config is the user's: the agent changes it only through /dotagent:scale and /dotagent:workflow.
     path = tool_input.get("file_path", "")
     if phase() == "plan" and not is_path(path, TODO):
         block("planning is read-only. Only docs/TODO.md may change until the plan is settled.")
     if is_config(path):
-        block("do not edit .dotagent/config.json. Ask the user to run /dotagent:scale or /dotagent:merge.")
+        block("do not edit .dotagent/config.json. Ask the user to run /dotagent:scale or /dotagent:workflow.")
     rel = rel_path(path)
     if matches(rel, opt("PROTECTED").split(",")):
         block(f"{rel} is a protected path (`protected` in .dotagent/config.json). Leave it and tell the user what needs to change.")
@@ -545,7 +599,7 @@ def main():
         except OSError:
             pass
         print(
-            f"[dotagent] scale={opt('SCALE')} merge={opt('MERGE')} "
+            f"[dotagent] scale={opt('SCALE')} workflow={opt('WORKFLOW')} "
             f"read-limit={READ_LINES} style={opt('STYLE_SKILLS')}" + (f" protected={opt('PROTECTED')}" if opt("PROTECTED") else "")
         )
         if is_first_run():

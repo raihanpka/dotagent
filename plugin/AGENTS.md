@@ -26,7 +26,7 @@ repo's own `AGENTS.md`, which wins on any conflict.
 - The PR describes the whole change and stays reviewable in one sitting, a few hundred changed lines
   is typical and a range, not a limit. Use the PR template and
   delete unchecked lines.
-- Merge only as far as the merge level allows. A commit and a PR title never carry `(#N)`, GitHub adds it.
+- Push, open a PR, and merge only as far as the workflow mode allows. A commit and a PR title never carry `(#N)`, GitHub adds it.
   Merge with a squash. The subject is `<PR title> (#N)` with this PR's number, and the body is one line per
   commit, `- <short hash> <commit subject>`, with no trailer.
 
