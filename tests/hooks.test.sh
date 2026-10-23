@@ -326,5 +326,11 @@ expect "commit body with a trailer is refused" 2 "$(bash_json 'git commit -m "fe
 Co-Authored-By: X <x@y.z>"')"
 cfg '{}'
 
+# the session line carries the saved answers
+cfg '{"scale":"medium","setup":"minimal","hooks":"declined"}'
+out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
+case "$out" in *"setup=minimal hooks=declined"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL answers in the session line: $out" ;; esac
+cfg '{}'
+
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]

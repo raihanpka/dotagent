@@ -609,6 +609,7 @@ def main():
         print(
             f"[dotagent] scale={opt('SCALE')} workflow={opt('WORKFLOW')} "
             f"read-limit={READ_LINES} style={opt('STYLE_SKILLS')}" + (f" protected={opt('PROTECTED')}" if opt("PROTECTED") else "")
+            + "".join(f" {k}={opt(k)}" for k in ANSWERS if opt(k))
         )
         if is_first_run():
             print(first_run())

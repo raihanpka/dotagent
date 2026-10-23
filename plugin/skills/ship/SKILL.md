@@ -15,7 +15,8 @@ With no task, or when the user only says `continue` (any wording), carry on with
 - A run goes on by itself until the whole plan is merged or something stops it. It does not wait between PRs.
 
 Read the `[dotagent] scale=... workflow=... read-limit=... style=...` line from session start. It comes from the saved settings
-(it may end with `protected=...`), and `workflow=autopilot` is the default. If it also says `unfinished`, `docs/TODO.md` holds work
+(it may end with `protected=...`, `setup=...`, `hooks=...`, `big_plan=...`), and `workflow=autopilot` is the default.
+`RUN` is `${CLAUDE_SKILL_DIR}/../../hooks/run.sh`. If it also says `unfinished`, `docs/TODO.md` holds work
 that is not done yet.
 
 If a `[dotagent] first run` line is there, do what it says before anything else:
@@ -29,6 +30,15 @@ If a `[dotagent] first run` line is there, do what it says before anything else:
 
 A task is one or more PRs, each cut from the default branch. Commits are atomic and one
 line, `type(scope): summary`. Hooks enforce the format and the names.
+
+## Questions
+
+Ask with AskUserQuestion. If it is not in your tool list or it errors, load it with ToolSearch (`select:AskUserQuestion`) and try
+once more. If it is still missing, ask in plain text instead: a numbered list, the recommended option first and marked
+`(Recommended)`, one line of reason each, then stop and wait for the answer. In a headless run (`claude -p`, nobody to answer) take
+the recommended option, say so in one line, and go on. Ask only for what is missing and never guess a question the plan depends on.
+Save every answer that can come back with `sh "$RUN" set` (`setup`, `hooks`, `big_plan`), so it is not asked twice. The session line
+shows the saved ones.
 
 ## Tools and speed
 
@@ -46,11 +56,11 @@ not the steps below.
 ## Start
 
 Check the git hooks first: `sh "$RUN" hooks` prints `on`, `off`, or `none`. They check every commit and push
-by anyone, which the agent hook cannot, so do not skip this. `RUN` is `${CLAUDE_SKILL_DIR}/../../hooks/run.sh`.
+by anyone, which the agent hook cannot, so do not skip this. Skip the question below when the line says `hooks=declined`.
 
 - `off`: the repo ships `.githooks` but git does not use it. Say what is skipped (format, lint, names) and
   ask once with AskUserQuestion to turn them on with `git config core.hooksPath .githooks` (Recommended),
-  or to go on without. Never change git config without the answer.
+  or to go on without. Never change git config without the answer. Save it: `set hooks on` or `set hooks declined`.
 - `none`: the repo has no git hooks. Say once that only the agent hook guards the run, and go on.
 
 Then look at `docs/TODO.md`. A PR is unfinished when it has an unticked subtask or an empty `done:` line.
@@ -91,7 +101,7 @@ Start every non-`small` plan like this, with `RUN` from Start:
    listed first as `(Recommended)`, and its `why`. Then call the planner again with the answers as
    `decisions`. Repeat until it returns none. After 3 rounds stop and say what is still open.
 4. When the plan is settled, say what `docs/TODO.md` holds in two lines. Stop here if the user said
-   plan only (run `sh "$RUN" phase done`). With more than 6 PRs, ask once whether to go on.
+   plan only (run `sh "$RUN" phase done`). With more than 6 PRs, ask once whether to go on (skip it when the line says `big_plan=ok`) and save `set big_plan ok`.
 5. `sh "$RUN" phase build`, then build.
 6. At the end, and on every stop or failure, run `sh "$RUN" phase done`.
 
@@ -227,3 +237,5 @@ required review, report it instead. If the repo does not allow squash merging (`
 ## Done condition
 
 For `/goal`: `every PR in docs/TODO.md is merged, or a stop above was reached and reported`.
+
+End every run, and every stop, with one line `next:` that names what the user can do now (`continue`, `/dotagent:workflow`, `/dotagent:setup`, or a new task).

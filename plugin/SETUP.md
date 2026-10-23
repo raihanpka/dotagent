@@ -6,6 +6,10 @@ This holds for every row in step 4, also the rows marked "always", which means t
 not forced. An existing CI workflow, git hook, template, or doc belongs to the user. Never push or
 merge anything.
 
+Ask with AskUserQuestion. If it is not in your tool list or errors, load it with ToolSearch (`select:AskUserQuestion`) and try once
+more. If it is still missing, ask in plain text: a numbered list, the recommended option first, one line of reason, then wait. In a
+headless run take the recommended option and say so. Never guess an answer the setup depends on.
+
 Steps 0 to 3 only read and ask. Do not enter Claude Code plan mode, it would block the files you
 write later. Write nothing until the user has answered the rounds in step 3.
 
@@ -239,3 +243,5 @@ Commit the generated files in atomic commits, one line each, scope required, for
 the user's own uncommitted work stays out. Ignored files are not committed. Do not push. Then list what you wrote, what you
 skipped, and what the user must still decide. The user ticks each file in `docs/DOTAGENT-SETUP.md`
 as they review it.
+
+End with one line `next:` that names the first thing to try, for example `/dotagent:ship <a small task>` as a smoke test.

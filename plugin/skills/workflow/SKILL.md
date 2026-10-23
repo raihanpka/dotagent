@@ -11,3 +11,4 @@ Modes:
 With an argument run `sh "${CLAUDE_SKILL_DIR}/../../hooks/run.sh" set workflow <argument>`.
 With none run `sh "${CLAUDE_SKILL_DIR}/../../hooks/run.sh" show`. Reply with the output and one line: the mode now in use.
 The command rejects any other value. Never edit `.dotagent/config.json` by hand.
+End the reply with one line `next:` `/dotagent:ship <task>`, or `/dotagent:scale` to change the size of the run.
