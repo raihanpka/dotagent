@@ -1,6 +1,6 @@
 {
   "name": "dotagent",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A minimalist agent swarm workflow: plan, atomic commits, review, PR, CI, and a rebase and squash merge in three modes (autopilot, checkpoint, adapt), with hook guardrails.",
   "author": {
     "name": "Raihan Putra Kirana",

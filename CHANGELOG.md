@@ -1,7 +1,16 @@
 # Changelog
 
-Versions follow [semver](https://semver.org). The version lives only in `plugin/.claude-plugin/plugin.json`.
+Versions follow [semver](https://semver.org). The version lives in `plugin/.claude-plugin/plugin.json` and, equal to it, in `.codex-plugin/plugin.json`.
 Claude Code caches a plugin per version, so bump it on every change users should receive.
+
+## 0.3.1
+
+Other agents can install the ship skill from the repo. Codex: `codex plugin marketplace add raihanpka/dotagent`, then install dotagent from `/plugins`. Antigravity CLI or any agent that reads `.agents/skills`: `npx skills add raihanpka/dotagent --skill dotagent-ship -a codex -a antigravity-cli -y`.
+
+- A root `skills/dotagent-ship/SKILL.md` (same file as the template setup copies), a root `.codex-plugin/plugin.json`, and `.agents/plugins/marketplace.json` for Codex.
+- `plugin/SETUP.md` gets the install commands for other agents.
+- The setup checklist `docs/DOTAGENT-SETUP.md` has a Written column (the agent ticks it) and a Reviewed column (you tick it). Before, a written file still showed an unticked row.
+- Claude Code users: no change in behavior.
 
 ## 0.3.0
 
