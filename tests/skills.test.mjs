@@ -25,6 +25,19 @@ test('every raw file the setup guide fetches exists in the repo', () => {
   assert.ok(guide.includes(base), 'guide uses the raw base URL')
 })
 
+test('each Codex agent file has a name, a description, and developer instructions, and no Claude tool', () => {
+  for (const role of ['planner', 'worker', 'reviewer']) {
+    const toml = readFileSync(new URL(`../plugin/templates/.codex/agents/${role}.toml`, import.meta.url), 'utf8')
+    assert.match(toml, new RegExp(`^name = "${role}"$`, 'm'))
+    assert.match(toml, /^description = ".+"$/m)
+    assert.match(toml, /^developer_instructions = """$/m)
+    assert.ok(toml.trimEnd().endsWith('"""'), `${role} closes its string`)
+    for (const tool of ['AskUserQuestion', 'ToolSearch', 'Workflow', 'run.sh']) {
+      assert.ok(!toml.includes(tool), `${role} names ${tool}`)
+    }
+  }
+})
+
 test('the body names no tool that only Claude Code has', () => {
   for (const tool of ['AskUserQuestion', 'ToolSearch', 'Workflow', 'Agent', 'run.sh', 'phase plan']) {
     assert.ok(!skill.includes(tool), `found ${tool}`)
