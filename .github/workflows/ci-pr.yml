@@ -1,0 +1,26 @@
+# Pull Request Plugin Gate. Runs once per pull request and never on a plain push to a feature branch.
+# Make it a required status check in branch protection. Keep it fast: no services, no deploy.
+name: Pull Request Plugin Gate
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - name: Guard tests
+        run: "bash tests/hooks.test.sh"
+      - name: Ship tests
+        run: "node --test tests/ship.test.mjs"
+      - name: Skill tests
+        run: "node --test tests/skills.test.mjs"

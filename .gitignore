@@ -3,3 +3,7 @@ bench/results/
 *.DS_Store
 __pycache__/
 benchmark/results/
+.dotagent
+.claude
+docs/DOTAGENT-SETUP.md
+docs/TODO.md
