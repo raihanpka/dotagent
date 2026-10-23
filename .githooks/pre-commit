@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Checks the one Python file before the commit exists. This repo has no formatter or linter yet.
+# A commit is also refused with --no-verify by the dotagent hook.
+set -e
+cd "$(git rev-parse --show-toplevel)" || exit 1
+echo "==> syntax"
+python3 -m py_compile plugin/hooks/guard.py
