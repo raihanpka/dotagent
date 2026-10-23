@@ -8,7 +8,7 @@
     {
       "name": "dotagent",
       "source": "./plugin",
-      "description": "A minimalist agent swarm workflow: plan, atomic commits, review, PR, CI, squash merge by level, with hook guardrails (file scope, protected paths) and a receipt of the subagents that ran."
+      "description": "A minimalist agent swarm workflow: plan, atomic commits, review, PR, CI, and a rebase and squash merge in three modes (autopilot, checkpoint, adapt), with hook guardrails."
     }
   ],
   "description": "A minimalist agent swarm workflow for Claude Code."

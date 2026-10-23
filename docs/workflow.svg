@@ -83,5 +83,5 @@
 <polyline points="1305,657 1305,675 870,675 870,463" fill="none" stroke="#c92a2a" stroke-width="2" stroke-dasharray="8 6" marker-start="url(#r)" marker-end="url(#r)"/>
 <rect x="60" y="690" width="1570" height="96" rx="14" fill="#f8f9fa" stroke="#343a40" stroke-width="2.5"/>
 <text x="845" y="730" text-anchor="middle" font-size="17" fill="#212529"><tspan font-weight="700" fill="#212529">Hooks</tspan> guard every step.</text>
-<text x="845" y="758" text-anchor="middle" font-size="17" fill="#212529">Commit and PR names, <tspan font-weight="700" fill="#212529">no trailer</tspan>, <tspan font-weight="700" fill="#212529">merge level</tspan>, <tspan font-weight="700" fill="#212529">read only</tspan> planning.</text>
+<text x="845" y="758" text-anchor="middle" font-size="17" fill="#212529">Commit and PR names, <tspan font-weight="700" fill="#212529">no trailer</tspan>, <tspan font-weight="700" fill="#212529">workflow mode</tspan>, <tspan font-weight="700" fill="#212529">read only</tspan> planning.</text>
 </svg>

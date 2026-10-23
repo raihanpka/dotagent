@@ -3,6 +3,31 @@
 Versions follow [semver](https://semver.org). The version lives only in `plugin/.claude-plugin/plugin.json`.
 Claude Code caches a plugin per version, so bump it on every change users should receive.
 
+## 0.3.0
+
+Upgrading: `/dotagent:merge` is now `/dotagent:workflow`. An old `merge` key is read once: `on-green` and `full` become `autopilot`, `off` becomes `checkpoint`, a wrong value becomes `adapt`. Save the new key with `/dotagent:workflow`.
+
+### Workflow modes
+
+- `merge` is replaced by `workflow`, with three modes. `autopilot` (default) pushes, opens each PR, watches CI, merges, and goes on. `checkpoint` does the same work and local commits but asks for your yes in the chat before any push, PR, or merge; after a yes the agent runs `run.sh approve`, which covers one PR, and without it the hook asks with Claude Code's own permission prompt. `adapt` asks first, sets up the minimum, keeps every commit on one local branch, and never pushes: the hook refuses `git push` and `gh pr create` and `gh pr merge`. `full` and the old `off` are gone.
+- A wrong value or a broken config file means `adapt`, the mode that sends nothing.
+- In `adapt` setup skips the CI workflows, the PR template, and the PR example, and keeps the git hooks.
+
+### Rebase, then squash
+
+- Every merge rebases onto the latest default branch first, then squashes. Cloud: `git push --force-with-lease` on the agent's own branch, then the squash body lists the commits read after the rebase. Local (`adapt`): `git merge --squash` with the same hash list in one commit, and the branch is kept so the hashes still resolve.
+- The hook refuses `git push --force` and `-f`, and allows a commit body only when every line is `- <hash> <subject>`.
+
+### Asks, and remembers
+
+- Skills ask with `AskUserQuestion`, load it through `ToolSearch` when it is missing, and fall back to a numbered plain text question. A headless run takes the recommended option.
+- Every answer that can come back is saved: `setup` (`full`, `minimal`, `skipped`), `hooks`, and `big_plan` join `scale`, `workflow`, `protected`, and `style_skills`. The session line shows them.
+- `ship` on a first run explains the defaults and asks once: set up first, or go on with only a TODO. Every skill ends with a `next:` line.
+- `run.sh set` makes git ignore `.dotagent/` through `.git/info/exclude`, so the config never shows in your diff, with or without setup. The check that protects the config now compares the real path, so a copy under `examples/` is no longer refused.
+- The menu description of each skill lists every option. Autocomplete shows one `argument-hint` string per skill, the docs do not describe a description per value.
+- README is shorter, with install, update, and use sections.
+- `ship` is 15 KB, up from 11 KB at 0.2.1. The merge flow, `adapt`, and the questions account for it.
+
 ## 0.2.2
 
 Upgrading: merges are now squash only, see Merge is a squash. Run `/plugin marketplace update dotagent`, `/plugin update dotagent@dotagent`, then `/reload-plugins`. To protect paths, run `sh hooks/run.sh set protected "<globs>"`.
