@@ -7,7 +7,7 @@ A Claude Code plugin: skills, agents, a guard hook, and templates for a small ag
 - Build: none, the plugin is plain files.
 - Run: none.
 - Format: none. Lint: none.
-- Test: `bash tests/hooks.test.sh && node --test tests/ship.test.mjs && node --test tests/skills.test.mjs`
+- Test: `bash tests/hooks.test.sh && node --test tests/ship.test.mjs && node --test tests/skills.test.mjs && node --test tests/marketplace.test.mjs`
 - One file: `node --test tests/ship.test.mjs`, or `bash tests/hooks.test.sh` for the guard only.
 
 ## Architecture

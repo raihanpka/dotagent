@@ -24,3 +24,5 @@ jobs:
         run: "node --test tests/ship.test.mjs"
       - name: Skill tests
         run: "node --test tests/skills.test.mjs"
+      - name: Marketplace tests
+        run: "node --test tests/marketplace.test.mjs"
