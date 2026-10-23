@@ -14,6 +14,8 @@ hook are Claude Code only, so skip step 2. Everything else still applies:
   - Any agent with the skills CLI (Antigravity CLI, Codex): `npx skills add raihanpka/dotagent --skill dotagent-ship -a codex -a antigravity-cli -y`.
     Without `--skill` it also installs the Claude Code skills, which need Claude Code.
   - By hand: copy `templates/.agents/skills/dotagent-ship/SKILL.md` to that path.
+- Codex runs the swarm too, with subagents. Copy `templates/.codex/agents/*.toml` to `.codex/agents/`: the planner, one
+  worker per subtask, and the reviewer. Agents without subagents skip those files and do the steps themselves.
 - Write `AGENTS.md`, `docs/`, and the `.github`, `.githooks` files from step 4 as usual. Set the git hooks on with
   `git config core.hooksPath .githooks`.
 - Nothing reads `.dotagent/config.json` outside Claude Code, so write the settings in `docs/DOTAGENT-SETUP.md` instead of `run.sh set`.
