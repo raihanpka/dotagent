@@ -1,6 +1,6 @@
 ---
-description: Ship a clear task as clean PRs, all the way to a squash merge, with guardrails. Minimalist agent swarm workflow.
-argument-hint: "[small|medium|large] <task>"
+description: Ship a clear task as clean PRs with the saved workflow (autopilot, checkpoint, or adapt). A first word of small, medium, or large sets the size for this run. The word continue resumes unfinished work. Asks only for what is missing.
+argument-hint: "[small|medium|large] <task> | continue"
 ---
 # dotagent ship
 

@@ -1,6 +1,6 @@
 ---
-description: Save the default scale (small, medium, large) for this repo, or show it.
-argument-hint: "small|medium|large"
+description: Pick the size of a run. small: no plan, for a tiny diff. medium (default): planner, one Haiku worker per subtask, reviewer. large: the ship-large workflow, falls back to medium without the Workflow tool. No argument shows the saved settings.
+argument-hint: "[small|medium|large]"
 disable-model-invocation: true
 ---
 With an argument run `sh "${CLAUDE_SKILL_DIR}/../../hooks/run.sh" set scale <argument>`.
