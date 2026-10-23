@@ -1,6 +1,6 @@
 # dotagent
 
-🚢 A **minimalist agent swarm workflow** for Claude Code that gets the job done: **clear requirements in, clean pull request out, merge, and ship.**
+🚢 A **minimalist agent swarm workflow** for Claude Code and other AI coding agents (Codex, Antigravity, Cursor, and more) that gets the job done: **clear requirements in, clean pull request out, merge, and ship.**
 
 New skills and plugins show up every week, and most of us feel it: you install five skills, forget what
 each does, the setup gets heavier than the work, so you end up overwhelmed. 
@@ -37,7 +37,7 @@ claude
 - `/dotagent:setup` reads your repo, then interviews you in rounds like [grill-me](https://www.aihero.dev/skills-grill-me), with a recommended answer per question. It shows every file before writing it, never overwrites one, and ends with `docs/DOTAGENT-SETUP.md`, a checklist to tick as you review.
 - Skip it and `/dotagent:ship <task>` still works. The first run says which defaults it uses, asks once whether to set up first or go on with only a TODO, and saves your answer.
 - See `examples/` for what setup writes.
-- Not on Claude Code? Codex, Antigravity, or another agent: install the ship skill, then set up the repo with the guide below.
+- Using another AI coding agent (Codex, Antigravity, Cursor, or others)? Install the ship skill, then set up the repo with the guide below.
   - Codex: `codex plugin marketplace add raihanpka/dotagent`, then install dotagent from `/plugins`.
   - Antigravity CLI or any agent with the skills CLI: `npx skills add raihanpka/dotagent --skill dotagent-ship -a codex -a antigravity-cli -y`.
 

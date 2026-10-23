@@ -6,7 +6,7 @@ This holds for every row in step 4, also the rows marked "always", which means t
 not forced. An existing CI workflow, git hook, template, or doc belongs to the user. Never push or
 merge anything.
 
-**Not Claude Code** (Codex, Antigravity, or any agent that reads `AGENTS.md`). The plugin, its skills, its agents, and its guard
+**Other AI coding agents** (Codex, Antigravity, Cursor, or any agent that reads `AGENTS.md`). The plugin, its skills, its agents, and its guard
 hook are Claude Code only, so skip step 2. Everything else still applies:
 - Install the skill to `.agents/skills/dotagent-ship/SKILL.md`. Codex and Antigravity both read `.agents/skills/<name>/SKILL.md`.
   It is the plain-steps version of `/dotagent:ship`. Either:
