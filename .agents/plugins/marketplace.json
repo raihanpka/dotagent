@@ -1,0 +1,20 @@
+{
+  "name": "dotagent",
+  "interface": {
+    "displayName": "dotagent"
+  },
+  "plugins": [
+    {
+      "name": "dotagent",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
