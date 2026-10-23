@@ -7,7 +7,7 @@ Written by the setup agent so a human can track and review it. Tick a file once 
 | Setting | Value | Why |
 |---|---|---|
 | scale | small | A tiny single-team repo with 3 modules. |
-| merge level | off | The benchmark copy has no remote, so a PR is never opened. |
+| workflow | checkpoint | The benchmark copy has no remote, so nothing may be pushed without a yes. |
 | em dash and emoji | block | The default, the agent writes neither. |
 | companion skills | none | `style_skills` is none. |
 | git hooks on | yes, `git config core.hooksPath .githooks` | They check every commit and push, by anyone, before CI does. |

@@ -11,7 +11,11 @@ write later. Write nothing until the user has answered the rounds in step 3.
 
 Setup runs once. If `.dotagent/config.json` and `docs/DOTAGENT-SETUP.md` both exist, stop and say:
 already set up, change settings with `/dotagent:scale` and `/dotagent:workflow` or edit the file, and
-delete both files to run setup again.
+delete both files to run setup again. If the config says `setup` is `minimal`, the user only went on with a
+TODO before: run the full setup now and save `set setup full` at the end.
+
+When the workflow is `adapt`, setup stays small. It skips the `.github/` rows of step 4 (CI workflows, PR template, PR example),
+because nothing is pushed. It keeps the git hooks, they check every local commit, and writes `AGENTS.md`, the docs, and the config as usual.
 
 ## 0. Prerequisites
 
@@ -187,7 +191,7 @@ Between rounds, run the checks the answers make possible:
   for the language: Dart `import_lint`, Go `internal/` plus `depguard`, TypeScript
   `eslint-plugin-boundaries` or `dependency-cruiser`, Python `import-linter`, Java ArchUnit.
 
-After the rounds, write the workflow settings with `sh hooks/run.sh set scale <v>` and
+After the rounds, save `sh hooks/run.sh set setup full` and write the workflow settings with `sh hooks/run.sh set scale <v>` and
 `set workflow <v>` (and `set style_skills <list>` when chosen).
 
 ## 4. Generate, then show

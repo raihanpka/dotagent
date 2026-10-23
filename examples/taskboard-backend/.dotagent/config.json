@@ -1,8 +1,9 @@
 {
   "scale": "small",
-  "merge": "off",
   "em_dash": "block",
   "emoji": "block",
   "style_skills": "none",
-  "protected": "go.mod,go.sum"
+  "protected": "go.mod,go.sum",
+  "workflow": "checkpoint",
+  "setup": "full"
 }

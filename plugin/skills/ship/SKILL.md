@@ -14,13 +14,19 @@ With no task, or when the user only says `continue` (any wording), carry on with
   same steps run by the `ship-large` workflow, which enforces the limits in code.
 - A run goes on by itself until the whole plan is merged or something stops it. It does not wait between PRs.
 
-Read the `[dotagent] scale=... workflow=... read-limit=... style=...` line from session start (it may end with `protected=...`).
-If a `[dotagent] first run` line is there, do what it says before anything else: tell the user the scale (medium unless they gave
-one) and why, that each PR merges by itself when the review is clean and CI is green and the run goes on until every PR is
-merged or a stop, and how to change it. Then save both with `sh "$RUN" set scale <scale>` and `set workflow autopilot` and go straight to
-the task. Do not ask. It comes from
-`.dotagent/config.json`, and `workflow=autopilot` is the default. If it also says `unfinished`, `docs/TODO.md`
-holds work that is not done yet.
+Read the `[dotagent] scale=... workflow=... read-limit=... style=...` line from session start. It comes from the saved settings
+(it may end with `protected=...`), and `workflow=autopilot` is the default. If it also says `unfinished`, `docs/TODO.md` holds work
+that is not done yet.
+
+If a `[dotagent] first run` line is there, do what it says before anything else:
+
+1. Tell the user in two lines the scale (medium unless they gave one) and why, what the workflow does (`autopilot`: each PR merges by
+   itself when the review is clean and CI is green, and the run goes on until every PR is merged or a stop), and that
+   `/dotagent:scale` and `/dotagent:workflow` change it.
+2. Ask once (see Questions): set up first with `/dotagent:setup` (recommended), or go on with only a TODO. Going on means no
+   `AGENTS.md`, CI, or PR template are written, the planner still writes `docs/TODO.md`.
+3. Save the answers: `sh "$RUN" set scale <scale>`, `set workflow autopilot`, `set setup minimal` for going on. Then do the task.
+
 A task is one or more PRs, each cut from the default branch. Commits are atomic and one
 line, `type(scope): summary`. Hooks enforce the format and the names.
 
@@ -128,6 +134,13 @@ Work out where a PR stopped from git and `gh`, never from memory. In this order,
 5. Nothing yet: start the PR from the default branch.
 
 Whatever the user typed after `continue` is extra guidance, apply it.
+
+## By workflow
+
+- **autopilot** and **checkpoint**: the steps in Merge, one branch and one PR per plan item.
+- **adapt**: ask first for what is missing (one round, see Questions), then plan as in medium. Work on one branch for the whole TODO
+  (`feat/<slug>`), one local commit per subtask, no push, no PR, no CI. Run the reviewer once at the end. Then ask whether to rebase
+  and squash onto the default branch locally (recommended) or to leave the branch for the user, and do what they pick.
 
 ## By scale
 

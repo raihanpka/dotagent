@@ -253,7 +253,8 @@ def first_run():
         f"[dotagent] first run: no .dotagent/config.json, so the defaults apply (scale=medium, workflow=autopilot) to a repo of "
         f"{len(files)} tracked files in {folders} top-level folders. The first time the ship skill runs, say in two lines: the "
         "scale and why, that each PR merges by itself when the review is clean and CI is green and the run goes on until every "
-        "PR is merged or a stop, and that /dotagent:scale and /dotagent:workflow change it. Then save both with run.sh set."
+        "PR is merged or a stop, and that /dotagent:scale and /dotagent:workflow change it. Then ask once whether to set up first "
+        "(recommended) or go on with only a TODO, and save the scale, the workflow, and the setup answer with run.sh set."
     )
 
 
