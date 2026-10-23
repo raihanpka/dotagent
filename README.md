@@ -37,7 +37,9 @@ claude
 - `/dotagent:setup` reads your repo, then interviews you in rounds like [grill-me](https://www.aihero.dev/skills-grill-me), with a recommended answer per question. It shows every file before writing it, never overwrites one, and ends with `docs/DOTAGENT-SETUP.md`, a checklist to tick as you review.
 - Skip it and `/dotagent:ship <task>` still works. The first run says which defaults it uses, asks once whether to set up first or go on with only a TODO, and saves your answer.
 - See `examples/` for what setup writes.
-- Not on Claude Code? Codex, Antigravity, or another agent: tell it to read `plugin/SETUP.md` first. Its section for other agents covers what to copy into `.agents/skills/` and what the git hooks still check.
+- Not on Claude Code? Codex, Antigravity, or another agent: tell it to read `plugin/SETUP.md` first. Its section for other agents covers the install and what the git hooks still check.
+  - Codex: `codex plugin marketplace add raihanpka/dotagent`, then install dotagent from `/plugins`.
+  - Antigravity CLI or any agent with the skills CLI: `npx skills add raihanpka/dotagent --skill dotagent-ship -a codex -a antigravity-cli -y`.
 
 <details>
 <summary>install by hand, no plugin</summary>

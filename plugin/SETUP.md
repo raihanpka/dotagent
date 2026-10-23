@@ -8,8 +8,12 @@ merge anything.
 
 **Not Claude Code** (Codex, Antigravity, or any agent that reads `AGENTS.md`). The plugin, its skills, its agents, and its guard
 hook are Claude Code only, so skip step 2. Everything else still applies:
-- Copy `templates/.agents/skills/dotagent-ship/SKILL.md` to `.agents/skills/dotagent-ship/SKILL.md`. Codex and Antigravity both read
-  `.agents/skills/<name>/SKILL.md`. It is the plain-steps version of `/dotagent:ship`.
+- Install the skill to `.agents/skills/dotagent-ship/SKILL.md`. Codex and Antigravity both read `.agents/skills/<name>/SKILL.md`.
+  It is the plain-steps version of `/dotagent:ship`. Either:
+  - Codex: `codex plugin marketplace add raihanpka/dotagent`, then install dotagent from `/plugins`.
+  - Any agent with the skills CLI (Antigravity CLI, Codex): `npx skills add raihanpka/dotagent --skill dotagent-ship -a codex -a antigravity-cli -y`.
+    Without `--skill` it also installs the Claude Code skills, which need Claude Code.
+  - By hand: copy `templates/.agents/skills/dotagent-ship/SKILL.md` to that path.
 - Write `AGENTS.md`, `docs/`, and the `.github`, `.githooks` files from step 4 as usual. Set the git hooks on with
   `git config core.hooksPath .githooks`.
 - Nothing reads `.dotagent/config.json` outside Claude Code, so write the settings in `docs/DOTAGENT-SETUP.md` instead of `run.sh set`.
@@ -239,7 +243,8 @@ content in the existing doc's own language and structure. A PR template under an
 `docs/TODO.md` is not generated here. The planner writes it for each task from `templates/docs/TODO.md`:
 one section per PR, each with subtasks that the workers tick. It is ignored by git on purpose, a scratch report.
 
-Write each file from what you found in the repo. Never invent a command, a module, or a rule.
+Write each file from what you found in the repo. Tick `Written` `[x]` in `docs/DOTAGENT-SETUP.md` for each file you wrote,
+right after writing it. Leave `Reviewed` `[ ]`, only the user ticks it. Never invent a command, a module, or a rule.
 When you cannot find something, leave the `{{...}}` out of the file and add a line to the open
 items in `docs/DOTAGENT-SETUP.md`.
 
