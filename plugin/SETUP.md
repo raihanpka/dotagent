@@ -6,6 +6,18 @@ This holds for every row in step 4, also the rows marked "always", which means t
 not forced. An existing CI workflow, git hook, template, or doc belongs to the user. Never push or
 merge anything.
 
+**Not Claude Code** (Codex, Antigravity, or any agent that reads `AGENTS.md`). The plugin, its skills, its agents, and its guard
+hook are Claude Code only, so skip step 2. Everything else still applies:
+- Copy `templates/.agents/skills/dotagent-ship/SKILL.md` to `.agents/skills/dotagent-ship/SKILL.md`. Codex and Antigravity both read
+  `.agents/skills/<name>/SKILL.md`. It is the plain-steps version of `/dotagent:ship`.
+- Write `AGENTS.md`, `docs/`, and the `.github`, `.githooks` files from step 4 as usual. Set the git hooks on with
+  `git config core.hooksPath .githooks`.
+- Nothing reads `.dotagent/config.json` outside Claude Code, so write the settings in `docs/DOTAGENT-SETUP.md` instead of `run.sh set`.
+- The git hooks and the PR gate are the only checks outside Claude Code. The protected paths and the plan-only rule are not enforced:
+  say so in the open items.
+- Ask the questions in plain text, numbered, the recommended option first (see the fallback below).
+- Write nothing to `.claude/`.
+
 Ask with AskUserQuestion. If it is not in your tool list or errors, load it with ToolSearch (`select:AskUserQuestion`) and try once
 more. If it is still missing, ask in plain text: a numbered list, the recommended option first, one line of reason, then wait. In a
 headless run take the recommended option and say so. Never guess an answer the setup depends on.
@@ -211,6 +223,7 @@ content in the existing doc's own language and structure. A PR template under an
 | File | From | When |
 |---|---|---|
 | `AGENTS.md` | `templates/AGENTS.md` | always, under 60 lines, merged with existing rules |
+| `.agents/skills/dotagent-ship/SKILL.md` | `templates/.agents/skills/dotagent-ship/SKILL.md` | always, so Codex and Antigravity can ship the same way |
 | `CLAUDE.md` | `templates/CLAUDE.md`, one line, `@AGENTS.md` | when the repo has none |
 | `.github/PULL_REQUEST_TEMPLATE.md` | `templates/.github/PULL_REQUEST_TEMPLATE.md` | always, with the real commands |
 | `.github/PR_EXAMPLE.md` | `templates/.github/PR_EXAMPLE.md` | always, filled with a plausible finished example |

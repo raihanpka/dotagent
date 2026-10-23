@@ -23,7 +23,7 @@
 
 ## Rules
 
-- Branch from `{{default-branch}}`. One task is one branch and one PR.
+- Branch from `{{default-branch}}`. One task is one branch and one PR. To ship a task, follow `.agents/skills/dotagent-ship/SKILL.md` when that file exists.
 - Commits are one line, `type(scope): summary`, no trailer. Scopes: {{scopes}}.
 - Names say what changed. Never a plan label such as `milestone-1`, `task-2`, `slice 3`, or "finishing task", and never `(#N)`, in a commit message, PR title, or branch.
 - Never edit protected paths (`protected` in `.dotagent/config.json`: {{migrations, CODEOWNERS, lockfiles}}), a hook refuses it.
