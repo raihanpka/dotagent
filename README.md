@@ -127,19 +127,19 @@ One file, `.dotagent/config.json`, local and ignored by git (setup adds `.dotage
 
 ### how a run works
 
-- **Task, PR, subtask:** the planner turns your task into one or more PRs, and each PR into subtasks (edit this file, add that test). One run goes through every PR by itself.
-- **Plan first, read only:** the planner reads the repo and writes only `docs/TODO.md`. A hook refuses any other write, `git commit`, and `git push` until the plan is settled. It does not use Claude Code plan mode, which would block the TODO.
-- **Nothing gets lost between PRs:** with several requirements the planner numbers them `R1`, `R2`, and each PR says what it `covers`. The reviewer checks those, and an uncovered one comes back as a question.
-- **Ambiguity is asked, never guessed:** the planner hands back each open question with options and a recommended answer plus the reason. You agree or choose, and it plans again until nothing is open.
-- **`docs/TODO.md` is the report:** each Haiku worker ticks its own subtask when it finishes. A new task replaces the file. It is ignored by git, so nobody has to be shy about it.
-- **Team:** Sonnet plans and reviews. Haiku workers build, one subagent per subtask, one at a time. Git, `gh`, and CI are plain commands.
-- **Size is a range, not a limit:** a PR is reviewable in one sitting, usually 3 to 8 subtasks and a few hundred changed lines. A bigger task becomes more PRs.
-- **Fixes:** a failure gets one Haiku try, then one Sonnet try, then it stops and reports.
-- **Merge levels:** `on-green` (default, merge when the review is clean and CI is green), `full` (also fixes review gaps itself), `off` (stop at the open PR). Always a squash merge, and never `--admin`. The squash body lists every commit with its hash, so the atomic commits stay traceable.
-- **Git hooks are part of setup:** setup writes `pre-commit`, `commit-msg`, and `pre-push` and turns them on (`git config core.hooksPath .githooks`). They check every commit and push by anyone, the agent, a person, or a script, which the agent hook cannot. Every run and every new session checks they are still on, and warns when the repo ships them but git does not use them.
-- **Format and lint before CI:** the `pre-commit` git hook checks format and lint, `pre-push` runs format, lint, build, and test, and the worker formats before it commits. A red CI is then a real failure, not a forgotten lint.
-- **Continue:** `docs/TODO.md` and git are the state. A new session announces unfinished work, so `continue` resumes where it stopped.
-- **Hooks, not prompts, enforce:**
+1. **Task, PR, subtask:** the planner turns your task into one or more PRs, and each PR into subtasks (edit this file, add that test). One run goes through every PR by itself.
+2. **Plan first, read only:** the planner reads the repo and writes only `docs/TODO.md`. A hook refuses any other write, `git commit`, and `git push` until the plan is settled. It does not use Claude Code plan mode, which would block the TODO.
+3. **Nothing gets lost between PRs:** with several requirements the planner numbers them `R1`, `R2`, and each PR says what it `covers`. The reviewer checks those, and an uncovered one comes back as a question.
+4. **Ambiguity is asked, never guessed:** the planner hands back each open question with options and a recommended answer plus the reason. You agree or choose, and it plans again until nothing is open.
+5. **`docs/TODO.md` is the report:** each Haiku worker ticks its own subtask when it finishes. A new task replaces the file. It is ignored by git, so nobody has to be shy about it.
+6. **Team:** Sonnet plans and reviews. Haiku workers build, one subagent per subtask, one at a time. Git, `gh`, and CI are plain commands.
+7. **Size is a range, not a limit:** a PR is reviewable in one sitting, usually 3 to 8 subtasks and a few hundred changed lines. A bigger task becomes more PRs.
+8. **Fixes:** a failure gets one Haiku try, then one Sonnet try, then it stops and reports.
+9. **Merge levels:** `on-green` (default, merge when the review is clean and CI is green), `full` (also fixes review gaps itself), `off` (stop at the open PR). Always a squash merge, and never `--admin`. The squash body lists every commit with its hash, so the atomic commits stay traceable.
+10. **Git hooks are part of setup:** setup writes `pre-commit`, `commit-msg`, and `pre-push` and turns them on (`git config core.hooksPath .githooks`). They check every commit and push by anyone, the agent, a person, or a script, which the agent hook cannot. Every run and every new session checks they are still on, and warns when the repo ships them but git does not use them.
+11. **Format and lint before CI:** the `pre-commit` git hook checks format and lint, `pre-push` runs format, lint, build, and test, and the worker formats before it commits. A red CI is then a real failure, not a forgotten lint.
+12. **Continue:** `docs/TODO.md` and git are the state. A new session announces unfinished work, so `continue` resumes where it stopped.
+13. **Hooks, not prompts, enforce:**
   - one-line `type(scope): summary` commits with no trailer
   - the PR title format and the merge level, and the merge is a squash whose subject ends with this PR's `(#N)` (a commit or PR title never writes it, GitHub adds it) and whose body is only `- <hash> <subject>` lines. A merge commit and a rebase are refused
   - **names say what changed, never where the work sits in the plan:** no `milestone-1`, `task-2`, `slice 3`, `wip`, or "finishing task" in a commit, PR title, or merge subject. `feat(auth): add the login route`, never `feat(milestone-1): add login`
