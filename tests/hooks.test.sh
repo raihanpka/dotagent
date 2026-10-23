@@ -137,7 +137,8 @@ expect "commit em dash blocked by default" 2 "$(bash_json 'git commit -m "feat(a
 cfg '{"em_dash":"allow"}'
 expect "commit em dash allowed when the user asks" 0 "$(bash_json 'git commit -m "feat(a): add — login"')"
 cfg '{"em_dash":"block","emoji":"block"}'
-expect "config edit blocked" 2 '{"tool_name":"Write","tool_input":{"file_path":"/x/.dotagent/config.json","content":"{}"}}'
+expect "config edit blocked" 2 "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$tmp/proj/.dotagent/config.json\",\"content\":\"{}\"}}"
+expect "a config copy in a subfolder is not the config" 0 "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$tmp/proj/examples/x/.dotagent/config.json\",\"content\":\"{}\"}}"
 
 # set validates and writes the config
 set_out="$(sh "$guard" set merge on-green)"
@@ -251,10 +252,25 @@ case "$out" in "subagents: none") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); e
 rm -f "$tmp/proj/.dotagent/config.json"
 out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
 case "$out" in *"first run"*"scale=medium, merge=on-green"*"tracked files"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL first run line: $out" ;; esac
-cfg '{"protected":"go.sum"}'
+cfg '{"scale":"medium","protected":"go.sum"}'
 out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
 case "$out" in *"first run"*) fail=$((fail + 1)); echo "FAIL first run shown with a config: $out" ;; *"protected=go.sum"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL protected in line: $out" ;; esac
 cfg '{}'
+
+# saved answers, the git exclude entry, and the first run line
+sh "$guard" set setup minimal >/dev/null && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set setup"; }
+sh "$guard" set setup maybe >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL setup accepts a bad value"; } || pass=$((pass + 1))
+sh "$guard" set hooks declined >/dev/null && sh "$guard" set big_plan ok >/dev/null && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set hooks or big_plan"; }
+case "$(sh "$guard" show)" in *"setup=minimal"*"hooks=declined"*"big_plan=ok"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL show answers: $(sh "$guard" show)" ;; esac
+cfg '{}'
+x="$tmp/exproj"
+mkdir -p "$x" && git -C "$x" init -q
+CLAUDE_PROJECT_DIR=$x sh "$guard" set scale small >/dev/null
+CLAUDE_PROJECT_DIR=$x sh "$guard" set scale medium >/dev/null
+[ "$(git -C "$x" status --porcelain)" = "" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL config is not ignored: $(git -C "$x" status --porcelain)"; }
+[ "$(grep -c '^.dotagent/$' "$x/.git/info/exclude")" = "1" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL exclude line is not written once"; }
+out="$(printf '{"hook_event_name":"SessionStart"}' | CLAUDE_PROJECT_DIR=$x sh "$guard")"
+case "$out" in *"first run"*) fail=$((fail + 1)); echo "FAIL first run after saving the scale: $out" ;; *) pass=$((pass + 1)) ;; esac
 
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]

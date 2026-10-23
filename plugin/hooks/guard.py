@@ -53,6 +53,12 @@ CHOICES = {
     "em_dash": ("block", "allow"),
     "emoji": ("block", "allow"),
 }
+# Answers the user gave once, so a skill never asks twice. Unset means not asked yet.
+ANSWERS = {
+    "setup": ("full", "minimal", "skipped"),  # how much setup the user chose
+    "hooks": ("on", "declined"),  # the answer about git hooks
+    "big_plan": ("ok",),  # the user agreed to a plan of more than 6 PRs
+}
 CONFIG = os.path.join(".dotagent", "config.json")
 _settings = None
 
@@ -106,7 +112,50 @@ def load(base=None):
     values["style_skills"] = skills if isinstance(skills, str) and skills else "none"
     protected = raw.get("protected")
     values["protected"] = protected if isinstance(protected, str) else ""
+    for key, allowed in ANSWERS.items():
+        values[key] = raw[key] if raw.get(key) in allowed else ""
     return values
+
+
+def raw_config():
+    # The keys in the config file as written, {} when there is no file or it is broken.
+    try:
+        with open(config_path(), encoding="utf-8") as handle:
+            raw = json.load(handle)
+        return raw if isinstance(raw, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def is_first_run():
+    # A repo that never saved the scale, the merge level, or the setup answer has not met dotagent yet.
+    return not {"setup", "scale", "merge", "workflow"} & set(raw_config())
+
+
+def is_config(path):
+    # Only this project's config, not a copy of one in a subfolder such as examples/.
+    return os.path.abspath(path) == os.path.abspath(config_path())
+
+
+def ensure_ignored():
+    # The config and the markers are per machine. Git ignores them through .git/info/exclude, which is never pushed,
+    # so no tracked file changes. Skipped when the repo already ignores them or this is not a git repo.
+    try:
+        base = ["git", "-C", project_dir()]
+        if subprocess.run(base + ["check-ignore", "-q", ".dotagent/config.json"], capture_output=True, timeout=5).returncode == 0:
+            return
+        out = subprocess.run(base + ["rev-parse", "--git-path", "info/exclude"], capture_output=True, text=True, timeout=5).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return
+    if not out:
+        return
+    path = out if os.path.isabs(out) else os.path.join(project_dir(), out)
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "a", encoding="utf-8", newline="\n") as handle:
+            handle.write(".dotagent/\n")
+    except OSError:
+        pass
 
 
 def git_hooks():
@@ -249,6 +298,7 @@ def cli(args):
             os.makedirs(os.path.dirname(path), exist_ok=True)
             with open(path, "w", encoding="utf-8") as handle:
                 handle.write(args[1])
+            ensure_ignored()
         print("phase=" + args[1])
         return
     if len(args) != 3 or args[0] != "set":
@@ -256,8 +306,10 @@ def cli(args):
     key, value = args[1], args[2]
     if key in CHOICES and value not in CHOICES[key]:
         sys.exit(f"{key} must be one of: {', '.join(CHOICES[key])}")
-    if key not in CHOICES and key not in ("style_skills", "protected"):
-        sys.exit("unknown key, use: " + ", ".join(list(CHOICES) + ["style_skills", "protected"]))
+    if key in ANSWERS and value not in ANSWERS[key]:
+        sys.exit(f"{key} must be one of: {', '.join(ANSWERS[key])}")
+    if key not in CHOICES and key not in ANSWERS and key not in ("style_skills", "protected"):
+        sys.exit("unknown key, use: " + ", ".join(list(CHOICES) + list(ANSWERS) + ["style_skills", "protected"]))
     path = config_path()
     try:
         with open(path, encoding="utf-8") as handle:
@@ -269,6 +321,7 @@ def cli(args):
     with open(path, "w", encoding="utf-8", newline="\n") as handle:
         json.dump(raw, handle, indent=2)
         handle.write("\n")
+    ensure_ignored()
     print(f"{key}={value}")
 
 
@@ -437,7 +490,7 @@ def on_write(tool_input):
     path = tool_input.get("file_path", "")
     if phase() == "plan" and not is_path(path, TODO):
         block("planning is read-only. Only docs/TODO.md may change until the plan is settled.")
-    if is_path(path, CONFIG):
+    if is_config(path):
         block("do not edit .dotagent/config.json. Ask the user to run /dotagent:scale or /dotagent:merge.")
     rel = rel_path(path)
     if matches(rel, opt("PROTECTED").split(",")):
@@ -495,7 +548,7 @@ def main():
             f"[dotagent] scale={opt('SCALE')} merge={opt('MERGE')} "
             f"read-limit={READ_LINES} style={opt('STYLE_SKILLS')}" + (f" protected={opt('PROTECTED')}" if opt("PROTECTED") else "")
         )
-        if not os.path.exists(config_path()):
+        if is_first_run():
             print(first_run())
         if git_hooks() == "off":
             print(
