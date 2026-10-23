@@ -1,5 +1,5 @@
 ---
-description: Pick how every run ends. autopilot: push, open PRs, merge, and move to the next task by itself. checkpoint: the same work, but asks for your yes before any push, PR, or merge. adapt: asks first, minimal setup, one local branch, never pushes. No argument shows the saved settings.
+description: "Pick how every run ends. autopilot: push, open PRs, merge, and move to the next task by itself. checkpoint: the same work, but asks for your yes before any push, PR, or merge. adapt: asks first, minimal setup, one local branch, never pushes. No argument shows the saved settings."
 argument-hint: "[autopilot|checkpoint|adapt]"
 disable-model-invocation: true
 ---

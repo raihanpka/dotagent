@@ -1,6 +1,6 @@
 ---
 name: dotagent
-description: Show or set the size of a run like /dotagent:scale, or ship a task with the saved settings. Alone it shows the settings.
+description: "Show or set the size of a run like /dotagent:scale, or ship a task with the saved settings. Alone it shows the settings."
 argument-hint: "[small|medium|large | <task>]"
 ---
 - No arguments, or only `small`, `medium`, or `large`: do what `/dotagent:scale` does. With the word run
