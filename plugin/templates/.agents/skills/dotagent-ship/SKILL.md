@@ -18,6 +18,8 @@ user already set autopilot in `.dotagent/config.json` (Claude Code only).
 
 ## 2. Plan
 
+- Subagents: if your agent can run them (Codex reads `.codex/agents/planner.toml`), hand the plan to the `planner` subagent.
+  Otherwise write the plan yourself, read only, and say so.
 - Small change (one sentence describes the whole diff): skip the plan, go to step 3.
 - Otherwise write the plan as a checklist in `docs/TODO.md` (untracked, never commit it).
   One section per PR. Each PR has 3 to 8 subtasks: change, build, lint, test, commit.
@@ -26,6 +28,7 @@ user already set autopilot in `.dotagent/config.json` (Claude Code only).
 ## 3. Build
 
 - Branch from the default branch: `git switch -c <type>/<slug>`.
+- With subagents, give each subtask to one `worker` subagent (`.codex/agents/worker.toml`), one at a time. Otherwise do it yourself.
 - Do one subtask. Run the repo's test command from `AGENTS.md`. It must pass before you commit.
 - Commit one atomic change: `git add <explicit paths>`, then `git commit -m "type(scope): summary"`.
   Never `git add -A`. A refactor is its own commit.
@@ -36,7 +39,8 @@ user already set autopilot in `.dotagent/config.json` (Claude Code only).
 
 - Run build, lint, and test once more on the whole change. Show the output.
 - Prove it with a check you ran, never with "looks done".
-- Review the diff yourself against the plan, in a fresh pass. Fix gaps before the PR.
+- Review the diff against the plan in a fresh context: the `reviewer` subagent (`.codex/agents/reviewer.toml`) if you can run subagents,
+  otherwise yourself in a fresh pass. Fix gaps before the PR.
 
 ## 5. Pull request
 
