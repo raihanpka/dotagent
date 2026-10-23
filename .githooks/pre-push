@@ -6,3 +6,5 @@ echo "==> guard tests"
 bash tests/hooks.test.sh
 echo "==> ship tests"
 node --test tests/ship.test.mjs
+echo "==> skill tests"
+node --test tests/skills.test.mjs

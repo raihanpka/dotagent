@@ -22,3 +22,5 @@ jobs:
         run: "bash tests/hooks.test.sh"
       - name: Ship tests
         run: "node --test tests/ship.test.mjs"
+      - name: Skill tests
+        run: "node --test tests/skills.test.mjs"
