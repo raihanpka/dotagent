@@ -33,25 +33,21 @@ line, `type(scope): summary`. Hooks enforce the format and the names.
 
 ## Questions
 
-Ask with AskUserQuestion. If it is not in your tool list or it errors, load it with ToolSearch (`select:AskUserQuestion`) and try
-once more. If it is still missing, ask in plain text instead: a numbered list, the recommended option first and marked
-`(Recommended)`, one line of reason each, then stop and wait for the answer. In a headless run (`claude -p`, nobody to answer) take
-the recommended option, say so in one line, and go on. Ask only for what is missing and never guess a question the plan depends on.
-Save every answer that can come back with `sh "$RUN" set` (`setup`, `hooks`, `big_plan`), so it is not asked twice. The session line
-shows the saved ones.
+Ask with AskUserQuestion. If it is missing or errors, load it with ToolSearch (`select:AskUserQuestion`) and retry once. Still missing:
+ask in plain text, a numbered list with the recommended option first, one line of reason each, then stop and wait. Headless
+(`claude -p`): take the recommended option, say so, go on. Ask only for what is missing, never guess what the plan depends on, and
+save each answer that can come back with `sh "$RUN" set` (`setup`, `hooks`, `big_plan`) so it is not asked twice.
 
 ## Tools and speed
 
-Use the harness tools, they are faster than shell: Grep and Glob to find, Read with offset and limit to read, and
-several independent calls in one turn. For a big repo, send the `Explore` agent first for a wide read and give the
-planner its summary as `context`. Run `gh pr checks --watch` in the background and carry on, or watch it with Monitor.
-Agents cannot start agents, so only you (the lead) spawn.
+Prefer harness tools to shell: Grep and Glob to find, Read with offset and limit, independent calls together in one turn. On a big
+repo send the `Explore` agent first and pass its summary to the planner as `context`. Watch CI in the background. Agents cannot
+start agents, so only you spawn.
 
 ## Style skills
 
-`style=` lists skills such as `caveman` or `ponytail:lite`. Invoke each once with the Skill tool
-before you start. Skip `none` or a skill that is not installed. They change how you write replies,
-not the steps below.
+Invoke each skill in `style=` once with the Skill tool before you start (skip `none` and any not installed). They change how you
+write replies, not the steps.
 
 ## Start
 
@@ -75,16 +71,13 @@ Then look at `docs/TODO.md`. A PR is unfinished when it has an unticked subtask 
 
 ## The team
 
-A task becomes one or more PRs, a PR becomes subtasks. Sonnet leads: the `planner` plans and the
-`reviewer` checks each PR in a fresh context. A swarm of `worker` agents on Haiku does the building,
-one agent per subtask, one at a time because they share one git index. Fixed steps (git, `gh`, CI)
-are plain commands, not agents.
+Sonnet leads: the `planner` plans, the `reviewer` checks each PR in a fresh context. `worker` agents on Haiku build, one per
+subtask, one at a time (they share one git index). Git, `gh`, and CI are plain commands.
 
 ## Names
 
-A commit message, PR title, and merge subject say what changed, never where the work sits in the plan
-(`milestone-1`, `task-2`, `slice 3`, `step 4`, `phase`, `wip`, "finishing task"), and never `(#N)`.
-`feat(auth): add the login route` is right. A hook refuses the wrong ones, so write the right one first.
+Commit messages, PR titles, and merge subjects say what changed, never where the work sits in the plan (`milestone-1`, `task-2`,
+`wip`, "finishing task") and never `(#N)`. A hook refuses the wrong ones.
 
 ## The plan is read only
 
@@ -107,14 +100,9 @@ Start every non-`small` plan like this, with `RUN` from Start:
 
 ## The TODO
 
-`docs/TODO.md` is the report. The planner writes it fresh for each task, so the last task's file
-is gone, and it stays out of git (setup adds it to `.gitignore`). Each worker ticks its own subtask
-when it finishes it. When a PR is merged, write its url on its `done:` line. Read it to see progress.
-Never stage or commit it. It is a scratch file, so the truth about what is merged is git and `gh`.
-
-With more than one requirement, the planner numbers them `R1`, `R2` and gives each PR a `covers:` line, so
-no requirement is lost between PRs. An `R` that no PR covers comes back as a question. The reviewer checks the
-`R` of the PR in hand only. When you report a finished PR, say which `R` are done and which remain.
+`docs/TODO.md` is the report and stays out of git, never stage it. The planner writes it fresh per task, each worker ticks its
+subtask, and you write the PR url on `done:` after a merge. With several requirements the planner numbers them `R1`, `R2` and each PR
+`covers:` some; an uncovered `R` comes back as a question. The reviewer checks the `R` of the PR in hand, and you report which are done.
 
 ## The loop over the PRs
 
