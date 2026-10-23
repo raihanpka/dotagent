@@ -442,8 +442,13 @@ def check_commit(args):
     if len(messages) > 1:
         block("a commit message is a single line. Use one -m and put the detail in the PR.")
     msg = messages[0]
-    if "\n" in msg or "<<" in msg:
-        block("a commit message is a single line, no body and no heredoc.")
+    # One line. The only body allowed is the hash list of a local squash: `- <short hash> <subject>`, one per commit.
+    head, *rest = msg.split("\n")
+    if "<<" in msg or any(line.strip() and not COMMIT_LINE.match(line) for line in rest):
+        block("a commit message is a single line, no body and no heredoc. Only a local squash lists `- <hash> <subject>` lines.")
+    if TRAILER.search(msg):
+        block("no trailer in commit messages: no Co-Authored-By, Signed-off-by, or generated-by line.")
+    msg = head
     if PR_NUMBER.search(msg) and not msg.lower().startswith("revert"):
         block("no (#N) in a commit message, GitHub adds the PR number when it merges.")
     if TRAILER.search(msg):
@@ -529,6 +534,8 @@ def on_bash(command):
     for i in range(len(tokens) - 1):
         if tokens[i] == "git" and tokens[i + 1] == "push":
             no_skip(tokens[i + 2 :], "push")
+            if {"-f", "--force"} & set(tokens[i + 2 :]):
+                block("do not force push. After a rebase use --force-with-lease, on your own branch only.")
             gate("push")
     for i in range(len(tokens) - 2):
         if tokens[i] == "gh" and tokens[i + 1] == "pr":

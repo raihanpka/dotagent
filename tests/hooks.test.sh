@@ -308,5 +308,23 @@ cfg 'not json'
 case "$(sh "$guard" show)" in *"workflow=adapt"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL broken file: $(sh "$guard" show)" ;; esac
 cfg '{}'
 
+# force push, and the hash list in a local squash commit
+cfg '{"workflow":"autopilot"}'
+expect "force push is refused" 2 "$(bash_json 'git push --force origin feat/a')"
+expect "short force push is refused" 2 "$(bash_json 'git push -f origin feat/a')"
+expect "force with lease is allowed" 0 "$(bash_json 'git push --force-with-lease origin feat/a')"
+expect "squash commit with a hash list" 0 "$(bash_json 'git commit -m "feat(tasks): paginate the task list
+
+- 1a2b3c4 test(tasks): cover the pages
+- 5d6e7f8 feat(tasks): page the list"')"
+expect "commit body with prose is refused" 2 "$(bash_json 'git commit -m "feat(tasks): paginate
+
+this adds paging"')"
+expect "commit body with a trailer is refused" 2 "$(bash_json 'git commit -m "feat(tasks): paginate
+
+- 1a2b3c4 feat(tasks): x
+Co-Authored-By: X <x@y.z>"')"
+cfg '{}'
+
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]
