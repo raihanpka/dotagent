@@ -377,6 +377,45 @@ expect "rm of a log" 0 "$(bash_json 'rm -f build/out.log')"
 expect "a file named like test data is fine" 0 "$(bash_json 'rm test_data.txt')"
 expect "grep for a test is fine" 0 "$(bash_json 'grep -rn rm tests/a.test.js')"
 
+# a repo flow that is not the default: commit types, an optional scope, the merge method, and the base branch
+cfg '{}'
+expect "default needs a scope" 2 "$(bash_json 'git commit -m "feat: add a"')"
+cfg '{"commit_types":"feat,fix,chore"}'
+expect "a listed type is fine" 0 "$(bash_json 'git commit -m "chore(a): add a"')"
+expect "an unlisted type is refused" 2 "$(bash_json 'git commit -m "docs(a): add a"')"
+expect "a PR title follows the listed types" 2 "$(bash_json 'gh pr create --title "docs(a): add a" --body "text"')"
+cfg '{"commit_scope":"optional"}'
+expect "an optional scope may be left out" 0 "$(bash_json 'git commit -m "feat: add a"')"
+expect "an optional scope may be given" 0 "$(bash_json 'git commit -m "feat(a): add a"')"
+expect "an optional scope still needs a type" 2 "$(bash_json 'git commit -m "added a"')"
+cfg '{"merge_method":"merge"}'
+expect "merge method merge accepts --merge" 0 "$(bash_json 'gh pr merge 5 --merge --delete-branch')"
+expect "merge method merge refuses --squash" 2 "$(bash_json "gh pr merge 5 $SQ")"
+expect "merge method merge refuses --rebase" 2 "$(bash_json 'gh pr merge 5 --rebase')"
+expect "merge method merge refuses --admin" 2 "$(bash_json 'gh pr merge 5 --merge --admin')"
+expect "merge method merge refuses a trailer" 2 "$(bash_json 'gh pr merge 5 --merge --body "Co-Authored-By: a <a@b>"')"
+cfg '{"merge_method":"rebase"}'
+expect "merge method rebase accepts --rebase" 0 "$(bash_json 'gh pr merge 5 --rebase --delete-branch')"
+expect "merge method rebase refuses --merge" 2 "$(bash_json 'gh pr merge 5 --merge')"
+expect "merge method rebase refuses a bare merge" 2 "$(bash_json 'gh pr merge 5')"
+cfg '{"workflow":"auto"}'
+expect "the default merge is still a squash" 2 "$(bash_json 'gh pr merge 5 --merge')"
+for pair in "merge_method rebase" "merge_method merge" "commit_scope optional" "commit_types feat,fix" "base_branch develop" "base_branch release/1.x"; do
+  set -- $pair
+  [ "$(sh "$guard" set "$1" "$2")" = "$1=$2" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set $1 $2"; }
+done
+for pair in "merge_method octopus" "commit_scope never" "commit_types Feat,Fix" "commit_types feat;fix" "base_branch a;b"; do
+  set -- $pair
+  sh "$guard" set "$1" "$2" >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL set accepts $1 $2"; } || pass=$((pass + 1))
+done
+cfg '{"merge_method":"rebase","commit_types":"feat,fix","commit_scope":"optional","base_branch":"develop"}'
+out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
+case "$out" in *"merge=rebase"*"types=feat,fix"*"scope=optional"*"base=develop"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL session line misses the repo flow: $out" ;; esac
+cfg '{"workflow":"auto"}'
+out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
+case "$out" in *"merge="*|*"types="*|*"scope="*|*"base="*) fail=$((fail + 1)); echo "FAIL session line shows the defaults: $out" ;; *) pass=$((pass + 1)) ;; esac
+cfg '{}'
+
 # the gate is recorded per commit: ok at the same HEAD, stale after a commit, an edit, or with no record
 g="$tmp/gate"
 mkdir -p "$g" && git -C "$g" init -q && git -C "$g" config user.email t@t && git -C "$g" config user.name t

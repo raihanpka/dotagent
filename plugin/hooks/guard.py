@@ -17,8 +17,9 @@ READ_LINES = 500
 EM_DASH = chr(0x2014)
 EMOJI = re.compile("[" + chr(0x1F300) + "-" + chr(0x1FAFF) + chr(0x2600) + "-" + chr(0x27BF) + chr(0x1F000) + "-" + chr(0x1F2FF) + "]")
 TYPES = "feat|fix|hotfix|docs|style|refactor|test|chore|perf|revert|ci|build"
-COMMIT = re.compile(rf"^({TYPES})\([a-zA-Z0-9_.-]+\): \S")
-TITLE = re.compile(rf"^({TYPES})(\([a-zA-Z0-9_.-]+\))?: \S")
+SCOPE = r"\([a-zA-Z0-9_.-]+\)"
+TYPE_LIST = re.compile(r"[a-z]+(,[a-z]+)*")
+BRANCH = re.compile(r"[A-Za-z0-9._/-]+")
 MERGE_SUBJECT = re.compile(r"\(#(\d+)\)$")
 COMMIT_LINE = re.compile(r"^- [0-9a-f]{7,40} \S")  # one line per commit in a squash body: `- 1a2b3c4 feat(auth): add login`
 # GitHub adds the PR number on merge, so a commit or PR title never writes it: only the merge subject ends with it.
@@ -53,6 +54,8 @@ SKIP_READ = re.compile(
 MODE_ALIASES = {"autopilot": "auto", "checkpoint": "ask", "adapt": "local"}
 CHOICES = {
     "workflow": ("auto", "ask", "local"),
+    "merge_method": ("squash", "merge", "rebase"),  # how a PR merges, squash unless the repo only allows another
+    "commit_scope": ("required", "optional"),  # whether `type(scope): summary` needs its scope
     "em_dash": ("block", "allow"),
     "emoji": ("block", "allow"),
 }
@@ -115,6 +118,11 @@ def load(base=None):
     values["style_skills"] = skills if isinstance(skills, str) and skills else "none"
     protected = raw.get("protected")
     values["protected"] = protected if isinstance(protected, str) else ""
+    # A repo flow that is not the default: its own commit types and its base branch. Empty means the default.
+    types = raw.get("commit_types")
+    values["commit_types"] = types if isinstance(types, str) and TYPE_LIST.fullmatch(types) else ""
+    base = raw.get("base_branch")
+    values["base_branch"] = base if isinstance(base, str) and BRANCH.fullmatch(base) else ""
     for key, allowed in ANSWERS.items():
         values[key] = raw[key] if raw.get(key) in allowed else ""
     return values
@@ -382,8 +390,12 @@ def cli(args):
         sys.exit(f"{key} must be one of: {', '.join(CHOICES[key])}")
     if key in ANSWERS and value not in ANSWERS[key]:
         sys.exit(f"{key} must be one of: {', '.join(ANSWERS[key])}")
-    if key not in CHOICES and key not in ANSWERS and key not in ("style_skills", "protected"):
-        sys.exit("unknown key, use: " + ", ".join(list(CHOICES) + list(ANSWERS) + ["style_skills", "protected"]))
+    if key == "commit_types" and not TYPE_LIST.fullmatch(value):
+        sys.exit("commit_types is a comma separated list of lowercase types, like feat,fix,chore")
+    if key == "base_branch" and not BRANCH.fullmatch(value):
+        sys.exit("base_branch is a branch name, like develop")
+    if key not in CHOICES and key not in ANSWERS and key not in ("style_skills", "protected", "commit_types", "base_branch"):
+        sys.exit("unknown key, use: " + ", ".join(list(CHOICES) + list(ANSWERS) + ["style_skills", "protected", "commit_types", "base_branch"]))
     path = config_path()
     try:
         with open(path, encoding="utf-8") as handle:
@@ -509,14 +521,29 @@ def check_commit(args):
         block("no em dash in commit messages. Use a comma, period, or parentheses.")
     no_emoji(msg, "commit messages")
     no_label(msg, "commit messages")
-    if not COMMIT.match(msg):
+    if not commit_pattern().match(msg):
         block("commit message must look like `type(scope): summary` with a scope, for example `fix(auth): stop token reuse`.")
+
+
+def commit_types():
+    # The commit types of this repo: the saved list, or the default one.
+    return "|".join(opt("COMMIT_TYPES").split(",")) if opt("COMMIT_TYPES") else TYPES
+
+
+def commit_pattern():
+    # `type(scope): summary`, with the scope optional when the repo saved commit_scope=optional.
+    scope = rf"({SCOPE})?" if opt("COMMIT_SCOPE") == "optional" else SCOPE
+    return re.compile(rf"^({commit_types()}){scope}: \S")
+
+
+def title_pattern():
+    return re.compile(rf"^({commit_types()})({SCOPE})?: \S")
 
 
 def check_pr_create(tokens):
     # A PR title follows the commit format and no text carries an em dash.
     for title in flag_values(tokens, "-t", "--title"):
-        if not TITLE.match(title):
+        if not title_pattern().match(title):
             block("PR title must look like `type: summary` or `type(scope): summary`.")
     for text in flag_values(tokens, "-t", "--title") + flag_values(tokens, "-b", "--body"):
         if TRAILER.search(text):
@@ -532,12 +559,27 @@ def check_pr_create(tokens):
 
 
 def check_pr_merge(tokens):
-    # Merging obeys the workflow mode. The only merge is a squash: the subject ends with this PR's number and
-    # the body lists every commit as `- <hash> <subject>`, so the atomic commits stay traceable. No trailer.
+    # Merging obeys the workflow mode and the merge method of the repo. A squash (the default) has a subject that ends
+    # with this PR's number and a body that lists every commit as `- <hash> <subject>`, so the atomic commits stay
+    # traceable. A merge commit or a rebase merge only needs its own flag. No trailer in any of them.
     if "--admin" in tokens:
         block("do not merge with --admin, it skips the branch protection and the required checks.")
-    if {"-m", "--merge", "-r", "--rebase"} & set(tokens) or not {"-s", "--squash"} & set(tokens):
-        block("merge with --squash. The body keeps the commit list, so nothing is lost.")
+    method = opt("MERGE_METHOD")
+    flags = {"squash": {"-s", "--squash"}, "merge": {"-m", "--merge"}, "rebase": {"-r", "--rebase"}}
+    others = set().union(*(f for m, f in flags.items() if m != method))
+    if others & set(tokens) or not flags[method] & set(tokens):
+        block(f"this repo merges with {method} (`merge_method`), so use --{method}." + (
+            " The body keeps the commit list, so nothing is lost." if method == "squash" else ""))
+    if method != "squash":
+        for text in flag_values(tokens, "-t", "--subject") + flag_values(tokens, "-b", "--body"):
+            if TRAILER.search(text):
+                block("no generated-by line or Co-Authored-By in the merge text.")
+        gate("merge")
+        try:
+            os.remove(os.path.join(project_dir(), APPROVED))
+        except OSError:
+            pass
+        return
     number = next((t for t in tokens if t.isdigit()), None)
     subjects = flag_values(tokens, "-t", "--subject")
     if "-F" in tokens or "--body-file" in tokens:
@@ -679,7 +721,12 @@ def main():
             pass
         print(
             f"[dotagent] workflow={opt('WORKFLOW')} "
-            f"read-limit={READ_LINES} style={opt('STYLE_SKILLS')}" + (f" protected={opt('PROTECTED')}" if opt("PROTECTED") else "")
+            f"read-limit={READ_LINES} style={opt('STYLE_SKILLS')}"
+            # A repo flow that is not the default shows up here, so the ship skill follows it.
+            + "".join(f" {tag}={opt(key)}" for tag, key, default in (
+                ("merge", "MERGE_METHOD", "squash"), ("types", "COMMIT_TYPES", ""), ("scope", "COMMIT_SCOPE", "required"), ("base", "BASE_BRANCH", ""))
+                if opt(key) != default)
+            + (f" protected={opt('PROTECTED')}" if opt("PROTECTED") else "")
             + "".join(f" {k}={opt(k)}" for k in ANSWERS if opt(k))
         )
         if is_first_run():
