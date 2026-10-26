@@ -77,19 +77,19 @@
 <rect x="60" y="722" width="500" height="165" rx="14" fill="#f1f3f5" stroke="#343a40" stroke-width="2.5"/>
 <text x="84" y="763" text-anchor="start" font-size="19" font-weight="700" fill="#212529">local</text>
 <text x="84" y="785" text-anchor="start" font-size="14" fill="#495057">Stops at local commits</text>
-<text x="84" y="816" text-anchor="start" font-size="15" fill="#343a40">One branch for the whole TODO, one commit per subtask.</text>
-<text x="84" y="838" text-anchor="start" font-size="15" fill="#343a40">It never pushes, opens a PR, or runs CI. At the end it</text>
-<text x="84" y="860" text-anchor="start" font-size="15" fill="#343a40">squashes locally, or leaves the branch to you.</text>
+<text x="84" y="816" text-anchor="start" font-size="15" fill="#343a40">One branch for the whole TODO, one commit per subtask. It</text>
+<text x="84" y="838" text-anchor="start" font-size="15" fill="#343a40">never pushes, opens a PR, or runs CI. At the end it squashes</text>
+<text x="84" y="860" text-anchor="start" font-size="15" fill="#343a40">locally, or leaves the branch to you.</text>
 <rect x="595" y="722" width="500" height="165" rx="14" fill="#f1f3f5" stroke="#343a40" stroke-width="2.5"/>
 <text x="619" y="763" text-anchor="start" font-size="19" font-weight="700" fill="#212529">ask</text>
 <text x="619" y="785" text-anchor="start" font-size="14" fill="#495057">Asks before the remote</text>
-<text x="619" y="816" text-anchor="start" font-size="15" fill="#343a40">Same steps, one PR per plan item. It commits locally and</text>
-<text x="619" y="838" text-anchor="start" font-size="15" fill="#343a40">waits for your yes before the push, the PR, and the merge.</text>
-<text x="619" y="860" text-anchor="start" font-size="15" fill="#343a40">One yes covers one PR, then CI and the squash follow.</text>
+<text x="619" y="816" text-anchor="start" font-size="15" fill="#343a40">Same steps, one PR per plan item. It commits locally and waits</text>
+<text x="619" y="838" text-anchor="start" font-size="15" fill="#343a40">for your yes before the push, the PR, and the merge. One yes</text>
+<text x="619" y="860" text-anchor="start" font-size="15" fill="#343a40">covers one PR.</text>
 <rect x="1130" y="722" width="500" height="165" rx="14" fill="#f1f3f5" stroke="#343a40" stroke-width="2.5"/>
 <text x="1154" y="763" text-anchor="start" font-size="19" font-weight="700" fill="#212529">auto (default)</text>
 <text x="1154" y="785" text-anchor="start" font-size="14" fill="#495057">Finishes every PR</text>
 <text x="1154" y="816" text-anchor="start" font-size="15" fill="#343a40">Pushes, opens the PR, watches CI, fixes a red check (two</text>
-<text x="1154" y="838" text-anchor="start" font-size="15" fill="#343a40">tries), and squash merges when the review is clean and CI</text>
-<text x="1154" y="860" text-anchor="start" font-size="15" fill="#343a40">is green. Then the next PR, until all merged or a stop.</text>
+<text x="1154" y="838" text-anchor="start" font-size="15" fill="#343a40">tries), and squash merges when the review is clean and CI is</text>
+<text x="1154" y="860" text-anchor="start" font-size="15" fill="#343a40">green. Then the next PR, until a stop.</text>
 </svg>
