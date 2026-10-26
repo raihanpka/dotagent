@@ -14,13 +14,12 @@ The plugin is what users install. Everything else in the repo tests it, measures
 
 | Module | Owns | May depend on | Public interface |
 |---|---|---|---|
-| `plugin/hooks/` | the guard (`guard.py`) and its shell entry | nothing in the repo | `run.sh`, with `set`, `show`, `approve`, `receipt`, `hooks` |
-| `plugin/skills/` | the commands `setup`, `ship`, `workflow`, `scale`, `dotagent` | `hooks/run.sh`, `agents/`, `templates/` | each `SKILL.md` |
-| `plugin/agents/` | `planner`, `worker`, `reviewer` | nothing in the repo | each `.md` |
-| `plugin/workflows/` | `ship-large.js`, the large-scale run | `agents/` | the file |
+| `plugin/hooks/` | the guard (`guard.py`) and its shell entry | nothing in the repo | `run.sh`, with `set`, `show`, `approve`, `receipt`, `hooks`, `gate` |
+| `plugin/skills/` | the commands `setup`, `ship`, `workflow`, `dotagent` | `hooks/run.sh`, `agents/`, `templates/` | each `SKILL.md`, and the `references/` it reads on demand |
+| `plugin/agents/` | `reviewer`, the one subagent | nothing in the repo | each `.md` |
 | `plugin/templates/` | files copied into a user's repo | nothing in the repo | the repo path it mirrors |
-| `tests/` | `hooks.test.sh`, `ship.test.mjs` | `plugin/` | the two files |
-| `benchmark/`, `examples/`, `scripts/` | measurement, the example app, the release notes script | `plugin/`, read only | their `README.md` |
+| `tests/` | `hooks.test.sh`, `ship.test.mjs`, `skills.test.mjs`, `marketplace.test.mjs` | `plugin/` | the four files |
+| `benchmark/`, `examples/`, `scripts/` | measurement, the example app, the release notes script and the diagram svg script | `plugin/`, read only | their `README.md` |
 
 ## Current violations
 
@@ -32,4 +31,4 @@ None yet. The coupling rule is checked by the grep above. Open item in `DOTAGENT
 
 ## Flow
 
-`/dotagent:ship <task>` reads `.dotagent/config.json`. The planner writes `docs/TODO.md`, a worker commits each subtask, and the reviewer writes the PR body. The guard checks each Bash, Write, Edit, and Read call on the way. The git hooks check every commit and push, from anyone.
+`/dotagent:ship <task>` reads `.dotagent/config.json`. The lead writes `docs/TODO.md` when the diff is more than one sentence, commits each subtask itself, and a fresh reviewer checks the diff and writes the PR body. The guard checks each Bash, Write, Edit, and Read call on the way. The git hooks check every commit and push, from anyone.

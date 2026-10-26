@@ -2,7 +2,7 @@
 
 Reads one hook event as JSON on stdin. Exit 2 with a reason on stderr blocks the tool call.
 Settings live in one file, .dotagent/config.json in the project. Edit it by hand or run
-`sh run.sh set <key> <value>` (the /dotagent:scale and /dotagent:workflow commands do).
+`sh run.sh set <key> <value>` (the /dotagent:workflow command does).
 """
 import json
 import os
@@ -17,8 +17,9 @@ READ_LINES = 500
 EM_DASH = chr(0x2014)
 EMOJI = re.compile("[" + chr(0x1F300) + "-" + chr(0x1FAFF) + chr(0x2600) + "-" + chr(0x27BF) + chr(0x1F000) + "-" + chr(0x1F2FF) + "]")
 TYPES = "feat|fix|hotfix|docs|style|refactor|test|chore|perf|revert|ci|build"
-COMMIT = re.compile(rf"^({TYPES})\([a-zA-Z0-9_.-]+\): \S")
-TITLE = re.compile(rf"^({TYPES})(\([a-zA-Z0-9_.-]+\))?: \S")
+SCOPE = r"\([a-zA-Z0-9_.-]+\)"
+TYPE_LIST = re.compile(r"[a-z]+(,[a-z]+)*")
+BRANCH = re.compile(r"[A-Za-z0-9._/-]+")
 MERGE_SUBJECT = re.compile(r"\(#(\d+)\)$")
 COMMIT_LINE = re.compile(r"^- [0-9a-f]{7,40} \S")  # one line per commit in a squash body: `- 1a2b3c4 feat(auth): add login`
 # GitHub adds the PR number on merge, so a commit or PR title never writes it: only the merge subject ends with it.
@@ -39,6 +40,7 @@ WRITE = re.compile(
 TODO = os.path.join("docs", "TODO.md")
 RUNS = os.path.join(".dotagent", "runs.jsonl")  # one line per subagent spawned this session
 PHASE = os.path.join(".dotagent", "phase")
+GATE = os.path.join(".dotagent", "gate")  # the HEAD sha the repo gate last passed at, written by `run.sh gate run`
 APPROVED = os.path.join(".dotagent", "approved")  # written by `run.sh approve` after the user said yes in the chat
 PHASE_TTL = 3600  # a forgotten plan marker must never lock a repo for long
 SKIP_READ = re.compile(
@@ -48,9 +50,12 @@ SKIP_READ = re.compile(
 
 
 # Allowed values per setting, the first one is the default. A missing or invalid value falls back to it.
+# The workflow modes were autopilot, checkpoint, and adapt before 0.4.0. The old names still work and are saved under the new one.
+MODE_ALIASES = {"autopilot": "auto", "checkpoint": "ask", "adapt": "local"}
 CHOICES = {
-    "scale": ("medium", "small", "large"),
-    "workflow": ("autopilot", "checkpoint", "adapt"),
+    "workflow": ("auto", "ask", "local"),
+    "merge_method": ("squash", "merge", "rebase"),  # how a PR merges, squash unless the repo only allows another
+    "commit_scope": ("required", "optional"),  # whether `type(scope): summary` needs its scope
     "em_dash": ("block", "allow"),
     "emoji": ("block", "allow"),
 }
@@ -113,22 +118,28 @@ def load(base=None):
     values["style_skills"] = skills if isinstance(skills, str) and skills else "none"
     protected = raw.get("protected")
     values["protected"] = protected if isinstance(protected, str) else ""
+    # A repo flow that is not the default: its own commit types and its base branch. Empty means the default.
+    types = raw.get("commit_types")
+    values["commit_types"] = types if isinstance(types, str) and TYPE_LIST.fullmatch(types) else ""
+    base = raw.get("base_branch")
+    values["base_branch"] = base if isinstance(base, str) and BRANCH.fullmatch(base) else ""
     for key, allowed in ANSWERS.items():
         values[key] = raw[key] if raw.get(key) in allowed else ""
     return values
 
 
 def workflow_mode(raw, broken):
-    # autopilot pushes and merges by itself, checkpoint asks before anything leaves the machine, adapt never pushes.
-    # A wrong value or a broken file means adapt, the mode that sends nothing, so a typo never turns pushing on.
-    # The old `merge` key is read once: on-green and full were autopilot, off stopped before the merge (checkpoint).
+    # auto pushes and merges by itself, ask stops for your yes before anything leaves the machine, local never pushes.
+    # A wrong value or a broken file means local, the mode that sends nothing, so a typo never turns pushing on.
+    # The old `merge` key is read once: on-green and full were auto, off stopped before the merge (ask).
     if broken:
-        return "adapt"
+        return "local"
     if "workflow" in raw:
-        return raw["workflow"] if raw["workflow"] in CHOICES["workflow"] else "adapt"
+        mode = MODE_ALIASES.get(raw["workflow"], raw["workflow"])
+        return mode if mode in CHOICES["workflow"] else "local"
     if "merge" in raw:
-        return {"on-green": "autopilot", "full": "autopilot", "off": "checkpoint"}.get(raw["merge"], "adapt")
-    return "autopilot"
+        return {"on-green": "auto", "full": "auto", "off": "ask"}.get(raw["merge"], "local")
+    return "auto"
 
 
 def raw_config():
@@ -142,7 +153,8 @@ def raw_config():
 
 
 def is_first_run():
-    # A repo that never saved the scale, the merge level, or the setup answer has not met dotagent yet.
+    # A repo that never saved the workflow or the setup answer has not met dotagent yet. `scale` and `merge` are old keys,
+    # still read so a config saved before they went away does not look new.
     return not {"setup", "scale", "merge", "workflow"} & set(raw_config())
 
 
@@ -184,6 +196,28 @@ def git_hooks():
     except (OSError, subprocess.SubprocessError):
         return "none"
     return "on" if found.replace("\\", "/").rstrip("/").endswith(".githooks") else "off"
+
+
+def clean_head():
+    # The HEAD sha when no tracked file differs from it, else "". Empty also outside a git repo.
+    base = ["git", "-C", project_dir()]
+    try:
+        head = subprocess.run(base + ["rev-parse", "HEAD"], capture_output=True, text=True, timeout=5)
+        dirty = subprocess.run(base + ["status", "--porcelain", "--untracked-files=no"], capture_output=True, text=True, timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return head.stdout.strip() if head.returncode == 0 and dirty.returncode == 0 and not dirty.stdout.strip() else ""
+
+
+def gate_check():
+    # "ok" when the gate passed at this exact commit and nothing tracked changed since, else "stale". Bookkeeping the
+    # agent trusts, CI is the real check.
+    head = clean_head()
+    try:
+        with open(os.path.join(project_dir(), GATE), encoding="utf-8") as handle:
+            return "ok" if head and handle.read().strip() == head else "stale"
+    except OSError:
+        return "stale"
 
 
 def todo_prs():
@@ -250,11 +284,11 @@ def first_run():
         files = []
     folders = len({f.split("/")[0] for f in files if "/" in f})
     return (
-        f"[dotagent] first run: no .dotagent/config.json, so the defaults apply (scale=medium, workflow=autopilot) to a repo of "
-        f"{len(files)} tracked files in {folders} top-level folders. The first time the ship skill runs, say in two lines: the "
-        "scale and why, that each PR merges by itself when the review is clean and CI is green and the run goes on until every "
-        "PR is merged or a stop, and that /dotagent:scale and /dotagent:workflow change it. Then ask once whether to set up first "
-        "(recommended) or go on with only a TODO, and save the scale, the workflow, and the setup answer with run.sh set."
+        f"[dotagent] first run: no .dotagent/config.json, so the defaults apply (workflow=auto) to a repo of "
+        f"{len(files)} tracked files in {folders} top-level folders. The first time the ship skill runs, say in two lines: that "
+        "each PR merges by itself when the review is clean and CI is green and the run goes on until every PR is merged or a stop, "
+        "and that /dotagent:workflow changes it. Then ask once whether to set up first (recommended) or go on with only a TODO, "
+        "and save the workflow and the setup answer with run.sh set."
     )
 
 
@@ -270,7 +304,7 @@ def log_spawn(tool_input):
 
 
 def receipt():
-    # `planner 1, worker 4, reviewer 1` for this session, or `none`.
+    # `reviewer 1, Explore 2` for this session, or `none`.
     counts = {}
     try:
         with open(os.path.join(project_dir(), RUNS), encoding="utf-8") as handle:
@@ -305,6 +339,27 @@ def cli(args):
     if args[:1] == ["status"]:
         print(len(unfinished()))
         return
+    if args[:1] == ["gate"] and args[1:] == ["check"]:
+        print(gate_check())
+        return
+    if args[:1] == ["gate"] and len(args) > 2 and args[1] == "run":
+        # Runs the repo gate and records the commit only when it exits 0, so a record always means the command passed.
+        head = clean_head()
+        if not head:
+            sys.exit("gate run needs a git repo with no uncommitted change to tracked files, commit first")
+        try:
+            code = subprocess.run(args[2:], cwd=project_dir()).returncode
+        except OSError as err:
+            sys.exit(f"gate run could not start {args[2]}: {err}")
+        if code != 0 or clean_head() != head:
+            sys.exit(code or 1)
+        path = os.path.join(project_dir(), GATE)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(head)
+        ensure_ignored()
+        print("gate passed at " + head[:7])
+        return
     if args[:1] == ["approve"]:
         path = os.path.join(project_dir(), APPROVED)
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -325,14 +380,22 @@ def cli(args):
         print("phase=" + args[1])
         return
     if len(args) != 3 or args[0] != "set":
-        sys.exit("usage: guard.py show | hooks | receipt | status | approve | set <key> <value> | phase plan|build|done")
+        sys.exit("usage: guard.py show | hooks | receipt | status | approve | gate run <command>|check | set <key> <value> | phase plan|build|done")
     key, value = args[1], args[2]
+    if key == "workflow":
+        value = MODE_ALIASES.get(value, value)
+    if key == "scale":
+        sys.exit("scale was removed, the ship skill sizes the run itself: a one sentence diff has no plan")
     if key in CHOICES and value not in CHOICES[key]:
         sys.exit(f"{key} must be one of: {', '.join(CHOICES[key])}")
     if key in ANSWERS and value not in ANSWERS[key]:
         sys.exit(f"{key} must be one of: {', '.join(ANSWERS[key])}")
-    if key not in CHOICES and key not in ANSWERS and key not in ("style_skills", "protected"):
-        sys.exit("unknown key, use: " + ", ".join(list(CHOICES) + list(ANSWERS) + ["style_skills", "protected"]))
+    if key == "commit_types" and not TYPE_LIST.fullmatch(value):
+        sys.exit("commit_types is a comma separated list of lowercase types, like feat,fix,chore")
+    if key == "base_branch" and not BRANCH.fullmatch(value):
+        sys.exit("base_branch is a branch name, like develop")
+    if key not in CHOICES and key not in ANSWERS and key not in ("style_skills", "protected", "commit_types", "base_branch"):
+        sys.exit("unknown key, use: " + ", ".join(list(CHOICES) + list(ANSWERS) + ["style_skills", "protected", "commit_types", "base_branch"]))
     path = config_path()
     try:
         with open(path, encoding="utf-8") as handle:
@@ -408,10 +471,10 @@ def ask(reason):
 def gate(kind):
     # Push, pull request, and merge follow the workflow mode.
     mode = opt("WORKFLOW")
-    if mode == "adapt":
-        block(f"workflow is adapt: nothing leaves this machine, so no {kind}. Keep the commits local and tell the user.")
-    if mode == "checkpoint" and not approved():
-        ask(f"workflow is checkpoint: the {kind} needs your yes. Ask in the chat first, and after a yes run `sh run.sh approve`.")
+    if mode == "local":
+        block(f"workflow is local: nothing leaves this machine, so no {kind}. Keep the commits local and tell the user.")
+    if mode == "ask" and not approved():
+        ask(f"workflow is ask: the {kind} needs your yes. Ask in the chat first, and after a yes run `sh run.sh approve`.")
 
 
 def no_label(text, where):
@@ -458,14 +521,29 @@ def check_commit(args):
         block("no em dash in commit messages. Use a comma, period, or parentheses.")
     no_emoji(msg, "commit messages")
     no_label(msg, "commit messages")
-    if not COMMIT.match(msg):
+    if not commit_pattern().match(msg):
         block("commit message must look like `type(scope): summary` with a scope, for example `fix(auth): stop token reuse`.")
+
+
+def commit_types():
+    # The commit types of this repo: the saved list, or the default one.
+    return "|".join(opt("COMMIT_TYPES").split(",")) if opt("COMMIT_TYPES") else TYPES
+
+
+def commit_pattern():
+    # `type(scope): summary`, with the scope optional when the repo saved commit_scope=optional.
+    scope = rf"({SCOPE})?" if opt("COMMIT_SCOPE") == "optional" else SCOPE
+    return re.compile(rf"^({commit_types()}){scope}: \S")
+
+
+def title_pattern():
+    return re.compile(rf"^({commit_types()})({SCOPE})?: \S")
 
 
 def check_pr_create(tokens):
     # A PR title follows the commit format and no text carries an em dash.
     for title in flag_values(tokens, "-t", "--title"):
-        if not TITLE.match(title):
+        if not title_pattern().match(title):
             block("PR title must look like `type: summary` or `type(scope): summary`.")
     for text in flag_values(tokens, "-t", "--title") + flag_values(tokens, "-b", "--body"):
         if TRAILER.search(text):
@@ -481,12 +559,27 @@ def check_pr_create(tokens):
 
 
 def check_pr_merge(tokens):
-    # Merging obeys the workflow mode. The only merge is a squash: the subject ends with this PR's number and
-    # the body lists every commit as `- <hash> <subject>`, so the atomic commits stay traceable. No trailer.
+    # Merging obeys the workflow mode and the merge method of the repo. A squash (the default) has a subject that ends
+    # with this PR's number and a body that lists every commit as `- <hash> <subject>`, so the atomic commits stay
+    # traceable. A merge commit or a rebase merge only needs its own flag. No trailer in any of them.
     if "--admin" in tokens:
         block("do not merge with --admin, it skips the branch protection and the required checks.")
-    if {"-m", "--merge", "-r", "--rebase"} & set(tokens) or not {"-s", "--squash"} & set(tokens):
-        block("merge with --squash. The body keeps the commit list, so nothing is lost.")
+    method = opt("MERGE_METHOD")
+    flags = {"squash": {"-s", "--squash"}, "merge": {"-m", "--merge"}, "rebase": {"-r", "--rebase"}}
+    others = set().union(*(f for m, f in flags.items() if m != method))
+    if others & set(tokens) or not flags[method] & set(tokens):
+        block(f"this repo merges with {method} (`merge_method`), so use --{method}." + (
+            " The body keeps the commit list, so nothing is lost." if method == "squash" else ""))
+    if method != "squash":
+        for text in flag_values(tokens, "-t", "--subject") + flag_values(tokens, "-b", "--body"):
+            if TRAILER.search(text):
+                block("no generated-by line or Co-Authored-By in the merge text.")
+        gate("merge")
+        try:
+            os.remove(os.path.join(project_dir(), APPROVED))
+        except OSError:
+            pass
+        return
     number = next((t for t in tokens if t.isdigit()), None)
     subjects = flag_values(tokens, "-t", "--subject")
     if "-F" in tokens or "--body-file" in tokens:
@@ -516,6 +609,25 @@ def check_pr_merge(tokens):
         pass
 
 
+# A path that holds tests: a tests or __tests__ folder, x_test.go, x.test.js, x.spec.ts, test_x.py.
+TEST_PATH = re.compile(r"(^|/)(tests?|__tests__)(/|$)|_test\.[a-z]+$|\.(test|spec)\.[a-z]+$|(^|/)test_[^/]*\.py$")
+SEPARATORS = {"&&", "||", ";", "|", "&"}
+
+
+def no_test_delete(tokens):
+    # rm and git rm never delete a test, a test removed to get green hides the failure. A test that is truly obsolete is the user's call.
+    for i, tok in enumerate(tokens):
+        before = tokens[i - 1] if i else ";"
+        starts = i < 2 or tokens[i - 2] in SEPARATORS
+        if tok != "rm" or not (before in SEPARATORS or (before == "git" and starts)):
+            continue
+        for arg in tokens[i + 1 :]:
+            if arg in SEPARATORS:
+                break
+            if not arg.startswith("-") and TEST_PATH.search(arg):
+                block(f"do not delete {arg}, a removed test hides a failure. If the test is obsolete, ask the user to remove it.")
+
+
 def on_bash(command):
     # Routes a Bash command to the commit, PR create, or PR merge check.
     try:
@@ -528,7 +640,8 @@ def on_bash(command):
         if WRITE.search(command) and "TODO.md" not in command:
             block("planning is read-only. Only docs/TODO.md may change, and no shell command may write.")
     if re.search(r"\.dotagent[/\\]config\.json", command) and WRITE.search(command) and "run.sh" not in command:
-        block("do not edit .dotagent/config.json from the shell. Ask the user to run /dotagent:scale or /dotagent:workflow.")
+        block("do not edit .dotagent/config.json from the shell. Ask the user to run /dotagent:workflow.")
+    no_test_delete(tokens)
     for args in commits_in(tokens):
         no_skip(args, "commit")
         check_commit(args)
@@ -548,16 +661,16 @@ def on_bash(command):
 
 
 def on_write(tool_input):
-    # The config is the user's: the agent changes it only through /dotagent:scale and /dotagent:workflow.
+    # The config is the user's: the agent changes it only through /dotagent:workflow.
     path = tool_input.get("file_path", "")
     if phase() == "plan" and not is_path(path, TODO):
         block("planning is read-only. Only docs/TODO.md may change until the plan is settled.")
     if is_config(path):
-        block("do not edit .dotagent/config.json. Ask the user to run /dotagent:scale or /dotagent:workflow.")
+        block("do not edit .dotagent/config.json. Ask the user to run /dotagent:workflow.")
     rel = rel_path(path)
     if matches(rel, opt("PROTECTED").split(",")):
         block(f"{rel} is a protected path (`protected` in .dotagent/config.json). Leave it and tell the user what needs to change.")
-    # While building, a worker edits only the files the plan lists for the PR, so a stray edit shows up at once.
+    # While building, the lead edits only the files the plan lists for the PR, so a stray edit shows up at once.
     if phase() == "build" and not is_path(path, TODO):
         allowed = pr_files()
         if allowed and not matches(rel, allowed):
@@ -607,8 +720,13 @@ def main():
         except OSError:
             pass
         print(
-            f"[dotagent] scale={opt('SCALE')} workflow={opt('WORKFLOW')} "
-            f"read-limit={READ_LINES} style={opt('STYLE_SKILLS')}" + (f" protected={opt('PROTECTED')}" if opt("PROTECTED") else "")
+            f"[dotagent] workflow={opt('WORKFLOW')} "
+            f"read-limit={READ_LINES} style={opt('STYLE_SKILLS')}"
+            # A repo flow that is not the default shows up here, so the ship skill follows it.
+            + "".join(f" {tag}={opt(key)}" for tag, key, default in (
+                ("merge", "MERGE_METHOD", "squash"), ("types", "COMMIT_TYPES", ""), ("scope", "COMMIT_SCOPE", "required"), ("base", "BASE_BRANCH", ""))
+                if opt(key) != default)
+            + (f" protected={opt('PROTECTED')}" if opt("PROTECTED") else "")
             + "".join(f" {k}={opt(k)}" for k in ANSWERS if opt(k))
         )
         if is_first_run():

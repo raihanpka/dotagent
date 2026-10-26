@@ -13,11 +13,11 @@
 branch: {{feat/short-slug}}
 needs: none
 covers: {{R1, R2, only when the requirements are numbered}}
-read: {{path/c#symbol}}
+files: {{path/**, other/file, every path this PR may edit, tests included}}
 
-- [ ] 1.1 (S) `{{type(scope): summary}}`. {{What changes, in which files.}} Verify: {{format, build, lint, test}}.
-- [ ] 1.2 (M) `{{type(scope): summary}}`. {{What changes, in which files.}} Verify: {{commands}}.
-- [ ] 1.3 (S) `{{type(scope): summary}}`. {{What changes, in which files.}} Verify: {{commands}}.
+- [ ] 1.1 `{{type(scope): summary}}`. {{What changes, in which files.}} Verify: {{format, build, lint, test}}.
+- [ ] 1.2 `{{type(scope): summary}}`. {{What changes, in which files.}} Verify: {{commands}}.
+- [ ] 1.3 `{{type(scope): summary}}`. {{What changes, in which files.}} Verify: {{commands}}.
 
 done: {{the PR url, filled when it is merged}}
 
@@ -27,7 +27,7 @@ branch: {{feat/short-slug}}
 needs: {{PR 1, or none}}
 covers: {{R3}}
 
-- [ ] 2.1 (M) `{{type(scope): summary}}`. {{What changes, in which files.}} Verify: {{commands}}.
+- [ ] 2.1 `{{type(scope): summary}}`. {{What changes, in which files.}} Verify: {{commands}}.
 
 done:
 

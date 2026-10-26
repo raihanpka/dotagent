@@ -34,13 +34,21 @@ Ask only about what you could not find.
 Round 1 (no prerequisites):
 
 - Commands: the build, the lint, and one test command. Recommend what the repo already uses.
-- Scale: `small`, `medium`, or `large`. Recommend `medium` for most repos, `small` for one maintainer.
 
 Round 2 (needs round 1):
 
 - Protected paths: files no agent should edit (migrations, lockfiles, secrets, the release workflow, the license). Recommend what the repo has.
 - Commit scopes: recommend the scope words from the commit history.
 - Git hooks: turn them on with `git config core.hooksPath .githooks`. Recommend yes.
+
+Flow check, before round 3. Read it from the repo, ask only when you cannot find it:
+
+- The remote host (`git remote get-url origin`), the merge methods the repo allows (`gh repo view --json squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed`),
+  the branch PRs target (`gh pr list --state merged -L 30 --json baseRefName`), and the commit types and scope the last 30 subjects use.
+- Nothing here reads a config file, so write what differs from the default (merge method, commit types, optional scope, base branch) in the
+  decisions of `docs/DOTAGENT-SETUP.md`, and keep `.githooks/commit-msg` in line with the commit types.
+- When the host is not GitHub, there is no remote, `gh` is missing, or work does not go through PRs, say so and skip the PR gate in round 3 and the
+  PR steps of the ship skill: commits stay on one local branch and the user pushes them. Write an open item for it.
 
 Round 3:
 
@@ -65,13 +73,16 @@ one, leave it out of the file and add a line to the open items in `docs/DOTAGENT
 | `.githooks/pre-push` | `plugin/templates/.githooks/pre-push` (replace the test lines with the repo's test command) |
 | `docs/ARCHITECTURE.md` | `plugin/templates/docs/ARCHITECTURE.md` |
 | `docs/DOTAGENT-SETUP.md` | `plugin/templates/docs/DOTAGENT-SETUP.md` (the checklist, see step 6) |
-| `.codex/agents/planner.toml` | `plugin/templates/.codex/agents/planner.toml` (Codex only, see below) |
-| `.codex/agents/worker.toml` | `plugin/templates/.codex/agents/worker.toml` (Codex only) |
-| `.codex/agents/reviewer.toml` | `plugin/templates/.codex/agents/reviewer.toml` (Codex only) |
+| `.codex/agents/reviewer.toml` | `plugin/templates/.codex/agents/reviewer.toml` (Codex only, see below) |
+| `.dotagent/guard.py` | `plugin/hooks/guard.py` (optional, see below) |
+| `.dotagent/run.sh` | `plugin/hooks/run.sh` (optional, see below) |
 
-The three `.codex/agents/` files are the swarm roles for Codex: the planner plans, one worker per subtask builds, the reviewer
-checks before the PR. Write them only when you can run subagents, and leave out the rest of this table's Codex rows otherwise.
-Agents without subagents do the same steps one at a time, yourself.
+The `.codex/agents/reviewer.toml` file is the one subagent role for Codex: it checks the diff in a fresh context before the PR. You plan and
+build yourself. Write it only when you can run subagents. Agents without subagents review in a fresh pass, yourself.
+
+The two `.dotagent/` files are optional. They give you `sh .dotagent/run.sh gate run <the gate command>` and `gate check`, so the whole change is
+gated once per commit and the result is recorded (needs Python 3.8 or newer). Nothing else in them runs outside Claude Code: no hook enforces a rule
+for you, only the git hooks and the CI do. `run.sh` keeps `.dotagent/` out of git through `.git/info/exclude`, so every clone fetches them again.
 
 Then append to the repo's `.gitignore`, skipping any line already there: `docs/DOTAGENT-SETUP.md` and `docs/TODO.md`.
 Tell the user which lines you added.

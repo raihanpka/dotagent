@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # One benchmark run: bash benchmark/run.sh <arm> <task> <trial>
-# arm: plain | small | medium | large. Writes benchmark/results/<arm>__<task>__<trial>.json.
+# arm: plain | dotagent. Writes benchmark/results/<arm>__<task>__<trial>.json.
 # Env: MODEL (default sonnet), BUDGET (max USD per run, default 5).
 # This spends real tokens. The work copy has no GitHub remote, so the dotagent arms stop before the PR.
 set -euo pipefail
@@ -26,7 +26,7 @@ if [ "$arm" = plain ]; then
 Commit your work on this branch. Do not push."
 else
   flags+=(--plugin-dir "$root/plugin")
-  prompt="/dotagent:ship $arm $prompt
+  prompt="/dotagent:ship $prompt
 
 There is no GitHub remote. Stop after the review and the local commits: do not push, do not open a PR."
 fi

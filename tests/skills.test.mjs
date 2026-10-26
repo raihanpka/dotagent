@@ -2,6 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 
 const skill = readFileSync(new URL('../plugin/templates/.agents/skills/dotagent-ship/SKILL.md', import.meta.url), 'utf8')
 const front = skill.match(/^---\n([\s\S]*?)\n---/)
@@ -26,7 +27,7 @@ test('every raw file the setup guide fetches exists in the repo', () => {
 })
 
 test('each Codex agent file has a name, a description, and developer instructions, and no Claude tool', () => {
-  for (const role of ['planner', 'worker', 'reviewer']) {
+  for (const role of ['reviewer']) {
     const toml = readFileSync(new URL(`../plugin/templates/.codex/agents/${role}.toml`, import.meta.url), 'utf8')
     assert.match(toml, new RegExp(`^name = "${role}"$`, 'm'))
     assert.match(toml, /^description = ".+"$/m)
@@ -39,7 +40,18 @@ test('each Codex agent file has a name, a description, and developer instruction
 })
 
 test('the body names no tool that only Claude Code has', () => {
+  const body = skill.replaceAll('.dotagent/run.sh', '')
   for (const tool of ['AskUserQuestion', 'ToolSearch', 'Workflow', 'Agent', 'run.sh', 'phase plan']) {
-    assert.ok(!skill.includes(tool), `found ${tool}`)
+    assert.ok(!body.includes(tool), `found ${tool}`)
   }
+})
+
+test('the root skill is the same file as the template copy', () => {
+  const root = readFileSync(new URL('../skills/dotagent-ship/SKILL.md', import.meta.url), 'utf8')
+  assert.equal(root, skill)
+})
+
+test('docs/workflow.svg is drawn from docs/workflow.excalidraw', () => {
+  const run = spawnSync('python3', ['scripts/workflow-svg.py', '--check'], { cwd: new URL('..', import.meta.url), encoding: 'utf8' })
+  assert.equal(run.status, 0, run.stderr)
 })

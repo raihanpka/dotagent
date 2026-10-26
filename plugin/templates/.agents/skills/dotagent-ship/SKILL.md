@@ -8,7 +8,7 @@ description: "Ship a task that already has clear requirements as small, reviewab
 Plain steps for any agent. Claude Code users get the richer `/dotagent:ship` instead.
 Rules that bind every step: commit messages say what changed, never a plan label, no
 trailer, no `(#N)`. Never push, open a PR, or merge without the user's yes, unless the
-user already set autopilot in `.dotagent/config.json` (Claude Code only).
+user already set auto in `.dotagent/config.json` (Claude Code only).
 
 ## 1. Start
 
@@ -18,18 +18,15 @@ user already set autopilot in `.dotagent/config.json` (Claude Code only).
 
 ## 2. Plan
 
-- Subagents: if your agent can run them (Codex reads `.codex/agents/planner.toml`), hand the plan to the `planner` subagent.
-  Otherwise write the plan yourself, read only, and say so.
 - Small change (one sentence describes the whole diff): skip the plan, go to step 3.
-- Otherwise write the plan as a checklist in `docs/TODO.md` (untracked, never commit it).
+- Otherwise write the plan yourself, read only, as a checklist in `docs/TODO.md` (untracked, never commit it). Revise it when the work differs from it.
   One section per PR. Each PR has 3 to 8 subtasks: change, build, lint, test, commit.
 - Each subtask leaves the repo green.
 
 ## 3. Build
 
 - Branch from the default branch: `git switch -c <type>/<slug>`.
-- With subagents, give each subtask to one `worker` subagent (`.codex/agents/worker.toml`), one at a time. Otherwise do it yourself.
-- Do one subtask. Run the repo's test command from `AGENTS.md`. It must pass before you commit.
+- Do each subtask yourself, one at a time. Run the repo's test command from `AGENTS.md`. It must pass before you commit.
 - Commit one atomic change: `git add <explicit paths>`, then `git commit -m "type(scope): summary"`.
   Never `git add -A`. A refactor is its own commit.
 - Tick the subtask in `docs/TODO.md`. Go to the next.
@@ -37,10 +34,14 @@ user already set autopilot in `.dotagent/config.json` (Claude Code only).
 
 ## 4. Check
 
-- Run build, lint, and test once more on the whole change. Show the output.
+- Run build, lint, and test once more on the whole change, once per commit, and show the output. Do not rerun a gate that passed on the same commit.
+  When `.dotagent/run.sh` exists, ask it first: `sh .dotagent/run.sh gate check` prints `ok` or `stale`. On `stale` run the gate through
+  `sh .dotagent/run.sh gate run <the gate command from AGENTS.md>`, which records the commit only when the command exits 0.
+  Without it, say in your reply which commit the gate passed at.
 - Prove it with a check you ran, never with "looks done".
 - Review the diff against the plan in a fresh context: the `reviewer` subagent (`.codex/agents/reviewer.toml`) if you can run subagents,
-  otherwise yourself in a fresh pass. Fix gaps before the PR.
+  otherwise yourself in a fresh pass. Tell it the gate result and what is in scope, and ask for `clean` or numbered gaps with `path:line`.
+  Fix gaps before the PR.
 
 ## 5. Pull request
 

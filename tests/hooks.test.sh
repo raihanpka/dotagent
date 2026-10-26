@@ -142,7 +142,7 @@ expect "a config copy in a subfolder is not the config" 0 "{\"tool_name\":\"Writ
 
 # set validates and writes the config
 set_out="$(sh "$guard" set workflow adapt)"
-[ "$set_out" = "workflow=adapt" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set merge: $set_out"; }
+[ "$set_out" = "workflow=local" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set merge: $set_out"; }
 sh "$guard" set workflow sometimes >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL set accepts a bad value"; } || pass=$((pass + 1))
 sh "$guard" set color red >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL set accepts a bad key"; } || pass=$((pass + 1))
 cfg '{}'
@@ -191,7 +191,7 @@ expect "read missing ok" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\
 # session start prints the active settings
 cfg '{"scale":"large","merge":"full","style_skills":"caveman"}'
 out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
-case "$out" in *"scale=large"*"workflow=autopilot"*"style=caveman"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL session start: $out" ;; esac
+case "$out" in *"scale"*) fail=$((fail + 1)); echo "FAIL session line still names the scale: $out" ;; *"workflow=auto"*"style=caveman"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL session start: $out" ;; esac
 
 # git hooks: shipped and on, shipped and off, or not shipped
 g="$tmp/gitproj"
@@ -251,7 +251,7 @@ case "$out" in "subagents: none") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); e
 # first run line and protected in the session line
 rm -f "$tmp/proj/.dotagent/config.json"
 out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
-case "$out" in *"first run"*"scale=medium, workflow=autopilot"*"tracked files"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL first run line: $out" ;; esac
+case "$out" in *"scale"*) fail=$((fail + 1)); echo "FAIL first run line names the scale: $out" ;; *"first run"*"workflow=auto"*"tracked files"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL first run line: $out" ;; esac
 cfg '{"scale":"medium","protected":"go.sum"}'
 out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
 case "$out" in *"first run"*) fail=$((fail + 1)); echo "FAIL first run shown with a config: $out" ;; *"protected=go.sum"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL protected in line: $out" ;; esac
@@ -265,12 +265,19 @@ case "$(sh "$guard" show)" in *"setup=minimal"*"hooks=declined"*"big_plan=ok"*) 
 cfg '{}'
 x="$tmp/exproj"
 mkdir -p "$x" && git -C "$x" init -q
-CLAUDE_PROJECT_DIR=$x sh "$guard" set scale small >/dev/null
-CLAUDE_PROJECT_DIR=$x sh "$guard" set scale medium >/dev/null
+CLAUDE_PROJECT_DIR=$x sh "$guard" set workflow checkpoint >/dev/null
+CLAUDE_PROJECT_DIR=$x sh "$guard" set workflow autopilot >/dev/null
 [ "$(git -C "$x" status --porcelain)" = "" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL config is not ignored: $(git -C "$x" status --porcelain)"; }
 [ "$(grep -c '^.dotagent/$' "$x/.git/info/exclude")" = "1" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL exclude line is not written once"; }
 out="$(printf '{"hook_event_name":"SessionStart"}' | CLAUDE_PROJECT_DIR=$x sh "$guard")"
-case "$out" in *"first run"*) fail=$((fail + 1)); echo "FAIL first run after saving the scale: $out" ;; *) pass=$((pass + 1)) ;; esac
+case "$out" in *"first run"*) fail=$((fail + 1)); echo "FAIL first run after saving the workflow: $out" ;; *) pass=$((pass + 1)) ;; esac
+
+# the scale setting is gone: set refuses it with a hint, and an old config that still has it loads as before
+out="$(sh "$guard" set scale medium 2>&1)" && { fail=$((fail + 1)); echo "FAIL set scale is accepted"; } || case "$out" in *"scale was removed"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL set scale hint: $out" ;; esac
+cfg '{"scale":"large"}'
+out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
+case "$out" in *"first run"*|*"scale"*) fail=$((fail + 1)); echo "FAIL an old scale key: $out" ;; *"workflow=auto"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old scale session line: $out" ;; esac
+cfg '{}'
 
 # workflow modes: autopilot, checkpoint, adapt
 SQ='--squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"'
@@ -295,17 +302,42 @@ case "$out" in *'"permissionDecision"'*) fail=$((fail + 1)); echo "FAIL checkpoi
 expect "checkpoint merges after a yes" 0 "$(bash_json "gh pr merge 5 $SQ")"
 out="$(ask_out "$(bash_json "gh pr merge 5 $SQ")")"
 case "$out" in *'"permissionDecision": "ask"'*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a yes covers more than one PR: $out" ;; esac
+# the modes are local, ask, and auto. The old names adapt, checkpoint, and autopilot stay as aliases and are saved under the new name
+cfg '{"workflow":"local"}'
+expect "local never pushes" 2 "$(bash_json 'git push origin feat/a')"
+expect "local never merges on the remote" 2 "$(bash_json "gh pr merge 5 $SQ")"
+expect "local keeps local commits" 0 "$(bash_json 'git commit -m "feat(a): add a"')"
+cfg '{"workflow":"auto"}'
+expect "auto pushes" 0 "$(bash_json 'git push origin feat/a')"
+expect "auto merges" 0 "$(bash_json "gh pr merge 5 $SQ")"
+cfg '{"workflow":"ask"}'
+rm -f "$tmp/proj/.dotagent/approved"
+out="$(ask_out "$(bash_json 'git push origin feat/a')")"
+case "$out" in *'"permissionDecision": "ask"'*"workflow is ask"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL ask does not ask: $out" ;; esac
+sh "$guard" approve >/dev/null
+out="$(ask_out "$(bash_json 'git push origin feat/a')")"
+case "$out" in *'"permissionDecision"'*) fail=$((fail + 1)); echo "FAIL ask asks after a yes: $out" ;; *) pass=$((pass + 1)) ;; esac
+for pair in "autopilot auto" "checkpoint ask" "adapt local" "auto auto" "ask ask" "local local"; do
+  set -- $pair
+  [ "$(sh "$guard" set workflow "$1")" = "workflow=$2" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set workflow $1 is not saved as $2"; }
+done
+cfg '{"workflow":"adapt"}'
+case "$(sh "$guard" show)" in *"workflow=local"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old adapt in the file: $(sh "$guard" show)" ;; esac
+cfg '{"workflow":"checkpoint"}'
+case "$(sh "$guard" show)" in *"workflow=ask"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old checkpoint in the file: $(sh "$guard" show)" ;; esac
+cfg '{"workflow":"autopilot"}'
+case "$(sh "$guard" show)" in *"workflow=auto"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old autopilot in the file: $(sh "$guard" show)" ;; esac
 # the old merge key is read once
 cfg '{"merge":"on-green"}'
-case "$(sh "$guard" show)" in *"workflow=autopilot"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old on-green: $(sh "$guard" show)" ;; esac
+case "$(sh "$guard" show)" in *"workflow=auto"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old on-green: $(sh "$guard" show)" ;; esac
 cfg '{"merge":"full"}'
-case "$(sh "$guard" show)" in *"workflow=autopilot"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old full: $(sh "$guard" show)" ;; esac
+case "$(sh "$guard" show)" in *"workflow=auto"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old full: $(sh "$guard" show)" ;; esac
 cfg '{"merge":"off"}'
-case "$(sh "$guard" show)" in *"workflow=checkpoint"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old off: $(sh "$guard" show)" ;; esac
+case "$(sh "$guard" show)" in *"workflow=ask"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old off: $(sh "$guard" show)" ;; esac
 cfg '{"merge":"sometimes"}'
-case "$(sh "$guard" show)" in *"workflow=adapt"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old typo: $(sh "$guard" show)" ;; esac
+case "$(sh "$guard" show)" in *"workflow=local"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old typo: $(sh "$guard" show)" ;; esac
 cfg 'not json'
-case "$(sh "$guard" show)" in *"workflow=adapt"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL broken file: $(sh "$guard" show)" ;; esac
+case "$(sh "$guard" show)" in *"workflow=local"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL broken file: $(sh "$guard" show)" ;; esac
 cfg '{}'
 
 # force push, and the hash list in a local squash commit
@@ -331,6 +363,87 @@ cfg '{"scale":"medium","setup":"minimal","hooks":"declined"}'
 out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
 case "$out" in *"setup=minimal hooks=declined"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL answers in the session line: $out" ;; esac
 cfg '{}'
+
+# deleting a test to get green is refused, other deletes are not
+cfg '{}'
+expect "rm of a js test" 2 "$(bash_json 'rm tests/a.test.js')"
+expect "git rm of a go test" 2 "$(bash_json 'git rm internal/x/x_test.go')"
+expect "rm of a python test" 2 "$(bash_json 'rm -f pkg/test_login.py')"
+expect "rm of the tests folder" 2 "$(bash_json 'rm -rf tests')"
+expect "git rm after another command" 2 "$(bash_json 'git add a && git rm -q src/__tests__/a.js')"
+expect "rm of a source file" 0 "$(bash_json 'rm src/a.js')"
+expect "git rm of a source file" 0 "$(bash_json 'git rm src/login.go')"
+expect "rm of a log" 0 "$(bash_json 'rm -f build/out.log')"
+expect "a file named like test data is fine" 0 "$(bash_json 'rm test_data.txt')"
+expect "grep for a test is fine" 0 "$(bash_json 'grep -rn rm tests/a.test.js')"
+
+# a repo flow that is not the default: commit types, an optional scope, the merge method, and the base branch
+cfg '{}'
+expect "default needs a scope" 2 "$(bash_json 'git commit -m "feat: add a"')"
+cfg '{"commit_types":"feat,fix,chore"}'
+expect "a listed type is fine" 0 "$(bash_json 'git commit -m "chore(a): add a"')"
+expect "an unlisted type is refused" 2 "$(bash_json 'git commit -m "docs(a): add a"')"
+expect "a PR title follows the listed types" 2 "$(bash_json 'gh pr create --title "docs(a): add a" --body "text"')"
+cfg '{"commit_scope":"optional"}'
+expect "an optional scope may be left out" 0 "$(bash_json 'git commit -m "feat: add a"')"
+expect "an optional scope may be given" 0 "$(bash_json 'git commit -m "feat(a): add a"')"
+expect "an optional scope still needs a type" 2 "$(bash_json 'git commit -m "added a"')"
+cfg '{"merge_method":"merge"}'
+expect "merge method merge accepts --merge" 0 "$(bash_json 'gh pr merge 5 --merge --delete-branch')"
+expect "merge method merge refuses --squash" 2 "$(bash_json "gh pr merge 5 $SQ")"
+expect "merge method merge refuses --rebase" 2 "$(bash_json 'gh pr merge 5 --rebase')"
+expect "merge method merge refuses --admin" 2 "$(bash_json 'gh pr merge 5 --merge --admin')"
+expect "merge method merge refuses a trailer" 2 "$(bash_json 'gh pr merge 5 --merge --body "Co-Authored-By: a <a@b>"')"
+cfg '{"merge_method":"rebase"}'
+expect "merge method rebase accepts --rebase" 0 "$(bash_json 'gh pr merge 5 --rebase --delete-branch')"
+expect "merge method rebase refuses --merge" 2 "$(bash_json 'gh pr merge 5 --merge')"
+expect "merge method rebase refuses a bare merge" 2 "$(bash_json 'gh pr merge 5')"
+cfg '{"workflow":"auto"}'
+expect "the default merge is still a squash" 2 "$(bash_json 'gh pr merge 5 --merge')"
+for pair in "merge_method rebase" "merge_method merge" "commit_scope optional" "commit_types feat,fix" "base_branch develop" "base_branch release/1.x"; do
+  set -- $pair
+  [ "$(sh "$guard" set "$1" "$2")" = "$1=$2" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set $1 $2"; }
+done
+for pair in "merge_method octopus" "commit_scope never" "commit_types Feat,Fix" "commit_types feat;fix" "base_branch a;b"; do
+  set -- $pair
+  sh "$guard" set "$1" "$2" >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL set accepts $1 $2"; } || pass=$((pass + 1))
+done
+cfg '{"merge_method":"rebase","commit_types":"feat,fix","commit_scope":"optional","base_branch":"develop"}'
+out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
+case "$out" in *"merge=rebase"*"types=feat,fix"*"scope=optional"*"base=develop"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL session line misses the repo flow: $out" ;; esac
+cfg '{"workflow":"auto"}'
+out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
+case "$out" in *"merge="*|*"types="*|*"scope="*|*"base="*) fail=$((fail + 1)); echo "FAIL session line shows the defaults: $out" ;; *) pass=$((pass + 1)) ;; esac
+cfg '{}'
+
+# the gate is recorded per commit: ok at the same HEAD, stale after a commit, an edit, or with no record
+g="$tmp/gate"
+mkdir -p "$g" && git -C "$g" init -q && git -C "$g" config user.email t@t && git -C "$g" config user.name t
+printf 'a\n' > "$g/a.txt" && git -C "$g" add a.txt && git -C "$g" commit -qm "feat(a): add a"
+gate() { CLAUDE_PROJECT_DIR=$g sh "$guard" gate "$@"; }
+[ "$(gate check)" = stale ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate check with no record: $(gate check)"; }
+gate run true >/dev/null
+[ "$(gate check)" = ok ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate check after pass: $(gate check)"; }
+printf 'b\n' >> "$g/a.txt"
+[ "$(gate check)" = stale ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate check after an edit: $(gate check)"; }
+git -C "$g" checkout -q a.txt
+[ "$(gate check)" = ok ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate check after the edit is undone: $(gate check)"; }
+printf 'b\n' >> "$g/a.txt" && git -C "$g" commit -qam "feat(a): add b"
+[ "$(gate check)" = stale ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate check after a commit: $(gate check)"; }
+[ "$(git -C "$g" status --porcelain)" = "" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate record is not ignored: $(git -C "$g" status --porcelain)"; }
+n="$tmp/nogit"
+mkdir -p "$n"
+[ "$(CLAUDE_PROJECT_DIR=$n sh "$guard" gate check)" = stale ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate check outside git"; }
+CLAUDE_PROJECT_DIR=$n sh "$guard" gate run true >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL gate run outside git"; } || pass=$((pass + 1))
+# a failing gate records nothing and its exit code comes back, a gate on a dirty tree is refused, and a missing command is an error
+gate run sh -c 'exit 3' >/dev/null 2>&1; [ $? -eq 3 ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate run does not return the exit code"; }
+[ "$(gate check)" = stale ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL a failing gate left a record: $(gate check)"; }
+gate run true >/dev/null && [ "$(gate check)" = ok ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate run true did not record"; }
+printf 'c\n' >> "$g/a.txt"
+gate run true >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL gate run on a dirty tree"; } || pass=$((pass + 1))
+git -C "$g" checkout -q a.txt
+gate run no-such-command-here >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL gate run of a missing command"; } || pass=$((pass + 1))
+gate pass >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL gate pass still exists"; } || pass=$((pass + 1))
 
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]

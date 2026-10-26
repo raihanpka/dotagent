@@ -8,7 +8,7 @@ Go backend for a small team task board, a modular monolith served over REST unde
 - Format: `gofmt -w .` (check only: `make fmt-check`)
 - Lint: `make lint` (`go vet`)
 - Test: `make test` (one package: `go test -race ./internal/modules/tasks -run TestName`)
-- One module (a worker checks with these, `make ci` runs once before the PR): lint `go vet ./internal/modules/<m>/...`, test `go test -race ./internal/modules/<m>/...`
+- One module (a subtask checks with these, `make ci` runs once per commit before the PR): lint `go vet ./internal/modules/<m>/...`, test `go test -race ./internal/modules/<m>/...`
 - Whole gate: `make ci`
 
 ## Architecture

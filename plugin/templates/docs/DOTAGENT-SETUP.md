@@ -7,11 +7,13 @@ You tick Reviewed once you have read it.
 
 | Setting | Value | Why |
 |---|---|---|
-| scale | {{small, medium, or large}} | {{reason}} |
-| workflow | {{autopilot, checkpoint, or adapt}} | {{reason}} |
+| workflow | {{auto, ask, or local}} | {{reason}} |
 | em dash and emoji | {{block (default) or allow}} | {{reason}} |
 | companion skills | {{plan, build, style skills, or none}} | {{reason}} |
 | commit scopes | {{list}} | {{reason}} |
+| merge method | {{squash (default), merge, or rebase}} | {{reason, for example the repo does not allow squash}} |
+| commit types and scope | {{the default list, or the repo's own list, scope required or optional}} | {{reason}} |
+| base branch | {{the default branch, or the branch PRs target}} | {{reason}} |
 | git hooks on | {{yes (`git config core.hooksPath .githooks`) or no}} | {{reason}} |
 
 ## Generated files
@@ -27,7 +29,6 @@ You tick Reviewed once you have read it.
 | `docs/README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md` | `templates/docs/` | [ ] | [ ] |
 | `.dotagent/config.json` | `templates/.dotagent/config.json`, set with `run.sh`, ignored by git | [ ] | [ ] |
 | `.gitignore` | adds `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, `docs/TODO.md` | [ ] | [ ] |
-| `.claude/settings.json` | `templates/.claude/settings.json`: allow `Workflow` for the large scale | [ ] | [ ] |
 
 ## Open items
 

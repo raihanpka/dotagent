@@ -1,5 +1,5 @@
 ---
-description: "Set dotagent up in this repo by interview, once: commands, architecture, workflow, CI, git hooks, and protected paths. Writes the files and the saved settings, shows each file first, and never overwrites. Stays small when the workflow is adapt."
+description: "Set dotagent up in this repo by interview, once: commands, architecture, workflow, CI, git hooks, and protected paths. Writes the files and the saved settings, shows each file first, and never overwrites. Stays small when the workflow is local."
 disable-model-invocation: true
 ---
 # dotagent setup

@@ -3,6 +3,43 @@
 Versions follow [semver](https://semver.org). The version lives in `plugin/.claude-plugin/plugin.json` and, equal to it, in `.codex-plugin/plugin.json`.
 Claude Code caches a plugin per version, so bump it on every change users should receive.
 
+## 0.4.0
+
+Upgrading: `/dotagent:scale` and the `large` run are gone, and so are the planner and worker agents. A saved `scale` key in `.dotagent/config.json` is ignored, `sh hooks/run.sh set scale ...` now says why it refuses. Add nothing, run `/plugin update dotagent@dotagent` and `/reload-plugins`. If you allowed `Workflow` in `.claude/settings.json` for `ship-large.js`, you can remove it.
+
+### One loop for every task
+
+- `/dotagent:ship <task>` has one path. If the whole diff fits one sentence there is no plan and no TODO. Otherwise the lead writes `docs/TODO.md` read only, builds each subtask itself with one commit each, and a fresh `reviewer` checks the diff. The lead revises the plan when the work differs from it. A fix gets two tries from the lead, then the run stops.
+- Why: [Anthropic's guide to folding subagents into the main loop](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop), and the repo's own benchmark run 1 (every arm resolved 15/15, the workflow cost 1.6x to 1.8x and took 1.5x to 1.8x longer than plain Claude Code, `large` matched `medium`). The single loop was measured on two tasks (5 runs, all resolved): it is not faster or cheaper than plain Claude Code, see `docs/BENCHMARK.md`.
+- Every spawn (`reviewer`, `Explore`) gets an objective, an output shape, and boundaries.
+- Removed: `/dotagent:scale`, the size word before a task, `plugin/workflows/ship-large.js`, `planner`, `worker`, the Codex `planner.toml` and `worker.toml`, the `Workflow` permission, and the Scale question in setup.
+- `ship` is a small core plus `references/plan.md` and `references/merge.md`, read when that step comes. A one sentence task never loads the plan layout or the merge steps, and the core is about half the size it was.
+- `/dotagent <task>` stays as the short form of `ship`. It no longer triggers by itself, so it does not compete with `ship`.
+
+### The workflow modes are local, ask, and auto
+
+- `adapt` is now `local` (stops at local commits, never pushes), `checkpoint` is now `ask` (asks for your yes before any push, PR, or merge), `autopilot` is now `auto` (finishes every PR to the merge and goes on to the next, the default). The old names still work as aliases, in the config file and in `/dotagent:workflow`, and are saved under the new name. A wrong value or a broken file still means `local`.
+
+### A repo flow that is not the default
+
+- Setup reads the remote host, the merge methods the repo allows, the branch PRs target, and the commit habit, and saves what differs: `merge_method` (`squash`, `merge`, or `rebase`), `commit_types`, `commit_scope` (`required` or `optional`), and `base_branch`. The guard checks commits, PR titles, and `gh pr merge` against them, and the session line shows them, so `ship` follows the same flow. The defaults are unchanged.
+- When the flow is one the plugin cannot follow (a host that is not GitHub, no remote, `gh` missing, or work without PRs), setup saves `workflow local`, skips the CI and PR template files, and writes an open item in `docs/DOTAGENT-SETUP.md`, so a run does not hit the guard halfway.
+
+### The gate runs once per commit
+
+- `sh hooks/run.sh gate run <command>` runs the repo gate and records the HEAD only when the command exits 0 (it refuses a tree with uncommitted changes to tracked files). `gate check` prints `ok` or `stale`, also `stale` after an edit to a tracked file. The lead, the reviewer, and `continue` read it, so nothing runs the gate twice on one commit. `continue` checks it before any new work.
+
+### Guards
+
+- `rm` and `git rm` of a test file are refused (`tests/`, `__tests__/`, `x_test.go`, `x.test.js`, `x.spec.ts`, `test_x.py`). The reviewer also flags a test that was deleted, skipped, or loosened to pass.
+- The workflow modes read as one ladder: `adapt` stops at local commits, `checkpoint` asks before the remote, `autopilot` goes to the merge.
+
+### Docs
+
+- `hooks/loop.sh` documents `CLAUDE_FLAGS="--max-budget-usd 5"` as a spend cap for each PR of a long run.
+- The benchmark keeps two tasks, `t1-board-leak` (a one sentence diff) and `t6-members-roles` (several PRs). The arms are `plain` and `dotagent`, run 1 keeps its old arms. `docs/PRACTICES.md` gains the single loop, failure mode, and long run sources, and says the 500 line read limit is a model era assumption to re-test.
+- The workflow diagram, README, setup guides, and `examples/` follow the single loop. The portable ship skill drops the planner and worker steps.
+
 ## 0.3.1
 
 Other agents can install the ship skill from the repo. Codex: `codex plugin marketplace add raihanpka/dotagent`, then install dotagent from `/plugins`. Antigravity CLI or any agent that reads `.agents/skills`: `npx skills add raihanpka/dotagent --skill dotagent-ship -a codex -a antigravity-cli -y`.

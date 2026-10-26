@@ -4,6 +4,8 @@ import glob, json, os, statistics as st
 from collections import defaultdict
 
 rows = [r for r in (json.load(open(p)) for p in glob.glob(os.path.join(os.path.dirname(__file__), "results", "*.json"))) if not r["is_error"]]  # a run the API refused is not a result
+# small, medium, and large are the arms of run 1, kept so its results still print.
+ARMS = ("plain", "dotagent", "small", "medium", "large")
 arms = defaultdict(list)
 for r in rows:
     arms[r["arm"]].append(r)
@@ -12,7 +14,7 @@ def med(xs): return st.median(xs) if xs else float("nan")
 def rng(xs): return f"{min(xs):.0f}-{max(xs):.0f}" if xs else "-"
 
 print(f"{'arm':8} {'runs':>4} {'resolved':>9} {'gate':>6} {'$/resolved':>11} {'p50 wall s':>11} {'wall range':>11} {'p50 out tok':>12} {'commits':>8} {'bad msg':>8}")
-for arm in ("plain", "small", "medium", "large"):
+for arm in ARMS:
     rs = arms.get(arm)
     if not rs: continue
     ok = [r for r in rs if r["resolved"]]
@@ -25,10 +27,10 @@ for arm in ("plain", "small", "medium", "large"):
 
 print("\nper task, resolved/runs")
 tasks = sorted({r["task"] for r in rows})
-print(f"{'task':18}" + "".join(f"{a:>9}" for a in ("plain", "small", "medium", "large")))
+print(f"{'task':18}" + "".join(f"{a:>9}" for a in ARMS))
 for t in tasks:
     line = f"{t:18}"
-    for a in ("plain", "small", "medium", "large"):
+    for a in ARMS:
         rs = [r for r in arms.get(a, []) if r["task"] == t]
         line += f"{sum(r['resolved'] for r in rs)}/{len(rs):>7}" if rs else f"{'-':>9}"
     print(line)
