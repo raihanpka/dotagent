@@ -13,7 +13,7 @@ taskboard-backend/
 ├── Makefile                            # build, fmt, fmt-check, lint, test, ci
 ├── AGENTS.md                           # commands, modules, rules
 ├── CLAUDE.md                           # @AGENTS.md
-├── .dotagent/config.json               # workflow checkpoint, protected go.mod and go.sum
+├── .dotagent/config.json               # workflow ask, protected go.mod and go.sum
 ├── .github/                            # PR template, PR example, ci-pr.yml, ci-default.yml
 ├── .githooks/                          # commit-msg, pre-commit, pre-push
 └── docs/                               # README, ARCHITECTURE, CONVENTIONS, DOTAGENT-SETUP, TODO.example

@@ -7,7 +7,7 @@ You tick Reviewed once you have read it.
 
 | Setting | Value | Why |
 |---|---|---|
-| workflow | checkpoint | The benchmark copy has no remote, so nothing may be pushed without a yes. |
+| workflow | ask | The benchmark copy has no remote, so nothing may be pushed without a yes. |
 | em dash and emoji | block | The default, the agent writes neither. |
 | companion skills | none | `style_skills` is none. |
 | git hooks on | yes, `git config core.hooksPath .githooks` | They check every commit and push, by anyone, before CI does. |

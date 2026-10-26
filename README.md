@@ -107,7 +107,7 @@ Copy from `plugin/` and edit. Fill every `{{...}}`. `plugin/SETUP.md` lists the 
 
 - Claude Code caches a plugin per version, so you get a change when the version in `plugin.json` goes up. `CHANGELOG.md` says what changed.
 - To try the repo as it is: `claude --plugin-dir ./plugin`.
-- From 0.2.x: `merge` became `workflow` (`on-green` and `full` are now `autopilot`, `off` is now `checkpoint`), and a merge is always a squash.
+- From 0.2.x: `merge` became `workflow` (`on-green` and `full` are now `auto`, `off` is now `ask`), and a merge is always a squash. From 0.3.x: `autopilot`, `checkpoint`, and `adapt` are now `auto`, `ask`, and `local`. The old names still work and are saved under the new one.
 
 ## use
 
@@ -115,7 +115,7 @@ Copy from `plugin/` and edit. Fill every `{{...}}`. `plugin/SETUP.md` lists the 
 |---|---|
 | `/dotagent <task>` | The short form of `/dotagent:ship`. Alone it shows the saved settings. |
 | `/dotagent:ship <task>` | Ship the task. `continue` resumes unfinished work. |
-| `/dotagent:workflow autopilot\|checkpoint\|adapt` | Save how far a run goes on its own, for every run. |
+| `/dotagent:workflow local\|ask\|auto` | Save how far a run goes on its own, for every run. |
 | `/dotagent:setup` | Set dotagent up in this repo, once. |
 
 Without an argument `workflow` shows the saved settings. In the `/` menu the first one is `/dotagent:dotagent`.
@@ -131,13 +131,13 @@ Without an argument `workflow` shows the saved settings. In the `/` menu the fir
 
 ### workflow
 
-How far a run goes on its own: `adapt` stops at local commits, `checkpoint` stops to ask before the remote, `autopilot` goes to the merge.
+How far a run goes on its own: `local` stops at local commits, `ask` stops to ask before the remote, `auto` goes to the merge.
 
 | Mode | What happens |
 |---|---|
-| `autopilot` *(default)* | Runs the whole TODO. Pushes, opens each PR, watches CI, rebases, squash merges when the review is clean and CI is green, goes on to the next PR. |
-| `checkpoint` | The same run and local commits, but it asks for your yes in the chat ("yes", "approve", "ya") before any push, PR, or merge. |
-| `adapt` | Asks first, sets up the minimum (no CI files, no PR template, git hooks stay), puts the whole TODO on one local branch, never pushes. |
+| `auto` *(default)* | Runs the whole TODO and finishes every PR: pushes, opens the PR, watches CI, fixes a red check (two tries), rebases, squash merges when the review is clean and CI is green, then starts the next PR. It stops on a failure, an open question, or a PR that cannot merge. |
+| `ask` | The same run and local commits, one PR per plan item, but it asks for your yes in the chat ("yes", "approve", "ya") before any push, PR, or merge. A yes covers one PR. |
+| `local` | Asks first, sets up the minimum (no CI files, no PR template, git hooks stay), puts the whole TODO on one local branch, never pushes, never opens a PR. It ends with a local squash or leaves the branch to you. |
 
 ### settings
 
@@ -145,14 +145,14 @@ One file, `.dotagent/config.json`, per machine and ignored by git (written by `r
 
 | Key | Default | Values |
 |---|---|---|
-| `workflow` | `autopilot` | `autopilot`, `checkpoint`, `adapt` |
+| `workflow` | `auto` | `auto`, `ask`, `local` (the old `autopilot`, `checkpoint`, `adapt` still work) |
 | `em_dash`, `emoji` | `block` | `block`, `allow` |
 | `style_skills` | `none` | comma separated skills, such as `caveman,ponytail:lite` |
 | `protected` | empty | globs no agent may edit, such as `db/migrations/**,.github/CODEOWNERS` |
 | `setup`, `hooks`, `big_plan` | unset | answers you gave once, saved so they are not asked twice |
 
 - `/dotagent:workflow` sets one of them. Any key: `sh hooks/run.sh set <key> <value>`. An old `scale` key is ignored.
-- A missing key means the default. A wrong value or a broken file means `adapt`, so a typo never turns pushing on.
+- A missing key means the default. A wrong value or a broken file means `local`, so a typo never turns pushing on.
 - The agent cannot edit this file, only you can.
 
 ### how a run works
@@ -172,7 +172,7 @@ One file, `.dotagent/config.json`, per machine and ignored by git (written by `r
 - one-line `type(scope): summary` commits, and names that say what changed, never `milestone-1`, `task-2`, `wip`, or `(#N)`
 - no `Co-Authored-By` or "Generated with" trailer in a commit, the PR body, or the squash body, and a PR whose commits carry one is not merged
 - no em dash or emoji unless you set `allow`, no `--no-verify`, no `--force` (only `--force-with-lease`), no `--admin`
-- push, PR, and merge follow the workflow: `checkpoint` asks first, `adapt` refuses
+- push, PR, and merge follow the workflow: `ask` asks first, `local` refuses
 - while building, no edit outside the PR's `files:` list in `docs/TODO.md`, and none in a `protected` path
 - no whole read of a file over 500 lines
 - no `rm` or `git rm` of a test file, a removed test hides a failure

@@ -36,7 +36,7 @@ already set up, change settings with `/dotagent:workflow` or edit the file, and
 delete both files to run setup again. If the config says `setup` is `minimal`, the user only went on with a
 TODO before: run the full setup now and save `set setup full` at the end.
 
-When the workflow is `adapt`, setup stays small. It skips the `.github/` rows of step 4 (CI workflows, PR template, PR example),
+When the workflow is `local`, setup stays small. It skips the `.github/` rows of step 4 (CI workflows, PR template, PR example),
 because nothing is pushed. It keeps the git hooks, they check every local commit, and writes `AGENTS.md`, the docs, and the config as usual.
 
 ## 0. Prerequisites
@@ -84,7 +84,7 @@ Settings live in one file, `.dotagent/config.json`, local to the machine and ign
 `sh hooks/run.sh set <key> <value>`, the same command behind
 `/dotagent:workflow`. Unset means the value in brackets.
 
-- `workflow` [autopilot]: `autopilot`, `checkpoint`, or `adapt`, see round 1. Say what each does in a sentence.
+- `workflow` [auto]: `auto`, `ask`, or `local`, see round 1. Say what each does in a sentence.
 - `em_dash` [block] and `emoji` [block]: the agent writes neither, the default. Set `allow` only when the user asks. It stops the
   agent from writing either into files, commits, and PR text.
   No skill or template states this as a rule, the config is the only place.
@@ -134,7 +134,7 @@ Round 1 (no prerequisites):
   slices by feature or horizontal layers. Record the answer and the reason in `ARCHITECTURE.md`.
   If the user is unsure, see When the user is unsure: describe what the code shows in an established
   repo, recommend a simple architecture in a new one.
-- **Workflow.** `autopilot` (pushes, opens each PR, merges when the review is clean and CI is green, goes on), `checkpoint` (the same, but asks for a yes in the chat before any push, PR, or merge), or `adapt` (asks first, minimal setup, one local branch, never pushes). Recommend `autopilot` only when `ci-pr.yml` is a required status check, else `checkpoint`.
+- **Workflow.** `auto` (pushes, opens each PR, merges when the review is clean and CI is green, goes on to the next PR), `ask` (the same, but asks for a yes in the chat before any push, PR, or merge), or `local` (asks first, minimal setup, one local branch, never pushes). Recommend `auto` only when `ci-pr.yml` is a required status check, else `ask`.
 
 Round 2 (needs the architecture and the commands):
 - **Coupling.** Aim for low coupling and high cohesion: a module owns one thing, hides its

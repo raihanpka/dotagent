@@ -7,7 +7,7 @@ You tick Reviewed once you have read it.
 
 | Setting | Value | Why |
 |---|---|---|
-| workflow | {{autopilot, checkpoint, or adapt}} | {{reason}} |
+| workflow | {{auto, ask, or local}} | {{reason}} |
 | em dash and emoji | {{block (default) or allow}} | {{reason}} |
 | companion skills | {{plan, build, style skills, or none}} | {{reason}} |
 | commit scopes | {{list}} | {{reason}} |
