@@ -163,6 +163,7 @@ One file, `.dotagent/config.json`, per machine and ignored by git (written by `r
 - A PR is reviewable in one sitting, 3 to 8 subtasks. `docs/TODO.md` is the report and the state, so a new session announces unfinished work.
 - Git hooks (`pre-commit`, `commit-msg`, `pre-push`) check every commit and push by anyone, so CI stays green.
 - A merge is a rebase onto the latest default branch, then a squash whose body lists each commit with its hash.
+- A long plan keeps one context, so `sh plugin/hooks/loop.sh` runs one fresh `claude -p` per PR, and `CLAUDE_FLAGS="--max-budget-usd 5"` caps the spend of each.
 
 <details>
 <summary>what the hooks enforce</summary>
