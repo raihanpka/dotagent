@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1690 1010" width="1690" height="1010" font-family="Inter, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1690 1041" width="1690" height="1041" font-family="Inter, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif">
 <defs><marker id="a" viewBox="0 0 10 10" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" refX="10" refY="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#343a40"/></marker><marker id="r" viewBox="0 0 10 10" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" refX="10" refY="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c92a2a"/></marker></defs>
-<rect width="1690" height="1010" fill="#ffffff"/>
+<rect width="1690" height="1041" fill="#ffffff"/>
 <text x="1630" y="52" text-anchor="end" font-size="26" font-weight="700" fill="#212529">Dotagent: /dotagent</text>
 <rect x="60" y="38" width="26" height="26" rx="6" fill="#a5d8ff" stroke="#343a40" stroke-width="2"/>
 <text x="96" y="59" text-anchor="start" font-size="17" fill="#212529">Lead: plans, builds, fixes</text>
@@ -62,9 +62,9 @@
 <text x="1390" y="408" text-anchor="middle" font-size="14" fill="#343a40">1. Lead fixes, one try</text>
 <text x="1390" y="428" text-anchor="middle" font-size="14" fill="#343a40">2. Lead retries with the full log</text>
 <text x="1390" y="448" text-anchor="middle" font-size="14" fill="#343a40">Still failing: stop and report</text>
-<rect x="60" y="880" width="1570" height="96" rx="14" fill="#f8f9fa" stroke="#343a40" stroke-width="2.5"/>
-<text x="845" y="919" text-anchor="middle" font-size="17" fill="#212529"><tspan font-weight="700" fill="#212529">Hooks</tspan> guard every step.</text>
-<text x="845" y="947" text-anchor="middle" font-size="17" fill="#212529">Commit and PR names, <tspan font-weight="700" fill="#212529">no trailer</tspan>, <tspan font-weight="700" fill="#212529">protected paths</tspan>, <tspan font-weight="700" fill="#212529">workflow mode</tspan>, <tspan font-weight="700" fill="#212529">read only</tspan> planning.</text>
+<rect x="60" y="911" width="1570" height="96" rx="14" fill="#f8f9fa" stroke="#343a40" stroke-width="2.5"/>
+<text x="845" y="950" text-anchor="middle" font-size="17" fill="#212529"><tspan font-weight="700" fill="#212529">Hooks</tspan> guard every step.</text>
+<text x="845" y="978" text-anchor="middle" font-size="17" fill="#212529">Commit and PR names, <tspan font-weight="700" fill="#212529">no trailer</tspan>, <tspan font-weight="700" fill="#212529">protected paths</tspan>, <tspan font-weight="700" fill="#212529">workflow mode</tspan>, <tspan font-weight="700" fill="#212529">read only</tspan> planning.</text>
 <rect x="700" y="542" width="170" height="112" rx="14" fill="#ffec99" stroke="#343a40" stroke-width="2.5"/>
 <text x="785" y="573" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Full gate</text>
 <text x="785" y="598" text-anchor="middle" font-size="15" fill="#343a40">Once per commit,</text>
@@ -74,22 +74,22 @@
 <polyline points="1305,542 1305,463" fill="none" stroke="#c92a2a" stroke-width="2" stroke-dasharray="8 6" marker-end="url(#r)" marker-start="url(#r)"/>
 <polyline points="1525,654 1525,680 145,680 145,656" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
 <text x="835" y="699" text-anchor="middle" font-size="14" fill="#495057">then the next PR: ask and auto go on until every PR is merged or a stop, local keeps one branch</text>
-<rect x="60" y="722" width="500" height="134" rx="14" fill="#f1f3f5" stroke="#343a40" stroke-width="2.5"/>
-<text x="310" y="755" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">local</text>
-<text x="76" y="782" text-anchor="start" font-size="15" fill="#343a40">Stops at local commits</text>
-<text x="76" y="804" text-anchor="start" font-size="15" fill="#343a40">One branch for the whole TODO, one commit per subtask.</text>
-<text x="76" y="826" text-anchor="start" font-size="15" fill="#343a40">No push, no PR, no CI, the hook refuses them.</text>
-<text x="76" y="848" text-anchor="start" font-size="15" fill="#343a40">At the end: a local squash, or the branch is left to you.</text>
-<rect x="595" y="722" width="500" height="134" rx="14" fill="#f1f3f5" stroke="#343a40" stroke-width="2.5"/>
-<text x="845" y="755" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">ask</text>
-<text x="611" y="782" text-anchor="start" font-size="15" fill="#343a40">Same steps, one PR per plan item</text>
-<text x="611" y="804" text-anchor="start" font-size="15" fill="#343a40">Commits locally, then waits for your yes before the push,</text>
-<text x="611" y="826" text-anchor="start" font-size="15" fill="#343a40">the PR, and the merge. One yes covers one PR.</text>
-<text x="611" y="848" text-anchor="start" font-size="15" fill="#343a40">After a yes: CI is watched and the squash merge follows.</text>
-<rect x="1130" y="722" width="500" height="134" rx="14" fill="#f1f3f5" stroke="#343a40" stroke-width="2.5"/>
-<text x="1380" y="755" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">auto (default)</text>
-<text x="1146" y="782" text-anchor="start" font-size="15" fill="#343a40">Goes all the way, then starts the next PR</text>
-<text x="1146" y="804" text-anchor="start" font-size="15" fill="#343a40">Pushes, opens the PR, watches CI, fixes a red check</text>
-<text x="1146" y="826" text-anchor="start" font-size="15" fill="#343a40">(two tries), rebases, squash merges when the review is</text>
-<text x="1146" y="848" text-anchor="start" font-size="15" fill="#343a40">clean and CI is green. Stops on a failure or a question.</text>
+<rect x="60" y="722" width="500" height="165" rx="14" fill="#f1f3f5" stroke="#343a40" stroke-width="2.5"/>
+<text x="84" y="763" text-anchor="start" font-size="19" font-weight="700" fill="#212529">local</text>
+<text x="84" y="785" text-anchor="start" font-size="14" fill="#495057">Stops at local commits</text>
+<text x="84" y="816" text-anchor="start" font-size="15" fill="#343a40">One branch for the whole TODO, one commit per subtask.</text>
+<text x="84" y="838" text-anchor="start" font-size="15" fill="#343a40">It never pushes, opens a PR, or runs CI. At the end it</text>
+<text x="84" y="860" text-anchor="start" font-size="15" fill="#343a40">squashes locally, or leaves the branch to you.</text>
+<rect x="595" y="722" width="500" height="165" rx="14" fill="#f1f3f5" stroke="#343a40" stroke-width="2.5"/>
+<text x="619" y="763" text-anchor="start" font-size="19" font-weight="700" fill="#212529">ask</text>
+<text x="619" y="785" text-anchor="start" font-size="14" fill="#495057">Asks before the remote</text>
+<text x="619" y="816" text-anchor="start" font-size="15" fill="#343a40">Same steps, one PR per plan item. It commits locally and</text>
+<text x="619" y="838" text-anchor="start" font-size="15" fill="#343a40">waits for your yes before the push, the PR, and the merge.</text>
+<text x="619" y="860" text-anchor="start" font-size="15" fill="#343a40">One yes covers one PR, then CI and the squash follow.</text>
+<rect x="1130" y="722" width="500" height="165" rx="14" fill="#f1f3f5" stroke="#343a40" stroke-width="2.5"/>
+<text x="1154" y="763" text-anchor="start" font-size="19" font-weight="700" fill="#212529">auto (default)</text>
+<text x="1154" y="785" text-anchor="start" font-size="14" fill="#495057">Finishes every PR</text>
+<text x="1154" y="816" text-anchor="start" font-size="15" fill="#343a40">Pushes, opens the PR, watches CI, fixes a red check (two</text>
+<text x="1154" y="838" text-anchor="start" font-size="15" fill="#343a40">tries), and squash merges when the review is clean and CI</text>
+<text x="1154" y="860" text-anchor="start" font-size="15" fill="#343a40">is green. Then the next PR, until all merged or a stop.</text>
 </svg>
