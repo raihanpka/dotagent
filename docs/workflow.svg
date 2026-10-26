@@ -2,86 +2,75 @@
 <defs><marker id="a" viewBox="0 0 10 10" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" refX="10" refY="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#343a40"/></marker><marker id="r" viewBox="0 0 10 10" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" refX="10" refY="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c92a2a"/></marker></defs>
 <rect width="1690" height="810" fill="#ffffff"/>
 <text x="1630" y="52" text-anchor="end" font-size="26" font-weight="700" fill="#212529">Dotagent: /dotagent</text>
-
-<text x="1630" y="78" text-anchor="end" font-size="15" fill="#495057">small skips the plan, large runs as a workflow</text>
-
-<rect x="60" y="38" width="26" height="26" rx="6" fill="#a5d8ff" stroke="#343a40" stroke-width="2"/><text x="96" y="58" font-size="17" fill="#212529">Sonnet: plans and reviews</text>
-
-<rect x="400" y="38" width="26" height="26" rx="6" fill="#b2f2bb" stroke="#343a40" stroke-width="2"/><text x="436" y="58" font-size="17" fill="#212529">Haiku: one narrow job</text>
-
-<rect x="700" y="38" width="26" height="26" rx="6" fill="#ffec99" stroke="#343a40" stroke-width="2"/><text x="736" y="58" font-size="17" fill="#212529">Fixed step: git, gh, CI</text>
-
-<rect x="1000" y="38" width="26" height="26" rx="6" fill="#ffc9c9" stroke="#343a40" stroke-width="2"/><text x="1036" y="58" font-size="17" fill="#212529">Escalation, then stop</text>
-
-<rect x="30" y="90" width="1630" height="176" rx="16" fill="#e7f5ff" stroke="#ced4da" stroke-width="1.5"/><text x="1642" y="120" text-anchor="end" font-size="17" font-weight="700" fill="#495057">Lead: Sonnet plans and reviews</text>
-
-<rect x="30" y="290" width="1630" height="176" rx="16" fill="#ebfbee" stroke="#ced4da" stroke-width="1.5"/><text x="1642" y="320" text-anchor="end" font-size="17" font-weight="700" fill="#495057">Worker swarm: one Haiku agent per subtask</text>
-
-<rect x="30" y="490" width="1630" height="176" rx="16" fill="#fff9db" stroke="#ced4da" stroke-width="1.5"/><text x="1642" y="520" text-anchor="end" font-size="17" font-weight="700" fill="#495057">Fixed steps: plain commands, no agent</text>
-
-<rect x="476" y="358" width="170" height="112" rx="14" fill="#b2f2bb" stroke="#343a40" stroke-width="2"/>
-<rect x="468" y="350" width="170" height="112" rx="14" fill="#b2f2bb" stroke="#343a40" stroke-width="2"/>
+<rect x="60" y="38" width="26" height="26" rx="6" fill="#a5d8ff" stroke="#343a40" stroke-width="2"/>
+<text x="96" y="59" text-anchor="start" font-size="17" fill="#212529">Sonnet lead: plans, builds, fixes</text>
+<rect x="400" y="38" width="26" height="26" rx="6" fill="#b2f2bb" stroke="#343a40" stroke-width="2"/>
+<text x="436" y="59" text-anchor="start" font-size="17" fill="#212529">Sonnet verifier: fresh context</text>
+<rect x="700" y="38" width="26" height="26" rx="6" fill="#ffec99" stroke="#343a40" stroke-width="2"/>
+<text x="736" y="59" text-anchor="start" font-size="17" fill="#212529">Fixed step: git, gh, CI</text>
+<rect x="1000" y="38" width="26" height="26" rx="6" fill="#ffc9c9" stroke="#343a40" stroke-width="2"/>
+<text x="1036" y="59" text-anchor="start" font-size="17" fill="#212529">Escalation, then stop</text>
+<rect x="30" y="90" width="1630" height="176" rx="16" fill="#e7f5ff" stroke="#ced4da" stroke-width="1.5"/>
+<text x="1642" y="117" text-anchor="end" font-size="17" font-weight="700" fill="#495057">Lead: Sonnet plans, builds, and fixes in one context</text>
+<rect x="30" y="290" width="1630" height="176" rx="16" fill="#ebfbee" stroke="#ced4da" stroke-width="1.5"/>
+<text x="1642" y="317" text-anchor="end" font-size="17" font-weight="700" fill="#495057">Verifier: one Sonnet reviewer, fresh context, read only</text>
+<rect x="30" y="490" width="1630" height="176" rx="16" fill="#fff9db" stroke="#ced4da" stroke-width="1.5"/>
+<text x="1642" y="517" text-anchor="end" font-size="17" font-weight="700" fill="#495057">Fixed steps: plain commands, no agent</text>
 <rect x="60" y="142" width="170" height="112" rx="14" fill="#e9ecef" stroke="#343a40" stroke-width="2.5"/>
-<text x="145" y="172" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Task</text>
-
+<text x="145" y="173" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Task</text>
 <text x="145" y="198" text-anchor="middle" font-size="15" fill="#343a40">Typed prompt plus</text>
-
 <text x="145" y="220" text-anchor="middle" font-size="15" fill="#343a40">pasted requirements</text>
-
 <rect x="260" y="142" width="170" height="112" rx="14" fill="#a5d8ff" stroke="#343a40" stroke-width="2.5"/>
-<text x="345" y="172" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Plan: Sonnet</text>
-
-<text x="345" y="198" text-anchor="middle" font-size="15" fill="#343a40"><tspan font-weight="700" fill="#212529">Read only</tspan>,</text>
-<text x="345" y="220" text-anchor="middle" font-size="15" fill="#343a40">writes <tspan font-weight="700" fill="#212529">TODO.md</tspan></text>
-<rect x="1000" y="142" width="170" height="112" rx="14" fill="#a5d8ff" stroke="#343a40" stroke-width="2.5"/>
-<text x="1085" y="172" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Review: Sonnet</text>
-
-<text x="1085" y="198" text-anchor="middle" font-size="15" fill="#343a40"><tspan font-weight="700" fill="#212529">Fresh context</tspan>,</text>
-<text x="1085" y="220" text-anchor="middle" font-size="15" fill="#343a40">checks the diff</text>
-<rect x="460" y="342" width="170" height="112" rx="14" fill="#b2f2bb" stroke="#343a40" stroke-width="2.5"/>
-<text x="545" y="372" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Subtasks: Haiku</text>
-<text x="545" y="398" text-anchor="middle" font-size="15" fill="#343a40"><tspan font-weight="700" fill="#212529">One worker</tspan> each,</text>
-<text x="545" y="420" text-anchor="middle" font-size="15" fill="#343a40">ticks its <tspan font-weight="700" fill="#212529">TODO</tspan> line</text>
+<text x="345" y="173" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Plan: Lead</text>
+<text x="345" y="198" text-anchor="middle" font-size="15" fill="#343a40">Writes TODO.md, asks</text>
+<text x="345" y="220" text-anchor="middle" font-size="15" fill="#343a40">you directly</text>
+<rect x="1000" y="342" width="170" height="112" rx="14" fill="#b2f2bb" stroke="#343a40" stroke-width="2.5"/>
+<text x="1085" y="373" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Review: Sonnet</text>
+<text x="1085" y="398" text-anchor="middle" font-size="15" fill="#343a40">Fresh context,</text>
+<text x="1085" y="420" text-anchor="middle" font-size="15" fill="#343a40">reads the diff</text>
+<rect x="460" y="142" width="170" height="112" rx="14" fill="#a5d8ff" stroke="#343a40" stroke-width="2.5"/>
+<text x="545" y="173" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Build: Lead</text>
+<text x="545" y="198" text-anchor="middle" font-size="15" fill="#343a40">Every subtask, one</text>
+<text x="545" y="220" text-anchor="middle" font-size="15" fill="#343a40">commit, ticks TODO</text>
 <rect x="60" y="542" width="170" height="112" rx="14" fill="#ffec99" stroke="#343a40" stroke-width="2.5"/>
-<text x="145" y="572" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Branch</text>
-
+<text x="145" y="573" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Branch</text>
 <text x="145" y="598" text-anchor="middle" font-size="15" fill="#343a40">Cut from the</text>
-
-<text x="145" y="620" text-anchor="middle" font-size="15" fill="#343a40"><tspan font-weight="700" fill="#212529">default branch</tspan></text>
-
+<text x="145" y="620" text-anchor="middle" font-size="15" fill="#343a40">default branch</text>
 <rect x="1000" y="542" width="170" height="112" rx="14" fill="#ffec99" stroke="#343a40" stroke-width="2.5"/>
-<text x="1085" y="572" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Open PR</text>
-
+<text x="1085" y="573" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Open PR</text>
 <text x="1085" y="598" text-anchor="middle" font-size="15" fill="#343a40">Push and open</text>
 <text x="1085" y="620" text-anchor="middle" font-size="15" fill="#343a40">the PR</text>
 <rect x="1220" y="542" width="170" height="112" rx="14" fill="#ffec99" stroke="#343a40" stroke-width="2.5"/>
-<text x="1305" y="572" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Watch CI</text>
-
+<text x="1305" y="573" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Watch CI</text>
 <text x="1305" y="598" text-anchor="middle" font-size="15" fill="#343a40">Watch the checks,</text>
-<text x="1305" y="620" text-anchor="middle" font-size="15" fill="#343a40"><tspan font-weight="700" fill="#212529">red</tspan> goes to fixes</text>
+<text x="1305" y="620" text-anchor="middle" font-size="15" fill="#343a40">red goes to fixes</text>
 <rect x="1440" y="542" width="170" height="112" rx="14" fill="#ffec99" stroke="#343a40" stroke-width="2.5"/>
-<text x="1525" y="572" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Merge by level</text>
-
-<text x="1525" y="598" text-anchor="middle" font-size="15" fill="#343a40"><tspan font-weight="700" fill="#212529">Off</tspan>, <tspan font-weight="700" fill="#212529">On-green</tspan>,</text>
-<text x="1525" y="620" text-anchor="middle" font-size="15" fill="#343a40">or <tspan font-weight="700" fill="#212529">Full</tspan></text>
-<rect x="700" y="336" width="340" height="124" rx="14" fill="#ffc9c9" stroke="#c92a2a" stroke-width="2.5" stroke-dasharray="9 6"/>
-<text x="870" y="364" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Fix and retry</text>
-
-<text x="870" y="388" text-anchor="middle" font-size="14" fill="#343a40">A failed subtask, review gap, or red CI</text>
-<text x="870" y="407" text-anchor="middle" font-size="14" fill="#343a40">1. <tspan font-weight="700" fill="#212529">Haiku</tspan> worker tries once</text>
-<text x="870" y="426" text-anchor="middle" font-size="14" fill="#343a40">2. <tspan font-weight="700" fill="#212529">Sonnet</tspan> worker tries, full context</text>
-<text x="870" y="445" text-anchor="middle" font-size="14" fill="#343a40">Still failing: <tspan font-weight="700" fill="#212529">stop and report</tspan></text>
+<text x="1525" y="573" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Merge</text>
+<text x="1525" y="597" text-anchor="middle" font-size="14" fill="#343a40">autopilot: merges</text>
+<text x="1525" y="618" text-anchor="middle" font-size="14" fill="#343a40">checkpoint: asks first</text>
+<text x="1525" y="638" text-anchor="middle" font-size="14" fill="#343a40">adapt: local only</text>
 <polyline points="145,257 145,539" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
 <polyline points="233,598 317,598 317,257" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
-<polyline points="373,257 373,398 457,398" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
-<polyline points="545,339 545,198 997,198" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
-<polyline points="1085,257 1085,539" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
+<polyline points="432,198 458,198" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
+<polyline points="545,257 545,598 700,598" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
+<polyline points="1085,457 1085,539" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
 <polyline points="1173,598 1217,598" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
 <polyline points="1393,598 1437,598" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
-<polyline points="649,398 697,398" fill="none" stroke="#c92a2a" stroke-width="2" stroke-dasharray="8 6" marker-start="url(#r)" marker-end="url(#r)"/>
-<polyline points="1020,257 1020,333" fill="none" stroke="#c92a2a" stroke-width="2" stroke-dasharray="8 6" marker-start="url(#r)" marker-end="url(#r)"/>
-<polyline points="1305,657 1305,675 870,675 870,463" fill="none" stroke="#c92a2a" stroke-width="2" stroke-dasharray="8 6" marker-start="url(#r)" marker-end="url(#r)"/>
+<rect x="1220" y="336" width="340" height="124" rx="14" fill="#ffc9c9" stroke="#c92a2a" stroke-width="2" stroke-dasharray="8 6"/>
+<text x="1390" y="367" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Fix and retry</text>
+<text x="1390" y="387" text-anchor="middle" font-size="14" fill="#343a40">A failed check, review gap, or red CI</text>
+<text x="1390" y="408" text-anchor="middle" font-size="14" fill="#343a40">1. Lead fixes, one try</text>
+<text x="1390" y="428" text-anchor="middle" font-size="14" fill="#343a40">2. Lead retries with the full log</text>
+<text x="1390" y="448" text-anchor="middle" font-size="14" fill="#343a40">Still failing: stop and report</text>
 <rect x="60" y="690" width="1570" height="96" rx="14" fill="#f8f9fa" stroke="#343a40" stroke-width="2.5"/>
-<text x="845" y="730" text-anchor="middle" font-size="17" fill="#212529"><tspan font-weight="700" fill="#212529">Hooks</tspan> guard every step.</text>
-<text x="845" y="758" text-anchor="middle" font-size="17" fill="#212529">Commit and PR names, <tspan font-weight="700" fill="#212529">no trailer</tspan>, <tspan font-weight="700" fill="#212529">workflow mode</tspan>, <tspan font-weight="700" fill="#212529">read only</tspan> planning.</text>
+<text x="845" y="729" text-anchor="middle" font-size="17" fill="#212529"><tspan font-weight="700" fill="#212529">Hooks</tspan> guard every step.</text>
+<text x="845" y="757" text-anchor="middle" font-size="17" fill="#212529">Commit and PR names, <tspan font-weight="700" fill="#212529">no trailer</tspan>, <tspan font-weight="700" fill="#212529">protected paths</tspan>, <tspan font-weight="700" fill="#212529">workflow mode</tspan>, <tspan font-weight="700" fill="#212529">read only</tspan> planning.</text>
+<text x="1630" y="80" text-anchor="end" font-size="15" fill="#495057">one loop for every task: the lead plans only when the diff is more than one sentence</text>
+<rect x="700" y="542" width="170" height="112" rx="14" fill="#ffec99" stroke="#343a40" stroke-width="2.5"/>
+<text x="785" y="573" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Full gate</text>
+<text x="785" y="598" text-anchor="middle" font-size="15" fill="#343a40">Once per commit,</text>
+<text x="785" y="620" text-anchor="middle" font-size="15" fill="#343a40">recorded</text>
+<polyline points="873,598 935,598 935,398 1000,398" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
+<polyline points="1173,398 1217,398" fill="none" stroke="#c92a2a" stroke-width="2" stroke-dasharray="8 6" marker-end="url(#r)" marker-start="url(#r)"/>
+<polyline points="1305,542 1305,463" fill="none" stroke="#c92a2a" stroke-width="2" stroke-dasharray="8 6" marker-end="url(#r)" marker-start="url(#r)"/>
 </svg>
