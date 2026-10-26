@@ -16,6 +16,10 @@ Upgrading: `/dotagent:scale` and the `large` run are gone, and so are the planne
 - `ship` is a small core plus `references/plan.md` and `references/merge.md`, read when that step comes. A one sentence task never loads the plan layout or the merge steps, and the core is about half the size it was.
 - `/dotagent <task>` stays as the short form of `ship`. It no longer triggers by itself, so it does not compete with `ship`.
 
+### The workflow modes are local, ask, and auto
+
+- `adapt` is now `local` (stops at local commits, never pushes), `checkpoint` is now `ask` (asks for your yes before any push, PR, or merge), `autopilot` is now `auto` (finishes every PR to the merge and goes on to the next, the default). The old names still work as aliases, in the config file and in `/dotagent:workflow`, and are saved under the new name. A wrong value or a broken file still means `local`.
+
 ### The gate runs once per commit
 
 - `sh hooks/run.sh gate run <command>` runs the repo gate and records the HEAD only when the command exits 0 (it refuses a tree with uncommitted changes to tracked files). `gate check` prints `ok` or `stale`, also `stale` after an edit to a tracked file. The lead, the reviewer, and `continue` read it, so nothing runs the gate twice on one commit. `continue` checks it before any new work.
