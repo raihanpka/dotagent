@@ -13,12 +13,11 @@ taskboard-backend/
 ├── Makefile                            # build, fmt, fmt-check, lint, test, ci
 ├── AGENTS.md                           # commands, modules, rules
 ├── CLAUDE.md                           # @AGENTS.md
-├── .dotagent/config.json               # scale small, merge off, protected go.mod and go.sum
-├── .claude/settings.json               # allow Workflow
+├── .dotagent/config.json               # workflow checkpoint, protected go.mod and go.sum
 ├── .github/                            # PR template, PR example, ci-pr.yml, ci-default.yml
 ├── .githooks/                          # commit-msg, pre-commit, pre-push
 └── docs/                               # README, ARCHITECTURE, CONVENTIONS, DOTAGENT-SETUP, TODO.example
 ```
 
 Start with `docs/DOTAGENT-SETUP.md`: decisions, files to review, open items.
-`docs/TODO.example.md` is not setup output. The planner writes `docs/TODO.md` per task, untracked and replaced by the next task, and the example shows one halfway through.
+`docs/TODO.example.md` is not setup output. The lead writes `docs/TODO.md` per task, untracked and replaced by the next task, and the example shows one halfway through.
