@@ -1,5 +1,5 @@
 ---
-description: "Pick how every run ends. autopilot: push, open PRs, merge, and move to the next task by itself. checkpoint: the same work, but asks for your yes before any push, PR, or merge. adapt: asks first, minimal setup, one local branch, never pushes. No argument shows the saved settings."
+description: "Pick how far a run goes on its own. adapt: stops at local commits, never pushes. checkpoint: asks for your yes before any push, PR, or merge. autopilot: goes all the way to the merge. No argument shows the saved settings."
 argument-hint: "[autopilot|checkpoint|adapt]"
 disable-model-invocation: true
 ---
@@ -11,4 +11,4 @@ Modes:
 With an argument run `sh "${CLAUDE_SKILL_DIR}/../../hooks/run.sh" set workflow <argument>`.
 With none run `sh "${CLAUDE_SKILL_DIR}/../../hooks/run.sh" show`. Reply with the output and one line: the mode now in use.
 The command rejects any other value. Never edit `.dotagent/config.json` by hand.
-End the reply with one line `next:` `/dotagent:ship <task>`, or `/dotagent:scale` to change the size of the run.
+End the reply with one line `next:` `/dotagent:ship <task>`.

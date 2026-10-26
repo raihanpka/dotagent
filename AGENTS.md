@@ -18,7 +18,7 @@ A Claude Code plugin: skills, agents, a guard hook, and templates for a small ag
 ## Modules
 
 - `plugin/hooks/`: the guard (`guard.py`) and its shell entry (`run.sh`). Public interface: `run.sh`. May depend on: nothing in the repo.
-- `plugin/skills/`: the commands `setup`, `ship`, `workflow`, `scale`, `dotagent`. Public interface: each `SKILL.md`. May depend on: `hooks/run.sh`, `agents/`, `templates/`.
+- `plugin/skills/`: the commands `setup`, `ship`, `workflow`, `dotagent`. Public interface: each `SKILL.md`. May depend on: `hooks/run.sh`, `agents/`, `templates/`.
 - `plugin/agents/`: `reviewer`, the one subagent. May depend on: nothing in the repo.
 - `plugin/templates/`: files copied into a user's repo, mirroring its paths. May depend on: nothing.
 - `tests/`: the guard tests and the skill tests. May depend on: `plugin/`.
