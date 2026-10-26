@@ -39,7 +39,7 @@ WRITE = re.compile(
 TODO = os.path.join("docs", "TODO.md")
 RUNS = os.path.join(".dotagent", "runs.jsonl")  # one line per subagent spawned this session
 PHASE = os.path.join(".dotagent", "phase")
-GATE = os.path.join(".dotagent", "gate")  # the HEAD sha the repo gate last passed at, written by `run.sh gate pass`
+GATE = os.path.join(".dotagent", "gate")  # the HEAD sha the repo gate last passed at, written by `run.sh gate run`
 APPROVED = os.path.join(".dotagent", "approved")  # written by `run.sh approve` after the user said yes in the chat
 PHASE_TTL = 3600  # a forgotten plan marker must never lock a repo for long
 SKIP_READ = re.compile(
@@ -331,10 +331,17 @@ def cli(args):
     if args[:1] == ["gate"] and args[1:] == ["check"]:
         print(gate_check())
         return
-    if args[:1] == ["gate"] and args[1:] == ["pass"]:
+    if args[:1] == ["gate"] and len(args) > 2 and args[1] == "run":
+        # Runs the repo gate and records the commit only when it exits 0, so a record always means the command passed.
         head = clean_head()
         if not head:
-            sys.exit("gate pass needs a git repo with no uncommitted change to tracked files, commit first")
+            sys.exit("gate run needs a git repo with no uncommitted change to tracked files, commit first")
+        try:
+            code = subprocess.run(args[2:], cwd=project_dir()).returncode
+        except OSError as err:
+            sys.exit(f"gate run could not start {args[2]}: {err}")
+        if code != 0 or clean_head() != head:
+            sys.exit(code or 1)
         path = os.path.join(project_dir(), GATE)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as handle:
@@ -362,7 +369,7 @@ def cli(args):
         print("phase=" + args[1])
         return
     if len(args) != 3 or args[0] != "set":
-        sys.exit("usage: guard.py show | hooks | receipt | status | approve | gate pass|check | set <key> <value> | phase plan|build|done")
+        sys.exit("usage: guard.py show | hooks | receipt | status | approve | gate run <command>|check | set <key> <value> | phase plan|build|done")
     key, value = args[1], args[2]
     if key == "scale":
         sys.exit("scale was removed, the ship skill sizes the run itself: a one sentence diff has no plan")

@@ -358,7 +358,7 @@ mkdir -p "$g" && git -C "$g" init -q && git -C "$g" config user.email t@t && git
 printf 'a\n' > "$g/a.txt" && git -C "$g" add a.txt && git -C "$g" commit -qm "feat(a): add a"
 gate() { CLAUDE_PROJECT_DIR=$g sh "$guard" gate "$@"; }
 [ "$(gate check)" = stale ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate check with no record: $(gate check)"; }
-gate pass >/dev/null
+gate run true >/dev/null
 [ "$(gate check)" = ok ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate check after pass: $(gate check)"; }
 printf 'b\n' >> "$g/a.txt"
 [ "$(gate check)" = stale ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate check after an edit: $(gate check)"; }
@@ -370,7 +370,16 @@ printf 'b\n' >> "$g/a.txt" && git -C "$g" commit -qam "feat(a): add b"
 n="$tmp/nogit"
 mkdir -p "$n"
 [ "$(CLAUDE_PROJECT_DIR=$n sh "$guard" gate check)" = stale ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate check outside git"; }
-CLAUDE_PROJECT_DIR=$n sh "$guard" gate pass >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL gate pass outside git"; } || pass=$((pass + 1))
+CLAUDE_PROJECT_DIR=$n sh "$guard" gate run true >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL gate run outside git"; } || pass=$((pass + 1))
+# a failing gate records nothing and its exit code comes back, a gate on a dirty tree is refused, and a missing command is an error
+gate run sh -c 'exit 3' >/dev/null 2>&1; [ $? -eq 3 ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate run does not return the exit code"; }
+[ "$(gate check)" = stale ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL a failing gate left a record: $(gate check)"; }
+gate run true >/dev/null && [ "$(gate check)" = ok ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate run true did not record"; }
+printf 'c\n' >> "$g/a.txt"
+gate run true >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL gate run on a dirty tree"; } || pass=$((pass + 1))
+git -C "$g" checkout -q a.txt
+gate run no-such-command-here >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL gate run of a missing command"; } || pass=$((pass + 1))
+gate pass >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL gate pass still exists"; } || pass=$((pass + 1))
 
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]
