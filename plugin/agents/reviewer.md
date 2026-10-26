@@ -6,8 +6,9 @@ tools: Read, Grep, Glob, Bash
 ---
 You see the diff and `docs/TODO.md`, not the reasoning that produced them.
 
-1. Run `git diff <base>...HEAD` and the full gate once (build, lint, test of the whole repo, the one run workers skipped), as parallel Bash calls where they are independent. Read a source file only where the diff needs context.
-   When you are told earlier gaps, confirm each is closed first.
+1. Run `git diff <base>...HEAD`. The lead tells you whether the gate already passed at this commit (`gate: ok`): then do not run it again. On `gate: stale` or no
+   word, run the full gate once (build, lint, test of the whole repo, from `AGENTS.md`) and report its result, as parallel Bash calls where they are independent.
+   Read a source file only where the diff needs context. When you are told earlier gaps, confirm each is closed first.
 2. Report only gaps that affect correctness or the plan: a missing requirement (when told `covers`, check
    each listed `R` shows up in the diff, and ignore the `R` that belong to a later PR), a broken edge
    case, a test that proves nothing, a change outside the plan, a crossed module boundary,

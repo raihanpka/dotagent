@@ -41,6 +41,14 @@ Prefer harness tools to shell: Grep and Glob to find, Read with offset and limit
 reading over many files send the `Explore` agent and keep only its summary. Watch CI in the background. Agents cannot start
 agents, so only you spawn.
 
+## Delegating
+
+Every spawn (`Explore`, `reviewer`) gets three lines, so it does not guess or repeat work:
+
+- **Objective:** one line, what to find or check, for which PR (the base branch, the `covers`).
+- **Output:** the shape you want back. `reviewer`: `clean` or a numbered list of gaps with `path:line` and the fix. `Explore`: `path:line` hits only.
+- **Boundaries:** read only, the files in scope, and what is already done (for the reviewer, whether `gate check` says `ok`).
+
 ## Style skills
 
 Invoke each skill in `style=` once with the Skill tool before you start (skip `none` and any not installed). They change how you
@@ -175,7 +183,9 @@ Whatever the user typed after `continue` is extra guidance, apply it.
 - The plan is yours to revise. When the work differs from it (a missing subtask, another file), update `docs/TODO.md` first and say in
   one line what changed. When a file outside the PR's `files:` must change, a hook refuses the edit: add the path to `files:` only when
   the task needs it, and tell the user when a protected path needs a change.
-- Spawn `reviewer` when the subtasks are done. Fix the gaps, then open the PR.
+- When the subtasks are done run `sh "$RUN" gate check`. On `stale` run the repo's full gate once (build, lint, test) and, when it is
+  green, `sh "$RUN" gate pass`. Then spawn `reviewer` with the brief from Delegating. Fix the gaps, run the gate again if code changed,
+  then open the PR.
 
 Whatever the size, text the user pastes after the task, such as requirements from product, is
 input to the plan. Never summarize it away, keep it verbatim.
@@ -214,7 +224,7 @@ side, and the default branch stays linear with one commit per PR. The squash bod
 Cloud (autopilot, checkpoint), in this order:
 
 1. `git fetch origin` and `git rebase origin/<default>`. On a conflict fix as in Limits, never `--skip` or `--abort` to hide it.
-2. Run the full gate once. Then `git push --force-with-lease`, on your own branch only (the hook refuses `--force`). Wait for CI.
+2. The rebase moved HEAD, so run the full gate once and `gate pass`. Then `git push --force-with-lease`, on your own branch only (the hook refuses `--force`). Wait for CI.
 3. Read the PR commits now, after the rebase, because the hashes changed: `gh pr view <n> --json commits -q '.commits[] | "- \(.oid[0:7]) \(.messageHeadline)"'`.
    Also check `.commits[].messageBody` for a `Co-Authored-By`, `Signed-off-by`, or "Generated with" line. If one is there, stop and report:
    GitHub copies such a trailer into the squash commit and it cannot be removed from the default branch afterwards.
@@ -235,7 +245,8 @@ required review, report it instead. If the repo does not allow squash merging (`
 
 - End every run, and every stop, with `sh "$RUN" receipt`, and put its line in your report. It lists the subagents that really
   ran (`subagents: reviewer 1`).
-- Before `gh pr create`, run the full gate once (the repo's build, lint, and test). Subtask checks covered only their module.
+- Before `gh pr create`, `sh "$RUN" gate check` must say `ok`. If it says `stale`, run the full gate (the repo's build, lint, and test),
+  then `gate pass`. Subtask checks covered only their module, and the gate runs once per commit, not once per agent.
 - A hook refuses an edit outside the PR's `files:` and any path in `protected`. Do not work around either.
 - To keep the lead context small on a long plan, the user can run `sh "${CLAUDE_SKILL_DIR}/../../hooks/loop.sh"`: one fresh
   `claude -p` per PR, resumed from `docs/TODO.md`.
