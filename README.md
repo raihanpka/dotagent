@@ -8,7 +8,7 @@ So I made my own, *small on purpose*, built on engineering habits I trust. I wan
 works once you adapt it to your
 repo. The generic parts are here, the parts that depend on your code are yours to fill in.
 
-- Small on purpose: a few skills, three agents, one hook script, one config file.
+- Small on purpose: a few skills, one subagent (the reviewer), one hook script, one config file.
 - Habits behind each rule are listed in `docs/PRACTICES.md`, so you can judge which to keep.
 
 ![the dotagent workflow](docs/workflow.svg)
@@ -158,8 +158,9 @@ One file, `.dotagent/config.json`, per machine and ignored by git (written by `r
 ### how a run works
 
 - One path for every task. If the whole diff fits one sentence there is no plan: change, check, commit, PR. Otherwise the lead plans read only, writing only `docs/TODO.md`, and builds each subtask itself, one commit each. Ambiguity becomes a question with a recommended answer, never a guess, and the lead revises the plan when the work differs from it.
-- The repo gate (build, lint, test) runs once per commit: `run.sh gate pass` records it, `gate check` says `ok` or `stale`, so the lead, the reviewer, and a `continue` do not repeat it.
+- The repo gate (build, lint, test) runs once per commit: `run.sh gate run <the gate command>` runs it and records the commit only when it exits 0, `gate check` says `ok` or `stale`, so the lead, the reviewer, and a `continue` do not repeat it.
 - A fresh `reviewer` checks the diff against the plan before the PR. `Explore` reads wide. Every spawn gets an objective, an output shape, and boundaries. A failure gets two tries from the lead, then it stops.
+- The ship skill is a small core plus two references, `plan.md` and `merge.md`, read when that step comes, so a one sentence task never loads the rest.
 - A PR is reviewable in one sitting, 3 to 8 subtasks. `docs/TODO.md` is the report and the state, so a new session announces unfinished work.
 - Git hooks (`pre-commit`, `commit-msg`, `pre-push`) check every commit and push by anyone, so CI stays green.
 - A merge is a rebase onto the latest default branch, then a squash whose body lists each commit with its hash.
@@ -193,7 +194,7 @@ dotagent/
 ├── .claude-plugin/marketplace.json   # points at plugin/, only plugin/ is downloaded
 ├── plugin/                           # everything that installs
 │   ├── SETUP.md  AGENTS.md           # setup interview, generic working rules
-│   ├── hooks/  agents/  skills/      # guard.py, reviewer, dotagent ship workflow setup
+│   ├── hooks/  agents/  skills/      # guard.py, reviewer, dotagent ship (core + references) workflow setup
 │   └── templates/                    # mirrors a repo 1:1: .github, .claude, .githooks, .dotagent, docs
 ├── examples/                         # what setup generated for a real repo
 ├── CHANGELOG.md                      # versions, set only in plugin.json
@@ -212,6 +213,10 @@ To release: bump `version` in `plugin/.claude-plugin/plugin.json`, add a `## <ve
 
 - Built for my own workflow.
 - Tried on small tasks, not yet on a big repo. A long run keeps one context, `hooks/loop.sh` gives each PR a fresh one.
+- The single loop is not measured yet. `docs/BENCHMARK.md` has two tasks for it, `t1` and `t6`, and run 1 measured the old design.
+- The guard hook runs on every `Bash`, `Write`, `Edit`, and `Read` call, and the 500 line read block can add reads. Neither is measured.
+- The gate record is bookkeeping the agent trusts, CI is the real check. Codex and Antigravity have no guard hook, so the gate rule there is only a step in the skill.
+- `examples/` was written from the templates by hand, setup is an interview and was not run again.
 - Tried on Windows and macOS, Python comes from the device.
 - Found something? Open an issue.
 
