@@ -39,6 +39,7 @@ WRITE = re.compile(
 TODO = os.path.join("docs", "TODO.md")
 RUNS = os.path.join(".dotagent", "runs.jsonl")  # one line per subagent spawned this session
 PHASE = os.path.join(".dotagent", "phase")
+GATE = os.path.join(".dotagent", "gate")  # the HEAD sha the repo gate last passed at, written by `run.sh gate pass`
 APPROVED = os.path.join(".dotagent", "approved")  # written by `run.sh approve` after the user said yes in the chat
 PHASE_TTL = 3600  # a forgotten plan marker must never lock a repo for long
 SKIP_READ = re.compile(
@@ -186,6 +187,28 @@ def git_hooks():
     return "on" if found.replace("\\", "/").rstrip("/").endswith(".githooks") else "off"
 
 
+def clean_head():
+    # The HEAD sha when no tracked file differs from it, else "". Empty also outside a git repo.
+    base = ["git", "-C", project_dir()]
+    try:
+        head = subprocess.run(base + ["rev-parse", "HEAD"], capture_output=True, text=True, timeout=5)
+        dirty = subprocess.run(base + ["status", "--porcelain", "--untracked-files=no"], capture_output=True, text=True, timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return head.stdout.strip() if head.returncode == 0 and dirty.returncode == 0 and not dirty.stdout.strip() else ""
+
+
+def gate_check():
+    # "ok" when the gate passed at this exact commit and nothing tracked changed since, else "stale". Bookkeeping the
+    # agent trusts, CI is the real check.
+    head = clean_head()
+    try:
+        with open(os.path.join(project_dir(), GATE), encoding="utf-8") as handle:
+            return "ok" if head and handle.read().strip() == head else "stale"
+    except OSError:
+        return "stale"
+
+
 def todo_prs():
     # The PRs in docs/TODO.md that still have an unticked subtask or no done: line, as (title, body).
     try:
@@ -305,6 +328,20 @@ def cli(args):
     if args[:1] == ["status"]:
         print(len(unfinished()))
         return
+    if args[:1] == ["gate"] and args[1:] == ["check"]:
+        print(gate_check())
+        return
+    if args[:1] == ["gate"] and args[1:] == ["pass"]:
+        head = clean_head()
+        if not head:
+            sys.exit("gate pass needs a git repo with no uncommitted change to tracked files, commit first")
+        path = os.path.join(project_dir(), GATE)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(head)
+        ensure_ignored()
+        print("gate passed at " + head[:7])
+        return
     if args[:1] == ["approve"]:
         path = os.path.join(project_dir(), APPROVED)
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -325,7 +362,7 @@ def cli(args):
         print("phase=" + args[1])
         return
     if len(args) != 3 or args[0] != "set":
-        sys.exit("usage: guard.py show | hooks | receipt | status | approve | set <key> <value> | phase plan|build|done")
+        sys.exit("usage: guard.py show | hooks | receipt | status | approve | gate pass|check | set <key> <value> | phase plan|build|done")
     key, value = args[1], args[2]
     if key in CHOICES and value not in CHOICES[key]:
         sys.exit(f"{key} must be one of: {', '.join(CHOICES[key])}")

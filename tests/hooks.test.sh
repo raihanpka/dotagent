@@ -332,5 +332,25 @@ out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
 case "$out" in *"setup=minimal hooks=declined"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL answers in the session line: $out" ;; esac
 cfg '{}'
 
+# the gate is recorded per commit: ok at the same HEAD, stale after a commit, an edit, or with no record
+g="$tmp/gate"
+mkdir -p "$g" && git -C "$g" init -q && git -C "$g" config user.email t@t && git -C "$g" config user.name t
+printf 'a\n' > "$g/a.txt" && git -C "$g" add a.txt && git -C "$g" commit -qm "feat(a): add a"
+gate() { CLAUDE_PROJECT_DIR=$g sh "$guard" gate "$@"; }
+[ "$(gate check)" = stale ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate check with no record: $(gate check)"; }
+gate pass >/dev/null
+[ "$(gate check)" = ok ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate check after pass: $(gate check)"; }
+printf 'b\n' >> "$g/a.txt"
+[ "$(gate check)" = stale ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate check after an edit: $(gate check)"; }
+git -C "$g" checkout -q a.txt
+[ "$(gate check)" = ok ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate check after the edit is undone: $(gate check)"; }
+printf 'b\n' >> "$g/a.txt" && git -C "$g" commit -qam "feat(a): add b"
+[ "$(gate check)" = stale ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate check after a commit: $(gate check)"; }
+[ "$(git -C "$g" status --porcelain)" = "" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate record is not ignored: $(git -C "$g" status --porcelain)"; }
+n="$tmp/nogit"
+mkdir -p "$n"
+[ "$(CLAUDE_PROJECT_DIR=$n sh "$guard" gate check)" = stale ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL gate check outside git"; }
+CLAUDE_PROJECT_DIR=$n sh "$guard" gate pass >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL gate pass outside git"; } || pass=$((pass + 1))
+
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]
