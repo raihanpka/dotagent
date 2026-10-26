@@ -22,7 +22,7 @@ A Claude Code plugin: skills, agents, a guard hook, and templates for a small ag
 - `plugin/agents/`: `reviewer`, the one subagent. May depend on: nothing in the repo.
 - `plugin/templates/`: files copied into a user's repo, mirroring its paths. May depend on: nothing.
 - `tests/`: the guard tests and the skill tests. May depend on: `plugin/`.
-- `benchmark/`, `examples/`, `scripts/`: measurement, the example app, the release notes script. May read `plugin/`, never written back by it.
+- `benchmark/`, `examples/`, `scripts/`: measurement, the example app, the release notes script and the diagram svg script. May read `plugin/`, never written back by it.
 
 ## Rules
 

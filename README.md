@@ -107,7 +107,6 @@ Copy from `plugin/` and edit. Fill every `{{...}}`. `plugin/SETUP.md` lists the 
 
 - Claude Code caches a plugin per version, so you get a change when the version in `plugin.json` goes up. `CHANGELOG.md` says what changed.
 - To try the repo as it is: `claude --plugin-dir ./plugin`.
-- From 0.2.x: `merge` became `workflow` (`on-green` and `full` are now `auto`, `off` is now `ask`), and a merge is always a squash. From 0.3.x: `autopilot`, `checkpoint`, and `adapt` are now `auto`, `ask`, and `local`. The old names still work and are saved under the new one.
 
 ## use
 
@@ -145,7 +144,7 @@ One file, `.dotagent/config.json`, per machine and ignored by git (written by `r
 
 | Key | Default | Values |
 |---|---|---|
-| `workflow` | `auto` | `auto`, `ask`, `local` (the old `autopilot`, `checkpoint`, `adapt` still work) |
+| `workflow` | `auto` | `auto`, `ask`, `local` |
 | `em_dash`, `emoji` | `block` | `block`, `allow` |
 | `style_skills` | `none` | comma separated skills, such as `caveman,ponytail:lite` |
 | `protected` | empty | globs no agent may edit, such as `db/migrations/**,.github/CODEOWNERS` |
@@ -199,6 +198,7 @@ dotagent/
 ├── examples/                         # what setup generated for a real repo
 ├── CHANGELOG.md                      # versions, set only in plugin.json
 ├── scripts/release-notes.sh          # release notes: the CHANGELOG section plus the commits since the last tag
+├── scripts/workflow-svg.py           # draws docs/workflow.svg from docs/workflow.excalidraw (run it after editing the diagram)
 ├── .github/workflows/release.yml     # tags and releases a version when it is bumped on main
 ├── docs/                             # PRACTICES.md, BENCHMARK.md, workflow diagram (svg, excalidraw)
 └── tests/                            # hook tests, skill tests
@@ -209,7 +209,7 @@ change run `bash tests/hooks.test.sh` and `node --test tests/ship.test.mjs tests
 
 To release: bump `version` in `plugin/.claude-plugin/plugin.json`, add a `## <version>` section to `CHANGELOG.md`, and push to `main`. The release workflow runs the tests, tags `v<version>`, and publishes the release with that section and the commits since the last tag.
 
-## known gaps or bugs?
+## known gaps or bugs
 
 - Built for my own workflow.
 - Tried on small tasks, not yet on a big repo. A long run keeps one context, `hooks/loop.sh` gives each PR a fresh one.

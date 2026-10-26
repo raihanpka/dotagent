@@ -19,7 +19,7 @@ The plugin is what users install. Everything else in the repo tests it, measures
 | `plugin/agents/` | `reviewer`, the one subagent | nothing in the repo | each `.md` |
 | `plugin/templates/` | files copied into a user's repo | nothing in the repo | the repo path it mirrors |
 | `tests/` | `hooks.test.sh`, `ship.test.mjs`, `skills.test.mjs`, `marketplace.test.mjs` | `plugin/` | the four files |
-| `benchmark/`, `examples/`, `scripts/` | measurement, the example app, the release notes script | `plugin/`, read only | their `README.md` |
+| `benchmark/`, `examples/`, `scripts/` | measurement, the example app, the release notes script and the diagram svg script | `plugin/`, read only | their `README.md` |
 
 ## Current violations
 

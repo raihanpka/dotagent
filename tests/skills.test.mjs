@@ -2,6 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 
 const skill = readFileSync(new URL('../plugin/templates/.agents/skills/dotagent-ship/SKILL.md', import.meta.url), 'utf8')
 const front = skill.match(/^---\n([\s\S]*?)\n---/)
@@ -47,4 +48,9 @@ test('the body names no tool that only Claude Code has', () => {
 test('the root skill is the same file as the template copy', () => {
   const root = readFileSync(new URL('../skills/dotagent-ship/SKILL.md', import.meta.url), 'utf8')
   assert.equal(root, skill)
+})
+
+test('docs/workflow.svg is drawn from docs/workflow.excalidraw', () => {
+  const run = spawnSync('python3', ['scripts/workflow-svg.py', '--check'], { cwd: new URL('..', import.meta.url), encoding: 'utf8' })
+  assert.equal(run.status, 0, run.stderr)
 })
