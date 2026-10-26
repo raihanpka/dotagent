@@ -40,8 +40,9 @@ test('each Codex agent file has a name, a description, and developer instruction
 })
 
 test('the body names no tool that only Claude Code has', () => {
+  const body = skill.replaceAll('.dotagent/run.sh', '')
   for (const tool of ['AskUserQuestion', 'ToolSearch', 'Workflow', 'Agent', 'run.sh', 'phase plan']) {
-    assert.ok(!skill.includes(tool), `found ${tool}`)
+    assert.ok(!body.includes(tool), `found ${tool}`)
   }
 })
 

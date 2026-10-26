@@ -65,9 +65,15 @@ one, leave it out of the file and add a line to the open items in `docs/DOTAGENT
 | `docs/ARCHITECTURE.md` | `plugin/templates/docs/ARCHITECTURE.md` |
 | `docs/DOTAGENT-SETUP.md` | `plugin/templates/docs/DOTAGENT-SETUP.md` (the checklist, see step 6) |
 | `.codex/agents/reviewer.toml` | `plugin/templates/.codex/agents/reviewer.toml` (Codex only, see below) |
+| `.dotagent/guard.py` | `plugin/hooks/guard.py` (optional, see below) |
+| `.dotagent/run.sh` | `plugin/hooks/run.sh` (optional, see below) |
 
 The `.codex/agents/reviewer.toml` file is the one subagent role for Codex: it checks the diff in a fresh context before the PR. You plan and
 build yourself. Write it only when you can run subagents. Agents without subagents review in a fresh pass, yourself.
+
+The two `.dotagent/` files are optional. They give you `sh .dotagent/run.sh gate run <the gate command>` and `gate check`, so the whole change is
+gated once per commit and the result is recorded (needs Python 3.8 or newer). Nothing else in them runs outside Claude Code: no hook enforces a rule
+for you, only the git hooks and the CI do. `run.sh` keeps `.dotagent/` out of git through `.git/info/exclude`, so every clone fetches them again.
 
 Then append to the repo's `.gitignore`, skipping any line already there: `docs/DOTAGENT-SETUP.md` and `docs/TODO.md`.
 Tell the user which lines you added.
