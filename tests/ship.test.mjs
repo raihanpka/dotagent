@@ -72,6 +72,16 @@ test('the TODO layout keeps the fields the guard reads', () => {
   for (const field of ['## PR 1:', 'files:', 'done:', '- [ ]', 'branch:', 'needs:']) assert.ok(plan.includes(field), `no ${field}`)
 })
 
+test('the ship skill and setup follow a repo flow that is not the default', () => {
+  const merge = read('references/merge.md')
+  for (const token of ['merge=', 'base=', '--rebase', 'merge_method']) assert.ok(merge.includes(token), `merge.md does not mention ${token}`)
+  for (const token of ['types=', 'scope=', 'base=', 'merge=']) assert.ok(skill.includes(token), `SKILL.md does not mention ${token}`)
+  const setup = readFileSync(new URL('../plugin/SETUP.md', import.meta.url), 'utf8')
+  for (const key of ['merge_method', 'commit_types', 'commit_scope', 'base_branch']) assert.ok(setup.includes(key), `SETUP.md does not save ${key}`)
+  assert.match(setup, /A flow the plugin does not support/)
+  assert.match(setup, /set workflow local/)
+})
+
 test('the three modes are local, ask, and auto', () => {
   const merge = read('references/merge.md')
   for (const mode of ['local', 'ask', 'auto']) assert.ok(merge.includes(`**${mode}**`), `merge.md does not explain ${mode}`)

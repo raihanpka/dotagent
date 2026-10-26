@@ -16,7 +16,8 @@ work, see Start.
   - `${CLAUDE_SKILL_DIR}/references/merge.md` before you push, open a PR, or merge: the workflow modes, the PR, CI, the squash.
 
 Read the `[dotagent] workflow=... read-limit=... style=...` line from session start. It comes from the saved settings
-(it may end with `protected=...`, `setup=...`, `hooks=...`, `big_plan=...`), and `workflow=auto` is the default.
+(it may end with `protected=...`, `setup=...`, `hooks=...`, `big_plan=...`), and `workflow=auto` is the default. A repo flow that is not the
+default adds `merge=`, `types=`, `scope=`, or `base=` to that line: follow them, they come from `/dotagent:setup`.
 `RUN` is `${CLAUDE_SKILL_DIR}/../../hooks/run.sh`. If it also says `unfinished`, `docs/TODO.md` holds work
 that is not done yet.
 
@@ -28,8 +29,8 @@ If a `[dotagent] first run` line is there, do what it says before anything else:
    `AGENTS.md`, CI, or PR template are written, the plan still goes to `docs/TODO.md`.
 3. Save the answers: `sh "$RUN" set workflow auto`, `set setup minimal` for going on. Then do the task.
 
-A task is one or more PRs, each cut from the default branch. Commits are atomic and one
-line, `type(scope): summary`. Hooks enforce the format and the names.
+A task is one or more PRs, each cut from the default branch (the `base=` branch when the line has one). Commits are atomic and one
+line, `type(scope): summary`, with the repo's own `types=` and an optional scope when the line says so. Hooks enforce the format and the names.
 
 ## Questions
 

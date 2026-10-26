@@ -11,6 +11,9 @@ You tick Reviewed once you have read it.
 | em dash and emoji | {{block (default) or allow}} | {{reason}} |
 | companion skills | {{plan, build, style skills, or none}} | {{reason}} |
 | commit scopes | {{list}} | {{reason}} |
+| merge method | {{squash (default), merge, or rebase}} | {{reason, for example the repo does not allow squash}} |
+| commit types and scope | {{the default list, or the repo's own list, scope required or optional}} | {{reason}} |
+| base branch | {{the default branch, or the branch PRs target}} | {{reason}} |
 | git hooks on | {{yes (`git config core.hooksPath .githooks`) or no}} | {{reason}} |
 
 ## Generated files

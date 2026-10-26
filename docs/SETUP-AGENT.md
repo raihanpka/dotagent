@@ -41,6 +41,15 @@ Round 2 (needs round 1):
 - Commit scopes: recommend the scope words from the commit history.
 - Git hooks: turn them on with `git config core.hooksPath .githooks`. Recommend yes.
 
+Flow check, before round 3. Read it from the repo, ask only when you cannot find it:
+
+- The remote host (`git remote get-url origin`), the merge methods the repo allows (`gh repo view --json squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed`),
+  the branch PRs target (`gh pr list --state merged -L 30 --json baseRefName`), and the commit types and scope the last 30 subjects use.
+- Nothing here reads a config file, so write what differs from the default (merge method, commit types, optional scope, base branch) in the
+  decisions of `docs/DOTAGENT-SETUP.md`, and keep `.githooks/commit-msg` in line with the commit types.
+- When the host is not GitHub, there is no remote, `gh` is missing, or work does not go through PRs, say so and skip the PR gate in round 3 and the
+  PR steps of the ship skill: commits stay on one local branch and the user pushes them. Write an open item for it.
+
 Round 3:
 
 - PR gate: a workflow that runs the test command on each pull request. Recommend yes.

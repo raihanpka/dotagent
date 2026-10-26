@@ -145,6 +145,9 @@ One file, `.dotagent/config.json`, per machine and ignored by git (written by `r
 | Key | Default | Values |
 |---|---|---|
 | `workflow` | `auto` | `auto`, `ask`, `local` |
+| `merge_method` | `squash` | `squash`, `merge`, `rebase`, how a PR merges |
+| `commit_types`, `commit_scope` | the default list, `required` | a comma separated list of types, and `optional` when the repo writes `feat: add x` |
+| `base_branch` | the default branch | the branch PRs target, such as `develop` |
 | `em_dash`, `emoji` | `block` | `block`, `allow` |
 | `style_skills` | `none` | comma separated skills, such as `caveman,ponytail:lite` |
 | `protected` | empty | globs no agent may edit, such as `db/migrations/**,.github/CODEOWNERS` |
@@ -215,7 +218,7 @@ To release: bump `version` in `plugin/.claude-plugin/plugin.json`, add a `## <ve
 - Tried on small tasks, not yet on a big repo. A long run keeps one context, `hooks/loop.sh` gives each PR a fresh one.
 - The single loop works end to end (5 runs, all resolved, one subagent, the reviewer) but is not faster or cheaper than plain Claude Code: about 2.5x the wall clock and 1.8x the cost on two tasks, and no faster than the old design on `t1`. `docs/BENCHMARK.md` has the numbers and the next test, skipping the reviewer for a one sentence diff.
 - The guard hook runs on every `Bash`, `Write`, `Edit`, and `Read` call. It costs about 40 ms a call on macOS (60 calls timed), so 200 calls add about 8 s. The 500 line read block can add reads, that is not measured.
-- A repo with an unusual flow is only half adapted. Setup follows the repo's habits (names, CI, templates, docs), but `ship` and the guard always want `type(scope): summary` commits, a squash merge after a rebase, a PR cut from the default branch, and GitHub with `gh`. Use `local` there.
+- Setup reads the repo's flow and saves it: the commit types and whether a scope is used, the merge method the repo allows, and the branch PRs target, and `ship` and the guard follow them. A flow they cannot follow (a host that is not GitHub, no remote, no `gh`, work without PRs) makes setup choose `local` and write an open item. A commit style with no type at all still does not fit the hook. None of this was tried on a real repo with such a flow yet, only in the guard tests.
 - The gate record is bookkeeping the agent trusts, CI is the real check. Codex and Antigravity have no guard hook, so the gate rule there is only a step in the skill.
 - `examples/` was written from the templates by hand, setup is an interview and was not run again.
 - Tried on Windows and macOS, Python comes from the device.

@@ -73,6 +73,15 @@ Note the scope words, the branch prefix, and whether PR titles carry a type. Als
 inventory: every file in `.github/workflows/`, its `on:` triggers, `gh workflow list --all` for
 disabled ones, and commented or `if: false` jobs.
 
+Also read the flow, because `ship` and the guard assume one and a repo may use another:
+
+- The host: `git remote get-url origin`. Only GitHub with `gh` signed in (`gh auth status`) supports the PR, CI, and merge steps.
+- The merge methods the repo allows: `gh repo view --json squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed`.
+- Whether work goes through PRs at all: `gh pr list --state merged -L 30 --json baseRefName`. No merged PRs, or commits straight on the
+  default branch, means a trunk flow without PRs.
+- The branch PRs target: the `baseRefName` of those PRs, which is not always the default branch.
+- The commit types and whether a scope is used, from the last 30 subjects.
+
 ## 2. Install the plugin
 
 ```
@@ -89,6 +98,10 @@ Settings live in one file, `.dotagent/config.json`, local to the machine and ign
   agent from writing either into files, commits, and PR text.
   No skill or template states this as a rule, the config is the only place.
 - `style_skills` [none]: comma separated skills to invoke at the start of a run, see step 3.
+- `merge_method` [squash]: `squash`, `merge`, or `rebase`, how a PR merges. Set it when the repo does not allow squash.
+- `commit_types` [feat, fix, hotfix, docs, style, refactor, test, chore, perf, revert, ci, build]: comma separated, for a repo with its own list.
+- `commit_scope` [required]: `optional` when the repo writes `feat: add x` without a scope.
+- `base_branch` [the default branch]: the branch PRs target when it is not the default one, such as `develop`.
 
 ## 3. Grill the user, in rounds
 
@@ -144,9 +157,11 @@ Round 2 (needs the architecture and the commands):
   the rest. Ask what the shared library is called and what may depend on what.
 - **Naming.** Follow what step 1 found: the repo's scope words, branch prefix, and PR title style, as
   the recommended answer, and record them in `AGENTS.md`. Only a new repo gets a fresh list, usually the
-  module names. The hook needs `type(scope): summary` for a commit and `type: summary` or
-  `type(scope): summary` for a PR title. If the repo's habit does not fit that, say so and ask
-  whether to adopt it, do not silently change the habit. A name never carries a plan label: no
+  module names. The hook defaults to `type(scope): summary` for a commit and `type: summary` or
+  `type(scope): summary` for a PR title. When the repo's habit differs only in the list of types or in
+  leaving the scope out, save it instead of forcing the default: `sh hooks/run.sh set commit_types <list>` and
+  `set commit_scope optional`, and put the same list in `types=` of `.githooks/commit-msg`. When the habit has no type at all
+  (free text), the hook cannot allow it: say so and ask whether to adopt `type(scope): summary`, do not silently change the habit. A name never carries a plan label: no
   `milestone-1`, `task-2`, `slice 3`, and no "finishing task". Say what changed. Tell the user.
 - **Trailers.** Do not ask. A commit or PR carries no Co-Authored-By trailer and no "Generated with" line, the hook and `.githooks/commit-msg` refuse them.
 - **Protected paths.** Files no agent should edit even when the task seems to need it: migrations, CODEOWNERS, lockfiles, secrets, deploy config. Recommend what the repo has. Save them with `sh hooks/run.sh set protected "<glob>,<glob>"`.
@@ -154,7 +169,14 @@ Round 2 (needs the architecture and the commands):
   hand, the rule goes in `AGENTS.md`. Do not block reading them, debugging needs it.
 - **Default branch.** Find it (`git symbolic-ref refs/remotes/origin/HEAD`, or `gh repo view --json defaultBranchRef`).
   A repo may merge PRs into another branch such as `dev`: ask which branch PRs target and use that
-  one as `{{default-branch}}` everywhere. Never write `main` unless the repo says so.
+  one as `{{default-branch}}` everywhere and save it with `sh hooks/run.sh set base_branch <branch>`. Never write `main` unless the repo says so.
+- **Merge method.** `squash` unless the repo does not allow it. Then ask which of the allowed methods to use, recommend the one the
+  recent merged PRs used, and save it with `sh hooks/run.sh set merge_method <method>`.
+- **A flow the plugin does not support.** A host that is not GitHub, no remote, `gh` missing or not signed in, or a trunk flow without PRs.
+  Do not ask and do not let `ship` run into the guard later: say so in two lines, save `sh hooks/run.sh set workflow local`, skip the `.github/`
+  rows of step 4 (CI workflows, PR template, PR example), and write an open item in `docs/DOTAGENT-SETUP.md`:
+  "PR, CI, and merge need GitHub and gh. This repo uses <what you found>, so the workflow is local: commits stay on one local branch and you
+  push and merge them yourself."
 - **CI.** Two workflows, each with one trigger, so a branch push never runs CI twice:
   - `ci-pr.yml` runs on `pull_request` only. It is the gate. What a PR check usually holds, in order
     of cost: format check, lint (and type check where the language has one), build, unit tests, a
@@ -209,7 +231,8 @@ Between rounds, run the checks the answers make possible:
   `eslint-plugin-boundaries` or `dependency-cruiser`, Python `import-linter`, Java ArchUnit.
 
 After the rounds, save `sh hooks/run.sh set setup full` and write the workflow setting with
-`sh hooks/run.sh set workflow <v>` (and `set style_skills <list>` when chosen).
+`sh hooks/run.sh set workflow <v>` (and `set style_skills <list>` when chosen). Save the repo flow only where it differs from the default:
+`set merge_method`, `set commit_types`, `set commit_scope`, `set base_branch`.
 
 ## 4. Generate, then show
 

@@ -29,7 +29,7 @@ The workflow mode decides who acts:
   yes ("yes", "approve", "ya"). After a yes run `sh "$RUN" approve` (it covers one PR), then go on. Without it the hook asks the user itself.
 - **local**: never push, open a PR, or merge on the remote. See By workflow.
 
-Always rebase first, then squash. The branch sits on the latest default branch, so a stale branch or a conflict shows up on your
+By default a merge is a squash, and `merge=merge` or `merge=rebase` on the session line means the repo merges that way (see Merge method below). A PR targets the `base=` branch when the line has one, so read `<default>` below as that branch. Always rebase first, then squash. The branch sits on the latest default branch, so a stale branch or a conflict shows up on your
 side, and the default branch stays linear with one commit per PR. The squash body lists each commit with its hash.
 
 Cloud (auto, ask), in this order:
@@ -50,4 +50,12 @@ branch, so the hashes in the body still resolve.
 
 A commit message and a PR title never carry `(#<n>)`, GitHub adds it. A hook refuses it, and `--merge`, `--rebase`, `--admin`, `--force`,
 a body that is not a commit list, and any trailer. The subject's number must be the PR you are merging. Never bypass a required check or a
-required review, report it instead. If the repo does not allow squash merging (`gh repo view --json squashMergeAllowed`), stop and say so.
+required review, report it instead.
+
+## Merge method
+
+The method is `merge=` on the session line, squash when it is missing. With `merge=merge` run `gh pr merge <n> --merge --delete-branch`, with `merge=rebase`
+run `gh pr merge <n> --rebase --delete-branch`. Neither needs a subject or a commit list, and the guard refuses the other methods and `--admin`.
+Rebase onto the base branch and push with `--force-with-lease` first, as for a squash, and read the commits for a trailer before you merge.
+If GitHub refuses the method (`gh repo view --json squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed` shows which are allowed), stop, ask the user
+which one to use, and save it with `sh "$RUN" set merge_method <squash|merge|rebase>`.

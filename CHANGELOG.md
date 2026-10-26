@@ -20,6 +20,11 @@ Upgrading: `/dotagent:scale` and the `large` run are gone, and so are the planne
 
 - `adapt` is now `local` (stops at local commits, never pushes), `checkpoint` is now `ask` (asks for your yes before any push, PR, or merge), `autopilot` is now `auto` (finishes every PR to the merge and goes on to the next, the default). The old names still work as aliases, in the config file and in `/dotagent:workflow`, and are saved under the new name. A wrong value or a broken file still means `local`.
 
+### A repo flow that is not the default
+
+- Setup reads the remote host, the merge methods the repo allows, the branch PRs target, and the commit habit, and saves what differs: `merge_method` (`squash`, `merge`, or `rebase`), `commit_types`, `commit_scope` (`required` or `optional`), and `base_branch`. The guard checks commits, PR titles, and `gh pr merge` against them, and the session line shows them, so `ship` follows the same flow. The defaults are unchanged.
+- When the flow is one the plugin cannot follow (a host that is not GitHub, no remote, `gh` missing, or work without PRs), setup saves `workflow local`, skips the CI and PR template files, and writes an open item in `docs/DOTAGENT-SETUP.md`, so a run does not hit the guard halfway.
+
 ### The gate runs once per commit
 
 - `sh hooks/run.sh gate run <command>` runs the repo gate and records the HEAD only when the command exits 0 (it refuses a tree with uncommitted changes to tracked files). `gate check` prints `ok` or `stale`, also `stale` after an edit to a tracked file. The lead, the reviewer, and `continue` read it, so nothing runs the gate twice on one commit. `continue` checks it before any new work.
