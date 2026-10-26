@@ -65,7 +65,6 @@
 <rect x="60" y="690" width="1570" height="96" rx="14" fill="#f8f9fa" stroke="#343a40" stroke-width="2.5"/>
 <text x="845" y="729" text-anchor="middle" font-size="17" fill="#212529"><tspan font-weight="700" fill="#212529">Hooks</tspan> guard every step.</text>
 <text x="845" y="757" text-anchor="middle" font-size="17" fill="#212529">Commit and PR names, <tspan font-weight="700" fill="#212529">no trailer</tspan>, <tspan font-weight="700" fill="#212529">protected paths</tspan>, <tspan font-weight="700" fill="#212529">workflow mode</tspan>, <tspan font-weight="700" fill="#212529">read only</tspan> planning.</text>
-<text x="1630" y="80" text-anchor="end" font-size="15" fill="#495057">one loop for every task: the lead plans only when the diff is more than one sentence</text>
 <rect x="700" y="542" width="170" height="112" rx="14" fill="#ffec99" stroke="#343a40" stroke-width="2.5"/>
 <text x="785" y="573" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Full gate</text>
 <text x="785" y="598" text-anchor="middle" font-size="15" fill="#343a40">Once per commit,</text>
