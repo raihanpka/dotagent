@@ -49,8 +49,10 @@ SKIP_READ = re.compile(
 
 
 # Allowed values per setting, the first one is the default. A missing or invalid value falls back to it.
+# The workflow modes were autopilot, checkpoint, and adapt before 0.4.0. The old names still work and are saved under the new one.
+MODE_ALIASES = {"autopilot": "auto", "checkpoint": "ask", "adapt": "local"}
 CHOICES = {
-    "workflow": ("autopilot", "checkpoint", "adapt"),
+    "workflow": ("auto", "ask", "local"),
     "em_dash": ("block", "allow"),
     "emoji": ("block", "allow"),
 }
@@ -119,16 +121,17 @@ def load(base=None):
 
 
 def workflow_mode(raw, broken):
-    # autopilot pushes and merges by itself, checkpoint asks before anything leaves the machine, adapt never pushes.
-    # A wrong value or a broken file means adapt, the mode that sends nothing, so a typo never turns pushing on.
-    # The old `merge` key is read once: on-green and full were autopilot, off stopped before the merge (checkpoint).
+    # auto pushes and merges by itself, ask stops for your yes before anything leaves the machine, local never pushes.
+    # A wrong value or a broken file means local, the mode that sends nothing, so a typo never turns pushing on.
+    # The old `merge` key is read once: on-green and full were auto, off stopped before the merge (ask).
     if broken:
-        return "adapt"
+        return "local"
     if "workflow" in raw:
-        return raw["workflow"] if raw["workflow"] in CHOICES["workflow"] else "adapt"
+        mode = MODE_ALIASES.get(raw["workflow"], raw["workflow"])
+        return mode if mode in CHOICES["workflow"] else "local"
     if "merge" in raw:
-        return {"on-green": "autopilot", "full": "autopilot", "off": "checkpoint"}.get(raw["merge"], "adapt")
-    return "autopilot"
+        return {"on-green": "auto", "full": "auto", "off": "ask"}.get(raw["merge"], "local")
+    return "auto"
 
 
 def raw_config():
@@ -273,7 +276,7 @@ def first_run():
         files = []
     folders = len({f.split("/")[0] for f in files if "/" in f})
     return (
-        f"[dotagent] first run: no .dotagent/config.json, so the defaults apply (workflow=autopilot) to a repo of "
+        f"[dotagent] first run: no .dotagent/config.json, so the defaults apply (workflow=auto) to a repo of "
         f"{len(files)} tracked files in {folders} top-level folders. The first time the ship skill runs, say in two lines: that "
         "each PR merges by itself when the review is clean and CI is green and the run goes on until every PR is merged or a stop, "
         "and that /dotagent:workflow changes it. Then ask once whether to set up first (recommended) or go on with only a TODO, "
@@ -371,6 +374,8 @@ def cli(args):
     if len(args) != 3 or args[0] != "set":
         sys.exit("usage: guard.py show | hooks | receipt | status | approve | gate run <command>|check | set <key> <value> | phase plan|build|done")
     key, value = args[1], args[2]
+    if key == "workflow":
+        value = MODE_ALIASES.get(value, value)
     if key == "scale":
         sys.exit("scale was removed, the ship skill sizes the run itself: a one sentence diff has no plan")
     if key in CHOICES and value not in CHOICES[key]:
@@ -454,10 +459,10 @@ def ask(reason):
 def gate(kind):
     # Push, pull request, and merge follow the workflow mode.
     mode = opt("WORKFLOW")
-    if mode == "adapt":
-        block(f"workflow is adapt: nothing leaves this machine, so no {kind}. Keep the commits local and tell the user.")
-    if mode == "checkpoint" and not approved():
-        ask(f"workflow is checkpoint: the {kind} needs your yes. Ask in the chat first, and after a yes run `sh run.sh approve`.")
+    if mode == "local":
+        block(f"workflow is local: nothing leaves this machine, so no {kind}. Keep the commits local and tell the user.")
+    if mode == "ask" and not approved():
+        ask(f"workflow is ask: the {kind} needs your yes. Ask in the chat first, and after a yes run `sh run.sh approve`.")
 
 
 def no_label(text, where):

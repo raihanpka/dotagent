@@ -142,7 +142,7 @@ expect "a config copy in a subfolder is not the config" 0 "{\"tool_name\":\"Writ
 
 # set validates and writes the config
 set_out="$(sh "$guard" set workflow adapt)"
-[ "$set_out" = "workflow=adapt" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set merge: $set_out"; }
+[ "$set_out" = "workflow=local" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set merge: $set_out"; }
 sh "$guard" set workflow sometimes >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL set accepts a bad value"; } || pass=$((pass + 1))
 sh "$guard" set color red >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL set accepts a bad key"; } || pass=$((pass + 1))
 cfg '{}'
@@ -191,7 +191,7 @@ expect "read missing ok" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\
 # session start prints the active settings
 cfg '{"scale":"large","merge":"full","style_skills":"caveman"}'
 out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
-case "$out" in *"scale"*) fail=$((fail + 1)); echo "FAIL session line still names the scale: $out" ;; *"workflow=autopilot"*"style=caveman"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL session start: $out" ;; esac
+case "$out" in *"scale"*) fail=$((fail + 1)); echo "FAIL session line still names the scale: $out" ;; *"workflow=auto"*"style=caveman"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL session start: $out" ;; esac
 
 # git hooks: shipped and on, shipped and off, or not shipped
 g="$tmp/gitproj"
@@ -251,7 +251,7 @@ case "$out" in "subagents: none") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); e
 # first run line and protected in the session line
 rm -f "$tmp/proj/.dotagent/config.json"
 out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
-case "$out" in *"scale"*) fail=$((fail + 1)); echo "FAIL first run line names the scale: $out" ;; *"first run"*"workflow=autopilot"*"tracked files"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL first run line: $out" ;; esac
+case "$out" in *"scale"*) fail=$((fail + 1)); echo "FAIL first run line names the scale: $out" ;; *"first run"*"workflow=auto"*"tracked files"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL first run line: $out" ;; esac
 cfg '{"scale":"medium","protected":"go.sum"}'
 out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
 case "$out" in *"first run"*) fail=$((fail + 1)); echo "FAIL first run shown with a config: $out" ;; *"protected=go.sum"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL protected in line: $out" ;; esac
@@ -276,7 +276,7 @@ case "$out" in *"first run"*) fail=$((fail + 1)); echo "FAIL first run after sav
 out="$(sh "$guard" set scale medium 2>&1)" && { fail=$((fail + 1)); echo "FAIL set scale is accepted"; } || case "$out" in *"scale was removed"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL set scale hint: $out" ;; esac
 cfg '{"scale":"large"}'
 out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
-case "$out" in *"first run"*|*"scale"*) fail=$((fail + 1)); echo "FAIL an old scale key: $out" ;; *"workflow=autopilot"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old scale session line: $out" ;; esac
+case "$out" in *"first run"*|*"scale"*) fail=$((fail + 1)); echo "FAIL an old scale key: $out" ;; *"workflow=auto"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old scale session line: $out" ;; esac
 cfg '{}'
 
 # workflow modes: autopilot, checkpoint, adapt
@@ -302,17 +302,42 @@ case "$out" in *'"permissionDecision"'*) fail=$((fail + 1)); echo "FAIL checkpoi
 expect "checkpoint merges after a yes" 0 "$(bash_json "gh pr merge 5 $SQ")"
 out="$(ask_out "$(bash_json "gh pr merge 5 $SQ")")"
 case "$out" in *'"permissionDecision": "ask"'*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a yes covers more than one PR: $out" ;; esac
+# the modes are local, ask, and auto. The old names adapt, checkpoint, and autopilot stay as aliases and are saved under the new name
+cfg '{"workflow":"local"}'
+expect "local never pushes" 2 "$(bash_json 'git push origin feat/a')"
+expect "local never merges on the remote" 2 "$(bash_json "gh pr merge 5 $SQ")"
+expect "local keeps local commits" 0 "$(bash_json 'git commit -m "feat(a): add a"')"
+cfg '{"workflow":"auto"}'
+expect "auto pushes" 0 "$(bash_json 'git push origin feat/a')"
+expect "auto merges" 0 "$(bash_json "gh pr merge 5 $SQ")"
+cfg '{"workflow":"ask"}'
+rm -f "$tmp/proj/.dotagent/approved"
+out="$(ask_out "$(bash_json 'git push origin feat/a')")"
+case "$out" in *'"permissionDecision": "ask"'*"workflow is ask"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL ask does not ask: $out" ;; esac
+sh "$guard" approve >/dev/null
+out="$(ask_out "$(bash_json 'git push origin feat/a')")"
+case "$out" in *'"permissionDecision"'*) fail=$((fail + 1)); echo "FAIL ask asks after a yes: $out" ;; *) pass=$((pass + 1)) ;; esac
+for pair in "autopilot auto" "checkpoint ask" "adapt local" "auto auto" "ask ask" "local local"; do
+  set -- $pair
+  [ "$(sh "$guard" set workflow "$1")" = "workflow=$2" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set workflow $1 is not saved as $2"; }
+done
+cfg '{"workflow":"adapt"}'
+case "$(sh "$guard" show)" in *"workflow=local"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old adapt in the file: $(sh "$guard" show)" ;; esac
+cfg '{"workflow":"checkpoint"}'
+case "$(sh "$guard" show)" in *"workflow=ask"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old checkpoint in the file: $(sh "$guard" show)" ;; esac
+cfg '{"workflow":"autopilot"}'
+case "$(sh "$guard" show)" in *"workflow=auto"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old autopilot in the file: $(sh "$guard" show)" ;; esac
 # the old merge key is read once
 cfg '{"merge":"on-green"}'
-case "$(sh "$guard" show)" in *"workflow=autopilot"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old on-green: $(sh "$guard" show)" ;; esac
+case "$(sh "$guard" show)" in *"workflow=auto"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old on-green: $(sh "$guard" show)" ;; esac
 cfg '{"merge":"full"}'
-case "$(sh "$guard" show)" in *"workflow=autopilot"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old full: $(sh "$guard" show)" ;; esac
+case "$(sh "$guard" show)" in *"workflow=auto"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old full: $(sh "$guard" show)" ;; esac
 cfg '{"merge":"off"}'
-case "$(sh "$guard" show)" in *"workflow=checkpoint"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old off: $(sh "$guard" show)" ;; esac
+case "$(sh "$guard" show)" in *"workflow=ask"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old off: $(sh "$guard" show)" ;; esac
 cfg '{"merge":"sometimes"}'
-case "$(sh "$guard" show)" in *"workflow=adapt"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old typo: $(sh "$guard" show)" ;; esac
+case "$(sh "$guard" show)" in *"workflow=local"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old typo: $(sh "$guard" show)" ;; esac
 cfg 'not json'
-case "$(sh "$guard" show)" in *"workflow=adapt"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL broken file: $(sh "$guard" show)" ;; esac
+case "$(sh "$guard" show)" in *"workflow=local"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL broken file: $(sh "$guard" show)" ;; esac
 cfg '{}'
 
 # force push, and the hash list in a local squash commit
