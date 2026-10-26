@@ -1,7 +1,7 @@
 {
   "name": "dotagent",
-  "version": "0.3.1",
-  "description": "A minimalist agent swarm workflow: clear requirements in, clean pull request out. The portable ship skill for Codex and other agents that read .agents/skills.",
+  "version": "0.4.0",
+  "description": "A minimalist single-loop agent workflow: clear requirements in, clean pull request out. The portable ship skill for Codex and other agents that read .agents/skills.",
   "author": {
     "name": "Raihan Putra Kirana",
     "url": "https://github.com/raihanpka"
