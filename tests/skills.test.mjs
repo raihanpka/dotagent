@@ -43,3 +43,8 @@ test('the body names no tool that only Claude Code has', () => {
     assert.ok(!skill.includes(tool), `found ${tool}`)
   }
 })
+
+test('the root skill is the same file as the template copy', () => {
+  const root = readFileSync(new URL('../skills/dotagent-ship/SKILL.md', import.meta.url), 'utf8')
+  assert.equal(root, skill)
+})
