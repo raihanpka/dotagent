@@ -174,6 +174,7 @@ One file, `.dotagent/config.json`, per machine and ignored by git (written by `r
 - push, PR, and merge follow the workflow: `checkpoint` asks first, `adapt` refuses
 - while building, no edit outside the PR's `files:` list in `docs/TODO.md`, and none in a `protected` path
 - no whole read of a file over 500 lines
+- no `rm` or `git rm` of a test file, a removed test hides a failure
 - `sh hooks/run.sh receipt` prints which subagents really ran (`reviewer 1, Explore 2`)
 
 </details>
