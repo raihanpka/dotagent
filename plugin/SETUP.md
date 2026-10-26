@@ -32,7 +32,7 @@ Steps 0 to 3 only read and ask. Do not enter Claude Code plan mode, it would blo
 write later. Write nothing until the user has answered the rounds in step 3.
 
 Setup runs once. If `.dotagent/config.json` and `docs/DOTAGENT-SETUP.md` both exist, stop and say:
-already set up, change settings with `/dotagent:scale` and `/dotagent:workflow` or edit the file, and
+already set up, change settings with `/dotagent:workflow` or edit the file, and
 delete both files to run setup again. If the config says `setup` is `minimal`, the user only went on with a
 TODO before: run the full setup now and save `set setup full` at the end.
 
@@ -81,11 +81,9 @@ disabled ones, and commented or `if: false` jobs.
 ```
 
 Settings live in one file, `.dotagent/config.json`, local to the machine and ignored by git. Setup writes it with
-`sh hooks/run.sh set <key> <value>`, the same command behind `/dotagent:scale` and
+`sh hooks/run.sh set <key> <value>`, the same command behind
 `/dotagent:workflow`. Unset means the value in brackets.
 
-- `scale` [medium]: `small` for a solo or tiny repo, `medium` for most, `large` for many modules
-  or a team.
 - `workflow` [autopilot]: `autopilot`, `checkpoint`, or `adapt`, see round 1. Say what each does in a sentence.
 - `em_dash` [block] and `emoji` [block]: the agent writes neither, the default. Set `allow` only when the user asks. It stops the
   agent from writing either into files, commits, and PR text.
@@ -123,7 +121,7 @@ suggest depends on the repo:
   on it (usually a modular monolith with vertical slices for one team, split services only when the
   need is proven). Give the best practice and the reason in two lines, and ask whether they agree. They
   can change it, record what they choose.
-- **Any other question they cannot answer** (scale, workflow, CI split, scopes): give the
+- **Any other question they cannot answer** (workflow, CI split, scopes): give the
   recommended option from the repo and the best practice behind it, and go on. A guess goes to open items
   in `docs/DOTAGENT-SETUP.md` when it is a guess and not something you checked.
 
@@ -136,7 +134,6 @@ Round 1 (no prerequisites):
   slices by feature or horizontal layers. Record the answer and the reason in `ARCHITECTURE.md`.
   If the user is unsure, see When the user is unsure: describe what the code shows in an established
   repo, recommend a simple architecture in a new one.
-- **Scale.** `small`, `medium`, or `large` (the default for runs). Recommend `medium`.
 - **Workflow.** `autopilot` (pushes, opens each PR, merges when the review is clean and CI is green, goes on), `checkpoint` (the same, but asks for a yes in the chat before any push, PR, or merge), or `adapt` (asks first, minimal setup, one local branch, never pushes). Recommend `autopilot` only when `ci-pr.yml` is a required status check, else `checkpoint`.
 
 Round 2 (needs the architecture and the commands):
@@ -211,8 +208,8 @@ Between rounds, run the checks the answers make possible:
   for the language: Dart `import_lint`, Go `internal/` plus `depguard`, TypeScript
   `eslint-plugin-boundaries` or `dependency-cruiser`, Python `import-linter`, Java ArchUnit.
 
-After the rounds, save `sh hooks/run.sh set setup full` and write the workflow settings with `sh hooks/run.sh set scale <v>` and
-`set workflow <v>` (and `set style_skills <list>` when chosen).
+After the rounds, save `sh hooks/run.sh set setup full` and write the workflow setting with
+`sh hooks/run.sh set workflow <v>` (and `set style_skills <list>` when chosen).
 
 ## 4. Generate, then show
 
@@ -251,7 +248,7 @@ items in `docs/DOTAGENT-SETUP.md`.
 
 Run build, lint, and test once. Check the git hooks are on with `sh hooks/run.sh hooks`, it must print `on`,
 then run `.githooks/pre-commit` once to see it pass. Run `bash tests/hooks.test.sh` from the dotagent checkout
-if it is available. Offer one tiny task on `scale=small` as a smoke test.
+if it is available. Offer one tiny task, a one sentence diff, as a smoke test.
 
 ## 6. Commit and report
 

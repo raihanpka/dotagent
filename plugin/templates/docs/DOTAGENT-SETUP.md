@@ -7,7 +7,6 @@ You tick Reviewed once you have read it.
 
 | Setting | Value | Why |
 |---|---|---|
-| scale | {{small, medium, or large}} | {{reason}} |
 | workflow | {{autopilot, checkpoint, or adapt}} | {{reason}} |
 | em dash and emoji | {{block (default) or allow}} | {{reason}} |
 | companion skills | {{plan, build, style skills, or none}} | {{reason}} |

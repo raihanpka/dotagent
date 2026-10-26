@@ -34,7 +34,6 @@ Ask only about what you could not find.
 Round 1 (no prerequisites):
 
 - Commands: the build, the lint, and one test command. Recommend what the repo already uses.
-- Scale: `small`, `medium`, or `large`. Recommend `medium` for most repos, `small` for one maintainer.
 
 Round 2 (needs round 1):
 
