@@ -26,7 +26,7 @@ test('every raw file the setup guide fetches exists in the repo', () => {
 })
 
 test('each Codex agent file has a name, a description, and developer instructions, and no Claude tool', () => {
-  for (const role of ['planner', 'worker', 'reviewer']) {
+  for (const role of ['reviewer']) {
     const toml = readFileSync(new URL(`../plugin/templates/.codex/agents/${role}.toml`, import.meta.url), 'utf8')
     assert.match(toml, new RegExp(`^name = "${role}"$`, 'm'))
     assert.match(toml, /^description = ".+"$/m)

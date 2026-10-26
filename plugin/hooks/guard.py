@@ -293,7 +293,7 @@ def log_spawn(tool_input):
 
 
 def receipt():
-    # `planner 1, worker 4, reviewer 1` for this session, or `none`.
+    # `reviewer 1, Explore 2` for this session, or `none`.
     counts = {}
     try:
         with open(os.path.join(project_dir(), RUNS), encoding="utf-8") as handle:
@@ -594,7 +594,7 @@ def on_write(tool_input):
     rel = rel_path(path)
     if matches(rel, opt("PROTECTED").split(",")):
         block(f"{rel} is a protected path (`protected` in .dotagent/config.json). Leave it and tell the user what needs to change.")
-    # While building, a worker edits only the files the plan lists for the PR, so a stray edit shows up at once.
+    # While building, the lead edits only the files the plan lists for the PR, so a stray edit shows up at once.
     if phase() == "build" and not is_path(path, TODO):
         allowed = pr_files()
         if allowed and not matches(rel, allowed):

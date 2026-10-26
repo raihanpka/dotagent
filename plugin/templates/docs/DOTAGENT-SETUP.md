@@ -27,7 +27,6 @@ You tick Reviewed once you have read it.
 | `docs/README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md` | `templates/docs/` | [ ] | [ ] |
 | `.dotagent/config.json` | `templates/.dotagent/config.json`, set with `run.sh`, ignored by git | [ ] | [ ] |
 | `.gitignore` | adds `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, `docs/TODO.md` | [ ] | [ ] |
-| `.claude/settings.json` | `templates/.claude/settings.json`: allow `Workflow` for the large scale | [ ] | [ ] |
 
 ## Open items
 

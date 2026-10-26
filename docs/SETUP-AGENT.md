@@ -65,13 +65,10 @@ one, leave it out of the file and add a line to the open items in `docs/DOTAGENT
 | `.githooks/pre-push` | `plugin/templates/.githooks/pre-push` (replace the test lines with the repo's test command) |
 | `docs/ARCHITECTURE.md` | `plugin/templates/docs/ARCHITECTURE.md` |
 | `docs/DOTAGENT-SETUP.md` | `plugin/templates/docs/DOTAGENT-SETUP.md` (the checklist, see step 6) |
-| `.codex/agents/planner.toml` | `plugin/templates/.codex/agents/planner.toml` (Codex only, see below) |
-| `.codex/agents/worker.toml` | `plugin/templates/.codex/agents/worker.toml` (Codex only) |
-| `.codex/agents/reviewer.toml` | `plugin/templates/.codex/agents/reviewer.toml` (Codex only) |
+| `.codex/agents/reviewer.toml` | `plugin/templates/.codex/agents/reviewer.toml` (Codex only, see below) |
 
-The three `.codex/agents/` files are the swarm roles for Codex: the planner plans, one worker per subtask builds, the reviewer
-checks before the PR. Write them only when you can run subagents, and leave out the rest of this table's Codex rows otherwise.
-Agents without subagents do the same steps one at a time, yourself.
+The `.codex/agents/reviewer.toml` file is the one subagent role for Codex: it checks the diff in a fresh context before the PR. You plan and
+build yourself. Write it only when you can run subagents. Agents without subagents review in a fresh pass, yourself.
 
 Then append to the repo's `.gitignore`, skipping any line already there: `docs/DOTAGENT-SETUP.md` and `docs/TODO.md`.
 Tell the user which lines you added.

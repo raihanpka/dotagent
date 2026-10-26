@@ -14,8 +14,8 @@ hook are Claude Code only, so skip step 2. Everything else still applies:
   - Any agent with the skills CLI (Antigravity CLI, Codex): `npx skills add raihanpka/dotagent --skill dotagent-ship -a codex -a antigravity-cli -y`.
     Without `--skill` it also installs the Claude Code skills, which need Claude Code.
   - By hand: copy `templates/.agents/skills/dotagent-ship/SKILL.md` to that path.
-- Codex runs the swarm too, with subagents. Copy `templates/.codex/agents/*.toml` to `.codex/agents/`: the planner, one
-  worker per subtask, and the reviewer. Agents without subagents skip those files and do the steps themselves.
+- Codex can run the reviewer as a subagent. Copy `templates/.codex/agents/reviewer.toml` to `.codex/agents/`. Agents without
+  subagents skip that file and review in a fresh pass themselves.
 - Write `AGENTS.md`, `docs/`, and the `.github`, `.githooks` files from step 4 as usual. Set the git hooks on with
   `git config core.hooksPath .githooks`.
 - Nothing reads `.dotagent/config.json` outside Claude Code, so write the settings in `docs/DOTAGENT-SETUP.md` instead of `run.sh set`.
@@ -92,8 +92,6 @@ Settings live in one file, `.dotagent/config.json`, local to the machine and ign
   No skill or template states this as a rule, the config is the only place.
 - `style_skills` [none]: comma separated skills to invoke at the start of a run, see step 3.
 
-Add `Workflow` to `permissions.allow` in `.claude/settings.json` so `ship-large.js` can start.
-
 ## 3. Grill the user, in rounds
 
 Interview the way the `grill-me` skill does ([aihero.dev/skills-grill-me](https://www.aihero.dev/skills-grill-me)),
@@ -132,8 +130,8 @@ suggest depends on the repo:
 Say which of the two cases you are in before you recommend, so the user knows why.
 
 Round 1 (no prerequisites):
-- **Commands.** Build, lint, test, and one test file. For a repo with many modules also the lint and test of one module, so a worker checks only its module and the full gate runs once before the PR. They must run the same locally and in CI,
-  or the worker and CI will disagree.
+- **Commands.** Build, lint, test, and one test file. For a repo with many modules also the lint and test of one module, so a subtask checks only its module and the full gate runs once per commit before the PR. They must run the same locally and in CI,
+  or the agent and CI will disagree.
 - **Architecture style.** Modular monolith, microservices, event driven, or layered, then vertical
   slices by feature or horizontal layers. Record the answer and the reason in `ARCHITECTURE.md`.
   If the user is unsure, see When the user is unsure: describe what the code shows in an established
@@ -184,7 +182,7 @@ Round 2 (needs the architecture and the commands):
   ask with AskUserQuestion whether to turn it on for PRs. Recommend yes when it already runs format,
   lint, and test. Show the exact diff (the `on:` block, or `gh workflow enable`), and apply it only after
   the answer. Say which jobs would then become required checks.
-- **Format.** The command that fixes formatting and the one that only checks it. Both are used: the worker runs the fixer, the git hook and CI run the checker.
+- **Format.** The command that fixes formatting and the one that only checks it. Both are used: the agent runs the fixer, the git hook and CI run the checker.
 - **Git hooks, part of setup.** Recommend all three, and recommend turning them on: `.githooks/pre-commit`
   (format check and lint), `commit-msg`, and `pre-push` (format, lint, build, test). Unlike the agent hook, git
   hooks check every commit and push by anyone: the agent, a person, a script, another tool. That is the
@@ -240,10 +238,9 @@ content in the existing doc's own language and structure. A PR template under an
 | `docs/DOTAGENT-SETUP.md` | `templates/docs/DOTAGENT-SETUP.md` | always, so a human can track it |
 | `.dotagent/config.json` | `templates/.dotagent/config.json`, written with `run.sh set` | always |
 | `.gitignore` (repo root) | append `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, and `docs/TODO.md`, so none of dotagent's own files show up as untracked and nobody has to be shy about them. Skip a line already present, and skip any path that has tracked files (`git ls-files <path>`), such as a team `.claude/settings.json`. Do it without asking, then tell the user which lines you added and which you skipped | append, never overwrite |
-| `.claude/settings.json` | `templates/.claude/settings.json`: allow `Workflow` for the large scale | merge into any existing file, show the diff first, keep every existing key |
 
-`docs/TODO.md` is not generated here. The planner writes it for each task from `templates/docs/TODO.md`:
-one section per PR, each with subtasks that the workers tick. It is ignored by git on purpose, a scratch report.
+`docs/TODO.md` is not generated here. The agent writes it for each task from `templates/docs/TODO.md`:
+one section per PR, each with subtasks that it ticks. It is ignored by git on purpose, a scratch report.
 
 Write each file from what you found in the repo. Tick `Written` `[x]` in `docs/DOTAGENT-SETUP.md` for each file you wrote,
 right after writing it. Leave `Reviewed` `[ ]`, only the user ticks it. Never invent a command, a module, or a rule.
