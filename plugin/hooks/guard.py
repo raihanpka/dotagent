@@ -2,7 +2,7 @@
 
 Reads one hook event as JSON on stdin. Exit 2 with a reason on stderr blocks the tool call.
 Settings live in one file, .dotagent/config.json in the project. Edit it by hand or run
-`sh run.sh set <key> <value>` (the /dotagent:scale and /dotagent:workflow commands do).
+`sh run.sh set <key> <value>` (the /dotagent:workflow command does).
 """
 import json
 import os
@@ -50,7 +50,6 @@ SKIP_READ = re.compile(
 
 # Allowed values per setting, the first one is the default. A missing or invalid value falls back to it.
 CHOICES = {
-    "scale": ("medium", "small", "large"),
     "workflow": ("autopilot", "checkpoint", "adapt"),
     "em_dash": ("block", "allow"),
     "emoji": ("block", "allow"),
@@ -143,7 +142,8 @@ def raw_config():
 
 
 def is_first_run():
-    # A repo that never saved the scale, the merge level, or the setup answer has not met dotagent yet.
+    # A repo that never saved the workflow or the setup answer has not met dotagent yet. `scale` and `merge` are old keys,
+    # still read so a config saved before they went away does not look new.
     return not {"setup", "scale", "merge", "workflow"} & set(raw_config())
 
 
@@ -273,11 +273,11 @@ def first_run():
         files = []
     folders = len({f.split("/")[0] for f in files if "/" in f})
     return (
-        f"[dotagent] first run: no .dotagent/config.json, so the defaults apply (scale=medium, workflow=autopilot) to a repo of "
-        f"{len(files)} tracked files in {folders} top-level folders. The first time the ship skill runs, say in two lines: the "
-        "scale and why, that each PR merges by itself when the review is clean and CI is green and the run goes on until every "
-        "PR is merged or a stop, and that /dotagent:scale and /dotagent:workflow change it. Then ask once whether to set up first "
-        "(recommended) or go on with only a TODO, and save the scale, the workflow, and the setup answer with run.sh set."
+        f"[dotagent] first run: no .dotagent/config.json, so the defaults apply (workflow=autopilot) to a repo of "
+        f"{len(files)} tracked files in {folders} top-level folders. The first time the ship skill runs, say in two lines: that "
+        "each PR merges by itself when the review is clean and CI is green and the run goes on until every PR is merged or a stop, "
+        "and that /dotagent:workflow changes it. Then ask once whether to set up first (recommended) or go on with only a TODO, "
+        "and save the workflow and the setup answer with run.sh set."
     )
 
 
@@ -364,6 +364,8 @@ def cli(args):
     if len(args) != 3 or args[0] != "set":
         sys.exit("usage: guard.py show | hooks | receipt | status | approve | gate pass|check | set <key> <value> | phase plan|build|done")
     key, value = args[1], args[2]
+    if key == "scale":
+        sys.exit("scale was removed, the ship skill sizes the run itself: a one sentence diff has no plan")
     if key in CHOICES and value not in CHOICES[key]:
         sys.exit(f"{key} must be one of: {', '.join(CHOICES[key])}")
     if key in ANSWERS and value not in ANSWERS[key]:
@@ -565,7 +567,7 @@ def on_bash(command):
         if WRITE.search(command) and "TODO.md" not in command:
             block("planning is read-only. Only docs/TODO.md may change, and no shell command may write.")
     if re.search(r"\.dotagent[/\\]config\.json", command) and WRITE.search(command) and "run.sh" not in command:
-        block("do not edit .dotagent/config.json from the shell. Ask the user to run /dotagent:scale or /dotagent:workflow.")
+        block("do not edit .dotagent/config.json from the shell. Ask the user to run /dotagent:workflow.")
     for args in commits_in(tokens):
         no_skip(args, "commit")
         check_commit(args)
@@ -585,12 +587,12 @@ def on_bash(command):
 
 
 def on_write(tool_input):
-    # The config is the user's: the agent changes it only through /dotagent:scale and /dotagent:workflow.
+    # The config is the user's: the agent changes it only through /dotagent:workflow.
     path = tool_input.get("file_path", "")
     if phase() == "plan" and not is_path(path, TODO):
         block("planning is read-only. Only docs/TODO.md may change until the plan is settled.")
     if is_config(path):
-        block("do not edit .dotagent/config.json. Ask the user to run /dotagent:scale or /dotagent:workflow.")
+        block("do not edit .dotagent/config.json. Ask the user to run /dotagent:workflow.")
     rel = rel_path(path)
     if matches(rel, opt("PROTECTED").split(",")):
         block(f"{rel} is a protected path (`protected` in .dotagent/config.json). Leave it and tell the user what needs to change.")
@@ -644,7 +646,7 @@ def main():
         except OSError:
             pass
         print(
-            f"[dotagent] scale={opt('SCALE')} workflow={opt('WORKFLOW')} "
+            f"[dotagent] workflow={opt('WORKFLOW')} "
             f"read-limit={READ_LINES} style={opt('STYLE_SKILLS')}" + (f" protected={opt('PROTECTED')}" if opt("PROTECTED") else "")
             + "".join(f" {k}={opt(k)}" for k in ANSWERS if opt(k))
         )

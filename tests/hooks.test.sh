@@ -191,7 +191,7 @@ expect "read missing ok" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\
 # session start prints the active settings
 cfg '{"scale":"large","merge":"full","style_skills":"caveman"}'
 out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
-case "$out" in *"scale=large"*"workflow=autopilot"*"style=caveman"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL session start: $out" ;; esac
+case "$out" in *"scale"*) fail=$((fail + 1)); echo "FAIL session line still names the scale: $out" ;; *"workflow=autopilot"*"style=caveman"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL session start: $out" ;; esac
 
 # git hooks: shipped and on, shipped and off, or not shipped
 g="$tmp/gitproj"
@@ -251,7 +251,7 @@ case "$out" in "subagents: none") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); e
 # first run line and protected in the session line
 rm -f "$tmp/proj/.dotagent/config.json"
 out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
-case "$out" in *"first run"*"scale=medium, workflow=autopilot"*"tracked files"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL first run line: $out" ;; esac
+case "$out" in *"scale"*) fail=$((fail + 1)); echo "FAIL first run line names the scale: $out" ;; *"first run"*"workflow=autopilot"*"tracked files"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL first run line: $out" ;; esac
 cfg '{"scale":"medium","protected":"go.sum"}'
 out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
 case "$out" in *"first run"*) fail=$((fail + 1)); echo "FAIL first run shown with a config: $out" ;; *"protected=go.sum"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL protected in line: $out" ;; esac
@@ -265,12 +265,19 @@ case "$(sh "$guard" show)" in *"setup=minimal"*"hooks=declined"*"big_plan=ok"*) 
 cfg '{}'
 x="$tmp/exproj"
 mkdir -p "$x" && git -C "$x" init -q
-CLAUDE_PROJECT_DIR=$x sh "$guard" set scale small >/dev/null
-CLAUDE_PROJECT_DIR=$x sh "$guard" set scale medium >/dev/null
+CLAUDE_PROJECT_DIR=$x sh "$guard" set workflow checkpoint >/dev/null
+CLAUDE_PROJECT_DIR=$x sh "$guard" set workflow autopilot >/dev/null
 [ "$(git -C "$x" status --porcelain)" = "" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL config is not ignored: $(git -C "$x" status --porcelain)"; }
 [ "$(grep -c '^.dotagent/$' "$x/.git/info/exclude")" = "1" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL exclude line is not written once"; }
 out="$(printf '{"hook_event_name":"SessionStart"}' | CLAUDE_PROJECT_DIR=$x sh "$guard")"
-case "$out" in *"first run"*) fail=$((fail + 1)); echo "FAIL first run after saving the scale: $out" ;; *) pass=$((pass + 1)) ;; esac
+case "$out" in *"first run"*) fail=$((fail + 1)); echo "FAIL first run after saving the workflow: $out" ;; *) pass=$((pass + 1)) ;; esac
+
+# the scale setting is gone: set refuses it with a hint, and an old config that still has it loads as before
+out="$(sh "$guard" set scale medium 2>&1)" && { fail=$((fail + 1)); echo "FAIL set scale is accepted"; } || case "$out" in *"scale was removed"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL set scale hint: $out" ;; esac
+cfg '{"scale":"large"}'
+out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
+case "$out" in *"first run"*|*"scale"*) fail=$((fail + 1)); echo "FAIL an old scale key: $out" ;; *"workflow=autopilot"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old scale session line: $out" ;; esac
+cfg '{}'
 
 # workflow modes: autopilot, checkpoint, adapt
 SQ='--squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"'
