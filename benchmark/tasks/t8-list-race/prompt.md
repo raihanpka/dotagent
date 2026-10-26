@@ -1,1 +1,0 @@
-`go test -race` reports a data race when tasks are listed while another request edits them. Find the cause and fix it at the source, then add a test that fails under `-race` before the fix and passes after.

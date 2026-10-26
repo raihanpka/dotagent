@@ -35,20 +35,14 @@ Common to the sources above and to the skill-creator guides ([Pillitteri](https:
 ## What is built
 
 - **App.** `examples/taskboard-backend`, a gin task board with 6 modules and a green `make ci`.
-- **Tasks.** 5 in `benchmark/tasks/`, each a `prompt.md` and a hidden `bench_test.go` grader that is copied in only after the run:
+- **Tasks.** Two in `benchmark/tasks/`, each a `prompt.md` and a hidden `bench_test.go` grader that is copied in only after the run. They are the two paths of the single loop:
 
-| Task | Kind | Shape |
+| Task | Path it tests | Shape |
 |---|---|---|
-| `t1-board-leak` | bug fix | one function, find the root cause |
-| `t2-due-dates` | feature | 2 modules, parsing, a filter |
-| `t3-pagination` | feature | one endpoint, validation, a header |
-| `t4-archive` | feature | cross module state, 409 rules, an unrelated bug to leave alone |
-| `t5-comments` | feature | a new module, wiring, tests |
-| `t6-members-roles` | feature, several PRs | roles across boards, tasks, and a new module, and it only passes if the `GET /boards` leak is fixed too |
-| `t7-task-labels` | feature, several PRs | links two modules through their interfaces, filter, cascade delete |
-| `t8-list-race` | bug | a data race found with `go test -race`, the fix is at the source (the list returns pointers it encodes after unlocking) |
+| `t1-board-leak` | a one sentence diff, no plan | a bug fix: one function, find the root cause |
+| `t6-members-roles` | plan, subtask commits, gate, reviewer | a feature across several PRs: roles across boards, tasks, and a new module, and it only passes if the `GET /boards` leak is fixed too |
 
-`t6` to `t8` were added after run 1 to force the plan, the subtask commits, and the reviewer onto the full path. They are not run yet, and grading now uses `-race`.
+Run 1 used five tasks, `t1` to `t5`. Every arm resolved all of them, so `t2` to `t5` (due dates, pagination, archive, comments) could not separate the arms and were removed, and `t6` was added to force the full path. The grader runs with `-race`.
 
 - **Arms.** `plain` (Claude Code alone) and `dotagent` (`/dotagent:ship <task>`, one loop for every task). Run 1 used the old arms `small`, `medium`, and `large` (`/dotagent:ship <scale>`), which no longer exist, and `report.py` still prints them. Same model for all, `MODEL=sonnet` by default.
 - **Run.** `bash benchmark/run.sh <arm> <task> <trial>` copies the app to a temp dir, runs `claude -p` with `--output-format json`, then grades. The dotagent arms load the working tree plugin with `--plugin-dir plugin`.
@@ -58,7 +52,7 @@ Common to the sources above and to the skill-creator guides ([Pillitteri](https:
 
 ```
 for t in benchmark/tasks/*/; do for a in plain dotagent; do for i in 1 2 3; do
-  bash benchmark/run.sh $a $(basename $t) $i; done; done; done      # 48 runs, spends real money, cap with BUDGET
+  bash benchmark/run.sh $a $(basename $t) $i; done; done; done      # 12 runs, spends real money, cap with BUDGET
 python3 benchmark/report.py
 ```
 
@@ -85,15 +79,14 @@ What it says, and no more:
 
 Next run: tasks that need several PRs, an ambiguous requirement, or a bug with a non obvious cause, and the same arms.
 
-Run 1 measured the old design, a planner and a worker per subtask. It is the reason the workflow became one loop for every task: the lead plans only when the diff is more than one sentence, builds it, and a fresh reviewer checks it. The single loop has not been measured yet, and `t6` to `t8` are the first tasks to run against it.
+Run 1 measured the old design, a planner and a worker per subtask. It is the reason the workflow became one loop for every task: the lead plans only when the diff is more than one sentence, builds it, and a fresh reviewer checks it. The single loop has not been measured yet, and `t6` is the first multi PR task to run against it.
 
 ## Limits to keep in mind
 
 - The work copy has no GitHub remote, so the dotagent arms stop after the review and local commits. PR, CI, and merge time and cost are not measured.
 - `total_cost_usd` from `claude -p` should include subagents. Confirm that on the first run, the reviewer is the one subagent left.
 - `--setting-sources project,local` keeps your user plugins out of the run, but the plain arm still has the machine's login and model defaults.
-- `t5` cannot observe that comments are deleted with their task over HTTP, so the grader checks reachability only.
-- 5 small tasks show a direction. A claim needs more tasks from real merged PRs.
+- Two tasks show a direction. A claim needs more tasks from real merged PRs.
 
 ## Decide
 
