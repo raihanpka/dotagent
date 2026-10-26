@@ -40,7 +40,7 @@ test('the core keeps what every run needs, the references hold the rest', () => 
 
 test('no removed setting, agent, workflow, or model name is left anywhere in the skill', () => {
   for (const text of all) {
-    for (const word of ['scale', 'ship-large', 'worker', 'planner', '`large`', '`medium`', 'gate pass']) {
+    for (const word of ['scale', 'ship-large', 'worker', 'planner', '`large`', '`medium`', 'gate pass', 'autopilot', 'checkpoint', '`adapt`']) {
       assert.ok(!text.toLowerCase().includes(word), `found ${word}`)
     }
     assert.ok(!/sonnet|opus|haiku|gpt|gemini/i.test(text), 'a model name is in the skill')
@@ -70,6 +70,11 @@ test('every spawn gets an objective, an output, and boundaries', () => {
 test('the TODO layout keeps the fields the guard reads', () => {
   const plan = read('references/plan.md')
   for (const field of ['## PR 1:', 'files:', 'done:', '- [ ]', 'branch:', 'needs:']) assert.ok(plan.includes(field), `no ${field}`)
+})
+
+test('the three modes are local, ask, and auto', () => {
+  const merge = read('references/merge.md')
+  for (const mode of ['local', 'ask', 'auto']) assert.ok(merge.includes(`**${mode}**`), `merge.md does not explain ${mode}`)
 })
 
 test('a merge is a squash after a rebase, with a safe push', () => {

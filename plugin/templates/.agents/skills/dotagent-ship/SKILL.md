@@ -8,7 +8,7 @@ description: "Ship a task that already has clear requirements as small, reviewab
 Plain steps for any agent. Claude Code users get the richer `/dotagent:ship` instead.
 Rules that bind every step: commit messages say what changed, never a plan label, no
 trailer, no `(#N)`. Never push, open a PR, or merge without the user's yes, unless the
-user already set autopilot in `.dotagent/config.json` (Claude Code only).
+user already set auto in `.dotagent/config.json` (Claude Code only).
 
 ## 1. Start
 

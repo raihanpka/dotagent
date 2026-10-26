@@ -1,12 +1,12 @@
 ---
-description: "Pick how far a run goes on its own. adapt: stops at local commits, never pushes. checkpoint: asks for your yes before any push, PR, or merge. autopilot: goes all the way to the merge. No argument shows the saved settings."
-argument-hint: "[autopilot|checkpoint|adapt]"
+description: "Pick how far a run goes on its own. local: stops at local commits, never pushes. ask: asks for your yes before any push, PR, or merge. auto: goes all the way to the merge. No argument shows the saved settings."
+argument-hint: "[local|ask|auto]"
 disable-model-invocation: true
 ---
 Modes:
-- `autopilot`: runs the whole TODO, pushes, opens each PR, watches CI, merges when the review is clean and CI is green, and goes on to the next PR.
-- `checkpoint`: the same run and local commits, but it asks for your yes in the chat before any push, PR, or merge.
-- `adapt`: asks first, sets up the minimum, keeps every commit on one local branch, and never pushes.
+- `auto`: runs the whole TODO and finishes every PR: pushes, opens it, watches CI, fixes a red check, merges when the review is clean and CI is green, then goes on to the next PR until all are merged or something stops it.
+- `ask`: the same run and local commits, but it asks for your yes in the chat before any push, PR, or merge.
+- `local`: asks first, sets up the minimum, keeps every commit on one local branch, and never pushes.
 
 With an argument run `sh "${CLAUDE_SKILL_DIR}/../../hooks/run.sh" set workflow <argument>`.
 With none run `sh "${CLAUDE_SKILL_DIR}/../../hooks/run.sh" show`. Reply with the output and one line: the mode now in use.

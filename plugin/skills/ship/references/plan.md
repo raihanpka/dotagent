@@ -66,6 +66,6 @@ Stop the loop, run `sh "$RUN" phase done`, and report when:
 
 - a fix ran out of tries (a failed subtask, review gaps, or a red CI after two tries),
 - a question is left open,
-- the workflow is `checkpoint` and the user has not said yes, or the PR cannot merge (a conflict, a required review): leave the PR open and
+- the workflow is `ask` and the user has not said yes, or the PR cannot merge (a conflict, a required review): leave the PR open and
   say what is needed, then the user says `continue`,
 - the next PR `needs` a PR that is not merged.

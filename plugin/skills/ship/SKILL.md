@@ -1,5 +1,5 @@
 ---
-description: "Ship a clear task as clean PRs with the saved workflow (autopilot, checkpoint, or adapt). The word continue resumes unfinished work. Asks only for what is missing."
+description: "Ship a clear task as clean PRs with the saved workflow (auto, ask, or local). The word continue resumes unfinished work. Asks only for what is missing."
 argument-hint: "<task> | continue"
 ---
 # dotagent ship
@@ -16,17 +16,17 @@ work, see Start.
   - `${CLAUDE_SKILL_DIR}/references/merge.md` before you push, open a PR, or merge: the workflow modes, the PR, CI, the squash.
 
 Read the `[dotagent] workflow=... read-limit=... style=...` line from session start. It comes from the saved settings
-(it may end with `protected=...`, `setup=...`, `hooks=...`, `big_plan=...`), and `workflow=autopilot` is the default.
+(it may end with `protected=...`, `setup=...`, `hooks=...`, `big_plan=...`), and `workflow=auto` is the default.
 `RUN` is `${CLAUDE_SKILL_DIR}/../../hooks/run.sh`. If it also says `unfinished`, `docs/TODO.md` holds work
 that is not done yet.
 
 If a `[dotagent] first run` line is there, do what it says before anything else:
 
-1. Tell the user in two lines what the workflow does (`autopilot`: each PR merges by itself when the review is clean and CI is
+1. Tell the user in two lines what the workflow does (`auto`: each PR merges by itself when the review is clean and CI is
    green, and the run goes on until every PR is merged or a stop) and that `/dotagent:workflow` changes it.
 2. Ask once (see Questions): set up first with `/dotagent:setup` (recommended), or go on with only a TODO. Going on means no
    `AGENTS.md`, CI, or PR template are written, the plan still goes to `docs/TODO.md`.
-3. Save the answers: `sh "$RUN" set workflow autopilot`, `set setup minimal` for going on. Then do the task.
+3. Save the answers: `sh "$RUN" set workflow auto`, `set setup minimal` for going on. Then do the task.
 
 A task is one or more PRs, each cut from the default branch. Commits are atomic and one
 line, `type(scope): summary`. Hooks enforce the format and the names.
