@@ -34,7 +34,7 @@ user already set autopilot in `.dotagent/config.json` (Claude Code only).
 
 ## 4. Check
 
-- Run build, lint, and test once more on the whole change, once per commit: do not rerun a gate that passed on the same commit. Show the output.
+- Run build, lint, and test once more on the whole change, once per commit: do not rerun a gate that passed on the same commit, and say in your reply which commit it passed at. Show the output.
 - Prove it with a check you ran, never with "looks done".
 - Review the diff against the plan in a fresh context: the `reviewer` subagent (`.codex/agents/reviewer.toml`) if you can run subagents,
   otherwise yourself in a fresh pass. Tell it the gate result and what is in scope, and ask for `clean` or numbered gaps with `path:line`.
