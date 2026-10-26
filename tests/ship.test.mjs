@@ -3,6 +3,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
 
+const reviewer = readFileSync(new URL('../plugin/agents/reviewer.md', import.meta.url), 'utf8')
+
 const skill = readFileSync(new URL('../plugin/skills/ship/SKILL.md', import.meta.url), 'utf8')
 const front = skill.match(/^---\n([\s\S]*?)\n---/)
 
@@ -39,4 +41,11 @@ test('every spawn gets an objective, an output, and boundaries', () => {
 
 test('a fix gets two tries, then the run stops', () => {
   assert.match(skill, /two tries from you/)
+})
+
+test('the workflow names no model, so it runs on whichever one the session uses', () => {
+  for (const text of [skill, reviewer]) {
+    assert.ok(!/sonnet|opus|haiku|gpt|gemini/i.test(text), 'a model name is in the skill or the agent')
+  }
+  assert.match(reviewer, /^model: inherit$/m)
 })

@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: Reviews a finished branch against its plan in a fresh context and writes the PR body.
-model: sonnet
+model: inherit
 tools: Read, Grep, Glob, Bash
 ---
 You see the diff and `docs/TODO.md`, not the reasoning that produced them.
