@@ -339,6 +339,19 @@ out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
 case "$out" in *"setup=minimal hooks=declined"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL answers in the session line: $out" ;; esac
 cfg '{}'
 
+# deleting a test to get green is refused, other deletes are not
+cfg '{}'
+expect "rm of a js test" 2 "$(bash_json 'rm tests/a.test.js')"
+expect "git rm of a go test" 2 "$(bash_json 'git rm internal/x/x_test.go')"
+expect "rm of a python test" 2 "$(bash_json 'rm -f pkg/test_login.py')"
+expect "rm of the tests folder" 2 "$(bash_json 'rm -rf tests')"
+expect "git rm after another command" 2 "$(bash_json 'git add a && git rm -q src/__tests__/a.js')"
+expect "rm of a source file" 0 "$(bash_json 'rm src/a.js')"
+expect "git rm of a source file" 0 "$(bash_json 'git rm src/login.go')"
+expect "rm of a log" 0 "$(bash_json 'rm -f build/out.log')"
+expect "a file named like test data is fine" 0 "$(bash_json 'rm test_data.txt')"
+expect "grep for a test is fine" 0 "$(bash_json 'grep -rn rm tests/a.test.js')"
+
 # the gate is recorded per commit: ok at the same HEAD, stale after a commit, an edit, or with no record
 g="$tmp/gate"
 mkdir -p "$g" && git -C "$g" init -q && git -C "$g" config user.email t@t && git -C "$g" config user.name t

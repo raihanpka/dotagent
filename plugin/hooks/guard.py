@@ -555,6 +555,25 @@ def check_pr_merge(tokens):
         pass
 
 
+# A path that holds tests: a tests or __tests__ folder, x_test.go, x.test.js, x.spec.ts, test_x.py.
+TEST_PATH = re.compile(r"(^|/)(tests?|__tests__)(/|$)|_test\.[a-z]+$|\.(test|spec)\.[a-z]+$|(^|/)test_[^/]*\.py$")
+SEPARATORS = {"&&", "||", ";", "|", "&"}
+
+
+def no_test_delete(tokens):
+    # rm and git rm never delete a test, a test removed to get green hides the failure. A test that is truly obsolete is the user's call.
+    for i, tok in enumerate(tokens):
+        before = tokens[i - 1] if i else ";"
+        starts = i < 2 or tokens[i - 2] in SEPARATORS
+        if tok != "rm" or not (before in SEPARATORS or (before == "git" and starts)):
+            continue
+        for arg in tokens[i + 1 :]:
+            if arg in SEPARATORS:
+                break
+            if not arg.startswith("-") and TEST_PATH.search(arg):
+                block(f"do not delete {arg}, a removed test hides a failure. If the test is obsolete, ask the user to remove it.")
+
+
 def on_bash(command):
     # Routes a Bash command to the commit, PR create, or PR merge check.
     try:
@@ -568,6 +587,7 @@ def on_bash(command):
             block("planning is read-only. Only docs/TODO.md may change, and no shell command may write.")
     if re.search(r"\.dotagent[/\\]config\.json", command) and WRITE.search(command) and "run.sh" not in command:
         block("do not edit .dotagent/config.json from the shell. Ask the user to run /dotagent:workflow.")
+    no_test_delete(tokens)
     for args in commits_in(tokens):
         no_skip(args, "commit")
         check_commit(args)
