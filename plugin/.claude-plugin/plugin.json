@@ -1,7 +1,7 @@
 {
   "name": "dotagent",
   "version": "0.4.0",
-  "description": "A minimalist single-loop agent workflow: plan when needed, atomic commits, fresh review, PR, CI, and a rebase and squash merge in three modes (autopilot, checkpoint, adapt), with hook guardrails.",
+  "description": "A minimalist single-loop agent workflow: plan when needed, atomic commits, fresh review, PR, CI, and a rebase and squash merge in three modes (local, ask, auto), with hook guardrails.",
   "author": {
     "name": "Raihan Putra Kirana",
     "url": "https://github.com/raihanpka"

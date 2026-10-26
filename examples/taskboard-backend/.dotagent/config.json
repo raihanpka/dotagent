@@ -3,6 +3,6 @@
   "emoji": "block",
   "style_skills": "none",
   "protected": "go.mod,go.sum",
-  "workflow": "checkpoint",
+  "workflow": "ask",
   "setup": "full"
 }
