@@ -8,7 +8,7 @@ repo's own `AGENTS.md`, which wins on any conflict.
 - One task is one branch and one PR, cut from the default branch.
 - Plan before editing when the change touches several files or modules. Skip the plan when
   you could describe the diff in one sentence. Planning is read only apart from `docs/TODO.md`,
-  the untracked checklist each worker ticks as it finishes.
+  the untracked checklist you tick as each subtask lands.
 - When a requirement is ambiguous, suggest an answer with the reason and ask the user. Do not guess.
 - Build in subtasks: change, build, lint, test, commit. Each subtask leaves the repo green.
 - Prove it with a check you ran, never with "looks done". Show the output.

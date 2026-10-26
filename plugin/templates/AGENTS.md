@@ -9,7 +9,7 @@
 - Format: `{{format}}` (check only: `{{format-check}}`)
 - Lint: `{{lint}}`
 - Test: `{{test}}` (one file: `{{test-one}}`)
-- One module, for a repo with many (a worker checks with these, the full gate above runs once before the PR): lint `{{lint-module}}`, test `{{test-module}}`
+- One module, for a repo with many (a subtask checks with these, the full gate above runs once per commit before the PR): lint `{{lint-module}}`, test `{{test-module}}`
 
 ## Architecture
 
