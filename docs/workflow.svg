@@ -3,17 +3,17 @@
 <rect width="1690" height="810" fill="#ffffff"/>
 <text x="1630" y="52" text-anchor="end" font-size="26" font-weight="700" fill="#212529">Dotagent: /dotagent</text>
 <rect x="60" y="38" width="26" height="26" rx="6" fill="#a5d8ff" stroke="#343a40" stroke-width="2"/>
-<text x="96" y="59" text-anchor="start" font-size="17" fill="#212529">Sonnet lead: plans, builds, fixes</text>
+<text x="96" y="59" text-anchor="start" font-size="17" fill="#212529">Lead: plans, builds, fixes</text>
 <rect x="400" y="38" width="26" height="26" rx="6" fill="#b2f2bb" stroke="#343a40" stroke-width="2"/>
-<text x="436" y="59" text-anchor="start" font-size="17" fill="#212529">Sonnet verifier: fresh context</text>
+<text x="436" y="59" text-anchor="start" font-size="17" fill="#212529">Reviewer: fresh context</text>
 <rect x="700" y="38" width="26" height="26" rx="6" fill="#ffec99" stroke="#343a40" stroke-width="2"/>
 <text x="736" y="59" text-anchor="start" font-size="17" fill="#212529">Fixed step: git, gh, CI</text>
 <rect x="1000" y="38" width="26" height="26" rx="6" fill="#ffc9c9" stroke="#343a40" stroke-width="2"/>
 <text x="1036" y="59" text-anchor="start" font-size="17" fill="#212529">Escalation, then stop</text>
 <rect x="30" y="90" width="1630" height="176" rx="16" fill="#e7f5ff" stroke="#ced4da" stroke-width="1.5"/>
-<text x="1642" y="117" text-anchor="end" font-size="17" font-weight="700" fill="#495057">Lead: Sonnet plans, builds, and fixes in one context</text>
+<text x="1642" y="117" text-anchor="end" font-size="17" font-weight="700" fill="#495057">Lead: plans, builds, and fixes in one context</text>
 <rect x="30" y="290" width="1630" height="176" rx="16" fill="#ebfbee" stroke="#ced4da" stroke-width="1.5"/>
-<text x="1642" y="317" text-anchor="end" font-size="17" font-weight="700" fill="#495057">Verifier: one Sonnet reviewer, fresh context, read only</text>
+<text x="1642" y="317" text-anchor="end" font-size="17" font-weight="700" fill="#495057">Verifier: one reviewer, fresh context, read only</text>
 <rect x="30" y="490" width="1630" height="176" rx="16" fill="#fff9db" stroke="#ced4da" stroke-width="1.5"/>
 <text x="1642" y="517" text-anchor="end" font-size="17" font-weight="700" fill="#495057">Fixed steps: plain commands, no agent</text>
 <rect x="60" y="142" width="170" height="112" rx="14" fill="#e9ecef" stroke="#343a40" stroke-width="2.5"/>
@@ -25,7 +25,7 @@
 <text x="345" y="198" text-anchor="middle" font-size="15" fill="#343a40">Writes TODO.md, asks</text>
 <text x="345" y="220" text-anchor="middle" font-size="15" fill="#343a40">you directly</text>
 <rect x="1000" y="342" width="170" height="112" rx="14" fill="#b2f2bb" stroke="#343a40" stroke-width="2.5"/>
-<text x="1085" y="373" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Review: Sonnet</text>
+<text x="1085" y="373" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Review</text>
 <text x="1085" y="398" text-anchor="middle" font-size="15" fill="#343a40">Fresh context,</text>
 <text x="1085" y="420" text-anchor="middle" font-size="15" fill="#343a40">reads the diff</text>
 <rect x="460" y="142" width="170" height="112" rx="14" fill="#a5d8ff" stroke="#343a40" stroke-width="2.5"/>

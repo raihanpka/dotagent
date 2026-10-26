@@ -85,7 +85,7 @@ What it says, and no more:
 
 Next run: tasks that need several PRs, an ambiguous requirement, or a bug with a non obvious cause, and the same arms.
 
-Run 1 measured the old design, a planner and a Haiku worker per subtask. It is the reason the workflow became one loop for every task: the lead plans only when the diff is more than one sentence, builds it, and a fresh reviewer checks it. The single loop has not been measured yet, and `t6` to `t8` are the first tasks to run against it.
+Run 1 measured the old design, a planner and a worker per subtask. It is the reason the workflow became one loop for every task: the lead plans only when the diff is more than one sentence, builds it, and a fresh reviewer checks it. The single loop has not been measured yet, and `t6` to `t8` are the first tasks to run against it.
 
 ## Limits to keep in mind
 
