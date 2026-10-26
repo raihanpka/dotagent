@@ -79,7 +79,29 @@ What it says, and no more:
 
 Next run: tasks that need several PRs, an ambiguous requirement, or a bug with a non obvious cause, and the same arms.
 
-Run 1 measured the old design, a planner and a worker per subtask. It is the reason the workflow became one loop for every task: the lead plans only when the diff is more than one sentence, builds it, and a fresh reviewer checks it. The single loop has not been measured yet, and `t6` is the first multi PR task to run against it.
+Run 1 measured the old design, a planner and a worker per subtask. It is the reason the workflow became one loop for every task: the lead plans only when the diff is more than one sentence, builds it, and a fresh reviewer checks it. Run 2 below measured the single loop, and it did not get faster than plain.
+
+## Results, run 2, the single loop (2026-10-26)
+
+Sonnet 5.5 for every arm, only the two kept tasks, `dotagent` 5 runs and `plain` 1 run on `t6`, about $2.6 in total. The `plain` and old arm numbers for `t1` are run 1's.
+
+| Task | Arm | Resolved | Gate | Cost p50 | Wall p50 | Commits |
+|---|---|---|---|---|---|---|
+| `t1-board-leak` | plain (run 1, n=3) | 3/3 | 3/3 | $0.11 | 27 s | 1 |
+| `t1-board-leak` | old `medium` (run 1, n=3) | 3/3 | 3/3 | $0.20 | 47 s | 1 |
+| `t1-board-leak` | `dotagent` (n=3) | 3/3 | 3/3 | $0.19 | 70 s | 1 |
+| `t6-members-roles` | plain (n=1) | 1/1 | 1/1 | $0.24 | 74 s | 1 |
+| `t6-members-roles` | `dotagent` (n=2) | 2/2 | 2/2 | $0.44 | 183 s | 3 |
+
+What it says, and no more:
+
+- **It works end to end.** Every run resolved and passed the gate, and the run's `subagent_stats` show one subagent only, `dotagent:reviewer`, no planner and no worker. No bad commit subject, no trailer.
+- **It is not faster or cheaper than plain Claude Code.** About 2.6x the wall clock on `t1` and 2.5x on `t6`, and 1.8x the cost. That is the same ratio as run 1, so the single loop did not close the gap.
+- **Against the old design, `t1` got no faster.** Cost is the same ($0.19 against $0.20), wall clock is slower (70 s against 47 s, each a median of 3 and the old `medium` has a 101 s outlier). A one sentence diff has no plan, so the extra time is the skill and its references being read, the gate, the reviewer, and the hook on each call.
+- **What it buys is the shape of the result.** `t6` came out as three atomic commits with the leak fixed and a clean review, `plain` as one commit.
+- **Too few runs.** One or two runs per cell, so a cell can move a lot (`t1` ranged from 66 to 83 s). There is no old design number for `t6`, because the old arms are gone.
+
+Next, before trusting the single loop for speed: skip the reviewer for a one sentence diff and run `t1` again, and run `t6` three times per arm.
 
 ## Limits to keep in mind
 

@@ -213,8 +213,9 @@ To release: bump `version` in `plugin/.claude-plugin/plugin.json`, add a `## <ve
 
 - Built for my own workflow.
 - Tried on small tasks, not yet on a big repo. A long run keeps one context, `hooks/loop.sh` gives each PR a fresh one.
-- The single loop is not measured yet. `docs/BENCHMARK.md` has two tasks for it, `t1` and `t6`, and run 1 measured the old design.
-- The guard hook runs on every `Bash`, `Write`, `Edit`, and `Read` call, and the 500 line read block can add reads. Neither is measured.
+- The single loop works end to end (5 runs, all resolved, one subagent, the reviewer) but is not faster or cheaper than plain Claude Code: about 2.5x the wall clock and 1.8x the cost on two tasks, and no faster than the old design on `t1`. `docs/BENCHMARK.md` has the numbers and the next test, skipping the reviewer for a one sentence diff.
+- The guard hook runs on every `Bash`, `Write`, `Edit`, and `Read` call. It costs about 40 ms a call on macOS (60 calls timed), so 200 calls add about 8 s. The 500 line read block can add reads, that is not measured.
+- A repo with an unusual flow is only half adapted. Setup follows the repo's habits (names, CI, templates, docs), but `ship` and the guard always want `type(scope): summary` commits, a squash merge after a rebase, a PR cut from the default branch, and GitHub with `gh`. Use `local` there.
 - The gate record is bookkeeping the agent trusts, CI is the real check. Codex and Antigravity have no guard hook, so the gate rule there is only a step in the skill.
 - `examples/` was written from the templates by hand, setup is an interview and was not run again.
 - Tried on Windows and macOS, Python comes from the device.
