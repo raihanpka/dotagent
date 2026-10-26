@@ -2,11 +2,8 @@
 
 🚢 A **minimalist single-loop agent workflow** for Claude Code and other AI coding agents (Codex, Antigravity, Cursor, and more) that gets the job done: **clear requirements in, clean pull request out, merge, and ship.**
 
-New skills and plugins show up every week, and most of us feel it: you install five skills, forget what
-each does, the setup gets heavier than the work, so you end up overwhelmed. 
-So I made my own, *small on purpose*, built on engineering habits I trust. I want to share it, but it only 
-works once you adapt it to your
-repo. The generic parts are here, the parts that depend on your code are yours to fill in.
+New skills and plugins show up every week, and most of us feel it: you install five skills, forget what each does, the setup gets heavier than the work, so you end up overwhelmed. 
+So I made my own, *small on purpose*, built on engineering habits I trust. I want to share it, but it only works once you adapt it to your repo. The generic parts are here, the parts that depend on your code are yours to fill in.
 
 - Small on purpose: a few skills, one subagent (the reviewer), one hook script, one config file.
 - Habits behind each rule are listed in `docs/PRACTICES.md`, so you can judge which to keep.
@@ -159,14 +156,14 @@ One file, `.dotagent/config.json`, per machine and ignored by git (written by `r
 
 ### how a run works
 
-- One path for every task. If the whole diff fits one sentence there is no plan: change, check, commit, PR. Otherwise the lead plans read only, writing only `docs/TODO.md`, and builds each subtask itself, one commit each. Ambiguity becomes a question with a recommended answer, never a guess, and the lead revises the plan when the work differs from it.
-- The repo gate (build, lint, test) runs once per commit: `run.sh gate run <the gate command>` runs it and records the commit only when it exits 0, `gate check` says `ok` or `stale`, so the lead, the reviewer, and a `continue` do not repeat it.
-- A fresh `reviewer` checks the diff against the plan before the PR. `Explore` reads wide. Every spawn gets an objective, an output shape, and boundaries. A failure gets two tries from the lead, then it stops.
-- The ship skill is a small core plus two references, `plan.md` and `merge.md`, read when that step comes, so a one sentence task never loads the rest.
-- A PR is reviewable in one sitting, 3 to 8 subtasks. `docs/TODO.md` is the report and the state, so a new session announces unfinished work.
-- Git hooks (`pre-commit`, `commit-msg`, `pre-push`) check every commit and push by anyone, so CI stays green.
-- A merge is a rebase onto the latest default branch, then a squash whose body lists each commit with its hash.
-- A long plan keeps one context, so `sh plugin/hooks/loop.sh` runs one fresh `claude -p` per PR, and `CLAUDE_FLAGS="--max-budget-usd 5"` caps the spend of each.
+1. One path for every task. If the whole diff fits one sentence there is no plan: change, check, commit, PR. Otherwise the lead plans read only, writing only `docs/TODO.md`, and builds each subtask itself, one commit each. Ambiguity becomes a question with a recommended answer, never a guess, and the lead revises the plan when the work differs from it.
+2. The repo gate (build, lint, test) runs once per commit: `run.sh gate run <the gate command>` runs it and records the commit only when it exits 0, `gate check` says `ok` or `stale`, so the lead, the reviewer, and a `continue` do not repeat it.
+3. A fresh `reviewer` checks the diff against the plan before the PR. `Explore` reads wide. Every spawn gets an objective, an output shape, and boundaries. A failure gets two tries from the lead, then it stops.
+4. The ship skill is a small core plus two references, `plan.md` and `merge.md`, read when that step comes, so a one sentence task never loads the rest.
+5. A PR is reviewable in one sitting, 3 to 8 subtasks. `docs/TODO.md` is the report and the state, so a new session announces unfinished work.
+6. Git hooks (`pre-commit`, `commit-msg`, `pre-push`) check every commit and push by anyone, so CI stays green.
+7. A merge is a rebase onto the latest default branch, then a squash whose body lists each commit with its hash.
+8. A long plan keeps one context, so `sh plugin/hooks/loop.sh` runs one fresh `claude -p` per PR, and `CLAUDE_FLAGS="--max-budget-usd 5"` caps the spend of each.
 
 <details>
 <summary>what the hooks enforce</summary>
@@ -215,12 +212,8 @@ To release: bump `version` in `plugin/.claude-plugin/plugin.json`, add a `## <ve
 ## known gaps or bugs
 
 - Built for my own workflow.
-- Tried on small tasks, not yet on a big repo. A long run keeps one context, `hooks/loop.sh` gives each PR a fresh one.
-- The single loop works end to end (5 runs, all resolved, one subagent, the reviewer) but is not faster or cheaper than plain Claude Code: about 2.5x the wall clock and 1.8x the cost on two tasks, and no faster than the old design on `t1`. `docs/BENCHMARK.md` has the numbers and the next test, skipping the reviewer for a one sentence diff.
-- The guard hook runs on every `Bash`, `Write`, `Edit`, and `Read` call. It costs about 40 ms a call on macOS (60 calls timed), so 200 calls add about 8 s. The 500 line read block can add reads, that is not measured.
-- Setup reads the repo's flow and saves it: the commit types and whether a scope is used, the merge method the repo allows, and the branch PRs target, and `ship` and the guard follow them. A flow they cannot follow (a host that is not GitHub, no remote, no `gh`, work without PRs) makes setup choose `local` and write an open item. A commit style with no type at all still does not fit the hook. None of this was tried on a real repo with such a flow yet, only in the guard tests.
 - The gate record is bookkeeping the agent trusts, CI is the real check. Codex and Antigravity have no guard hook, so the gate rule there is only a step in the skill.
-- `examples/` was written from the templates by hand, setup is an interview and was not run again.
+- `examples/` was written from the templates by hand from me, setup is an interview and was not run again.
 - Tried on Windows and macOS, Python comes from the device.
 - Found something? Open an issue.
 
