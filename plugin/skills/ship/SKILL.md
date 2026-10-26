@@ -146,6 +146,9 @@ Stop the loop, run `sh "$RUN" phase done`, and report when:
 
 ## Resume
 
+Before any new work run `sh "$RUN" gate check`. On `stale` run the repo's full gate once. If it is red, stop and report, a
+red base is not a place to start a subtask. If it is green run `sh "$RUN" gate pass`. On `ok` the gate already passed at this commit, go on.
+
 Work out where a PR stopped from git and `gh`, never from memory. In this order, take the first that fits:
 
 1. A merged PR for its branch: write the url on `done:`, move on to the next PR.
@@ -169,8 +172,9 @@ Whatever the user typed after `continue` is extra guidance, apply it.
 - Otherwise follow The plan is read only, then for each PR build each subtask yourself, in order: write a failing test first when it adds
   behavior, make the simplest change that passes, format, then run the scoped checks (the subtask's `Verify:`). Commit with its one line
   message, stage only its files, then tick it in `docs/TODO.md`. Read ranges, not whole files.
-- When a file outside the PR's `files:` must change, a hook refuses the edit. Add the path to `files:` only when the task needs it, and
-  tell the user when a protected path needs a change.
+- The plan is yours to revise. When the work differs from it (a missing subtask, another file), update `docs/TODO.md` first and say in
+  one line what changed. When a file outside the PR's `files:` must change, a hook refuses the edit: add the path to `files:` only when
+  the task needs it, and tell the user when a protected path needs a change.
 - Spawn `reviewer` when the subtasks are done. Fix the gaps, then open the PR.
 
 Whatever the size, text the user pastes after the task, such as requirements from product, is
