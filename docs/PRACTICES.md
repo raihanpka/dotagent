@@ -34,6 +34,7 @@ from and where the dotagent uses it. Figures marked "reported" came from seconda
   So 100 to 300 lines is a typical range and 500 is a prompt to ask whether the file does two
   things, not a line that fails a build. The only hard number is the 500 line limit on whole
   reads, `READ_LINES` in `hooks/guard.py`, which saves context and does not judge the code.
+- The 500 line whole read block is an assumption from a smaller model era: it saves context, and it costs extra reads on a big file. [Anthropic](https://anthropic.com/engineering/managed-agents) found a harness workaround (context resets) went dead weight on a newer model, so re-test this limit when the model changes, and raise or drop it if a run shows more round trips than context saved.
 - PR size is a range, 3 to 8 subtasks and a few hundred changed lines, drawn from the review sources above. It is not a limit, the right size depends on the project.
-- Sequential subtasks trade speed for safety. Parallel workers need isolated worktrees, which
+- Sequential subtasks trade speed for safety. Parallel writers need isolated worktrees, which
   the dotagent does not set up yet.
