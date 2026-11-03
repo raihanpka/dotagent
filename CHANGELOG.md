@@ -3,6 +3,31 @@
 Versions follow [semver](https://semver.org). The version lives in `plugin/.claude-plugin/plugin.json` and, equal to it, in `.codex-plugin/plugin.json`.
 Claude Code caches a plugin per version, so bump it on every change users should receive.
 
+## 0.6.0
+
+Upgrading: run `/plugin update dotagent@dotagent` and `/reload-plugins` in Claude Code. For Codex, update the marketplace, then open `/hooks` and trust the dotagent hooks once. A saved `.dotagent/config.json` needs no change.
+
+### Codex runs the guard
+
+- The repo root has `hooks/hooks.json`. It runs the guard for Codex on `Bash`, `apply_patch`, and `spawn_agent`, once you trust it in `/hooks`.
+- Codex has no permission prompt, so `ask` refuses a push, pull request, or merge, with the reason. Use `auto` or `local` in a Codex repo.
+- Other agents keep the git hooks and CI. Their setup writes `.codex/hooks.json` to run the guard from `.dotagent/`.
+
+### Setup asks which agent you use
+
+- Round 1 asks `claude`, `codex`, `both`, or `other`, and saves it as `agents`. Each answer writes only its own files: the Claude plugin, the Codex plugin with `.codex/agents/reviewer.toml`, or the skill alone for other agents.
+- The setup guide for agents without the plugin, `docs/SETUP-AGENT.md`, asks the same question.
+
+### Review someone else's pull request
+
+- `/dotagent:review <pr>` reads the pull request without switching your branch, runs the reviewer, and posts only what you choose: a comment, request changes, or approve. Nothing is pushed or merged.
+- Replies to review comments on your own pull request: each agreed comment gets its own commit and a reply on its thread. A branch you did not create is never rebased or force pushed.
+- A pull request review and any `gh api` write follow the workflow mode: `local` refuses them, `ask` asks, `auto` posts.
+
+### Docs
+
+- Each prerequisite links to its install page, in the README and in `plugin/SETUP.md`.
+
 ## 0.5.0
 
 Upgrading: run `/plugin update dotagent@dotagent` and `/reload-plugins`. The session line no longer shows `read-limit=`. Delete `.dotagent/approved`, `.dotagent/gate`, and `.dotagent/phase` if they are there, nothing reads them now.
