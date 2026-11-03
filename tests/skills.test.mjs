@@ -64,6 +64,9 @@ test('the review command posts only what the user chooses and never merges or pu
   assert.ok(review.includes('gh api -X POST'), 'no gh api review write')
   assert.ok(!review.includes('gh pr merge'), 'the review command merges')
   assert.ok(review.includes('Approve only when the user chooses it'), 'approve is not gated by the user')
+  assert.ok(review.includes('no argument'), 'no unfinished-work mode')
+  assert.ok(review.includes('docs/TODO.md'), 'the unfinished-work mode does not read the TODO')
+  assert.ok(review.includes('sh "$RUN" status'), 'the unfinished-work mode does not check the state')
 })
 
 test('setup asks which agent runs dotagent and branches on the four answers', () => {

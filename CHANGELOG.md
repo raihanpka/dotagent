@@ -3,6 +3,13 @@
 Versions follow [semver](https://semver.org). The version lives in `plugin/.claude-plugin/plugin.json` and, equal to it, in `.codex-plugin/plugin.json`.
 Claude Code caches a plugin per version, so bump it on every change users should receive.
 
+## 0.6.1
+
+Upgrading: run `/plugin update dotagent@dotagent` and `/reload-plugins` in Claude Code. For Codex, update the marketplace. Nothing to save.
+
+- `/dotagent:review` with no argument reviews the unfinished work of the repo: the PRs left in `docs/TODO.md`, their commits, and any uncommitted change. It reports the subtasks left and any gaps, and posts nothing. Use it after a cut session, then `/dotagent:ship continue` to resume.
+- `/dotagent:review <pr>` is unchanged.
+
 ## 0.6.0
 
 Upgrading: run `/plugin update dotagent@dotagent` and `/reload-plugins` in Claude Code. For Codex, update the marketplace, then open `/hooks` and trust the dotagent hooks once. A saved `.dotagent/config.json` needs no change.

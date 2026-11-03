@@ -115,7 +115,7 @@ Copy from `plugin/` and edit. Fill every `{{...}}`. `plugin/SETUP.md` lists the 
 | `/dotagent:ship <task>` | Ship the task. `continue` resumes unfinished work. |
 | `/dotagent:workflow local\|ask\|auto` | Save how far a run goes on its own, for every run. |
 | `/dotagent:setup` | Set dotagent up in this repo, once. It asks which agent you use: Claude Code, Codex, both, or another. |
-| `/dotagent:review <pr>` | Review someone else's pull request. A fresh reviewer reads the diff, you choose what to post, and it goes to GitHub with `gh`. Nothing is pushed or merged. |
+| `/dotagent:review [<pr>]` | With a PR: review someone else's pull request, and post what you choose to GitHub with `gh`. With no argument: review the unfinished work of this repo, the PRs left in `docs/TODO.md` and any uncommitted change, after a cut session. Nothing is pushed or merged. |
 
 Without an argument `workflow` shows the saved settings. In the `/` menu the short form is listed as `/dotagent:dotagent`.
 

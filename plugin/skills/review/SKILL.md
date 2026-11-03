@@ -1,14 +1,36 @@
 ---
-description: "Review a pull request you did not plan here: a fresh reviewer reads the diff against its description, you choose what to post, and it goes to GitHub as a review through gh. Nothing is pushed or merged."
-argument-hint: "<pr number or url>"
+description: "Review a pull request, or with no argument review the unfinished work of this repo: the PRs left in docs/TODO.md and any uncommitted change. A fresh reviewer reads the diff. Nothing is pushed, merged, or posted without your choice."
+argument-hint: "[<pr number or url>]"
 disable-model-invocation: true
 ---
 # dotagent review
 
-Usage: `/dotagent:review <pr number or url>`. It reviews one pull request and posts only what you choose. It never checks the PR
-out over your branch, never pushes to its branch, and never merges it.
+Usage:
+
+- `/dotagent:review <pr number or url>`: reviews one pull request, and posts only what you choose. See "With a PR".
+- `/dotagent:review` with no argument: reviews the work in this repo that is not finished, for example after a cut session. It reports
+  only, it posts nothing. See "Without a PR".
+
+It never commits, pushes, merges, or switches your branch.
 
 `RUN` is `${CLAUDE_SKILL_DIR}/../../hooks/run.sh`.
+
+## Without a PR: the unfinished work
+
+1. Check the state: `sh "$RUN" status` prints how many PRs in `docs/TODO.md` are unfinished (an unticked subtask, or an empty `done:` line).
+   Read `docs/TODO.md` for the layout. With no `docs/TODO.md`, skip to step 3.
+2. For each unfinished PR, in TODO order: its `branch:`, its subtasks (ticked and unticked), and what the branch holds. Use
+   `git log --oneline <base>..<branch>`, where `<base>` is `base=` on the session line, else the default branch, and
+   `gh pr list --head <branch> --json number,state` for an open PR. A branch that does not exist yet is said so, not guessed.
+3. The uncommitted work: `git status --short` and `git diff`. Say what is staged and what is not, and which PR's `files:` it belongs to.
+4. Review each unfinished branch and the uncommitted change with a `reviewer` subagent. Objective: check the ticked subtasks against their
+   code, and the unticked subtasks against what is still missing, for that PR in `docs/TODO.md`. Output: `clean`, or a numbered list of
+   gaps with `path:line` and the fix. Boundaries: read only, do not run the gate.
+5. Report per PR: subtasks done, subtasks left, the gaps or `clean`, and the uncommitted state. Fix nothing here.
+   `next:` `/dotagent:ship continue` resumes the work. With nothing unfinished, say so and give
+   `next:` `/dotagent:ship <task>`.
+
+## With a PR: review one pull request
 
 1. Read the pull request: `gh pr view <pr> --json title,body,author,baseRefName,headRefName`, then `gh pr diff <pr>`. The description
    is the requirement the diff is checked against.
@@ -25,4 +47,4 @@ out over your branch, never pushes to its branch, and never merges it.
      (each with `path`, `line`, `side`, `body`), then `gh api -X POST repos/{owner}/{repo}/pulls/<pr>/reviews --input <file>`.
 6. Delete the local `review/<pr>` branch only when the user asks. Run `sh "$RUN" receipt` and put its line in the report.
 
-End with one line `next:` that names `/dotagent:review <another pr>` or `/dotagent:ship <task>` for your own work.
+End with one line `next:` that names `/dotagent:review` for the unfinished work, `/dotagent:review <another pr>`, or `/dotagent:ship <task>`.
