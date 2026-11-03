@@ -33,6 +33,9 @@ Ask only about what you could not find.
 
 Round 1 (no prerequisites):
 
+- Agent: which agent runs dotagent here. Codex (recommended when the user runs Codex), another agent (Antigravity, Cursor, or others),
+  or Codex and Claude Code both. Claude Code uses the plugin: for it the user runs `/dotagent:setup`. Save the answer once step 3 has
+  written `run.sh`: `sh .dotagent/run.sh set agents <codex|other|both>`.
 - Commands: the build, the lint, and one test command. Recommend what the repo already uses.
 
 Round 2 (needs round 1):
@@ -77,12 +80,32 @@ one, leave it out of the file and add a line to the open items in `docs/DOTAGENT
 | `.dotagent/guard.py` | `plugin/hooks/guard.py` (optional, see below) |
 | `.dotagent/run.sh` | `plugin/hooks/run.sh` (optional, see below) |
 
+When the answer includes Codex, write `.codex/hooks.json` with this content. It runs the guard for Codex on its `Bash`, `apply_patch`,
+and `spawn_agent` tools. Ask the user to open `/hooks` in Codex and trust it, because Codex does not run a hook until it is trusted:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [{ "type": "command", "command": "sh \"$(git rev-parse --show-toplevel)/.dotagent/run.sh\" --client codex" }] }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|apply_patch|spawn_agent",
+        "hooks": [{ "type": "command", "command": "sh \"$(git rev-parse --show-toplevel)/.dotagent/run.sh\" --client codex" }]
+      }
+    ]
+  }
+}
+```
+
 The `.codex/agents/reviewer.toml` file is the one subagent role for Codex: it checks the diff in a fresh context before the PR. You plan and
 build yourself. Write it only when you can run subagents. Agents without subagents review in a fresh pass, yourself.
 
-The two `.dotagent/` files are optional. They give you `sh .dotagent/run.sh gate run <the gate command>` and `gate check`, so the whole change is
-gated once per commit and the result is recorded (needs Python 3.8 or newer). Nothing else in them runs outside Claude Code: no hook enforces a rule
-for you, only the git hooks and the CI do. `run.sh` keeps `.dotagent/` out of git through `.git/info/exclude`, so every clone fetches them again.
+The two `.dotagent/` files are optional, but Codex needs them for its hook. They give you `sh .dotagent/run.sh gate run <the gate command>`
+and `gate check`, so the whole change is gated once per commit and the result is recorded (needs Python 3.8 or newer). The guard runs in
+Codex through `.codex/hooks.json`, and nowhere else: other agents get the git hooks and CI only. `run.sh` keeps `.dotagent/` out of git
+through `.git/info/exclude`, so every clone fetches them again. `run.sh` keeps `.dotagent/` out of git through `.git/info/exclude`, so every clone fetches them again.
 
 Then append to the repo's `.gitignore`, skipping any line already there: `docs/DOTAGENT-SETUP.md` and `docs/TODO.md`.
 Tell the user which lines you added.
@@ -113,4 +136,5 @@ Report to the user: what you wrote, what you skipped and why, and what the user 
 ## Afterwards: shipping a task
 
 To ship a task later, follow `.agents/skills/dotagent-ship/SKILL.md`. Ask the user for a yes before each push, each
-PR, and each merge.
+PR, and each merge. In Codex the guard cannot show a prompt, so with `workflow` set to `ask` it refuses every push, PR, and merge. Then set
+`workflow` to `auto` or `local` with `sh .dotagent/run.sh set workflow <value>`, and tell the user why.
