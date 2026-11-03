@@ -13,8 +13,13 @@ user already set auto in `.dotagent/config.json` (Claude Code only).
 ## 1. Start
 
 - Read `AGENTS.md` at the repo root for the commands and the modules.
-- If the task is unclear, ask one question with a recommended answer and the reason. Do not guess.
+- Decide open points yourself: pick the option you would defend, and write it in `docs/TODO.md` under `## decisions` with the reason.
+  Ask the user only when the answer lives with them alone, or when an action cannot be undone and was not asked for. Ask in plain text,
+  one question with the recommended answer first, and do not stop the rest of the work for it.
+- If the request is wrong (it breaks a requirement, a repo rule, or a known failure), say in two lines what is wrong, build the best
+  version you would defend, and ask once at the end whether they want their version instead.
 - Check the default branch: `git symbolic-ref refs/remotes/origin/HEAD`, or ask.
+- Read `docs/LESSONS.md` when it exists. After a correction from the user, add one line to it (the pattern, then the rule). Never stage it.
 
 ## 2. Plan
 
@@ -30,6 +35,7 @@ user already set auto in `.dotagent/config.json` (Claude Code only).
 - Commit one atomic change: `git add <explicit paths>`, then `git commit -m "type(scope): summary"`.
   Never `git add -A`. A refactor is its own commit.
 - Tick the subtask in `docs/TODO.md`. Go to the next.
+- A bug report is a task: reproduce it from the log or the failing test, then fix the root cause, not the symptom.
 - Never edit a protected path or a generated file. Run the generator for generated files.
 
 ## 4. Check

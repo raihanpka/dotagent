@@ -26,6 +26,18 @@ expect() {
   fi
 }
 
+# expect_ask <name> <json>: the guard returns an ask (Claude Code shows its own prompt), it does not block
+expect_ask() {
+  local name="$1" json="$2" out got
+  out="$(printf '%s' "$json" | sh "$guard" 2>/dev/null)"
+  got=$?
+  case "$out" in
+    *'"permissionDecision": "ask"'*) [ "$got" -eq 0 ] && pass=$((pass + 1)) && return ;;
+  esac
+  fail=$((fail + 1))
+  echo "FAIL $name: want an ask, got exit $got: $out"
+}
+
 bash_json() { jq -nc --arg c "$1" '{tool_name:"Bash",tool_input:{command:$c}}'; }
 
 # commit style
@@ -53,7 +65,7 @@ expect "commit todo scope" 2 "$(bash_json 'git commit -m "feat(todo): add login"
 expect "commit real task word ok" 0 "$(bash_json 'git commit -m "feat(tasks): add the task list endpoint"')"
 expect "commit milestone feature ok" 0 "$(bash_json 'git commit -m "feat(billing): add milestone payments"')"
 expect "pr title label" 2 "$(bash_json 'gh pr create --title "feat(milestone-2): add overview" --body "text"')"
-expect "merge subject label" 2 "$(bash_json 'gh pr merge 5 --squash --subject "feat: finish task 3 (#5)" --body "- 1a2b3c4 fix(a): x"')"
+expect "merge subject label is not checked" 0 "$(bash_json 'gh pr merge 5 --squash --subject "feat: finish task 3 (#5)" --body "- 1a2b3c4 fix(a): x"')"
 
 # the git hooks format and lint, so they are never skipped
 expect "commit no-verify" 2 "$(bash_json 'git commit --no-verify -m "feat(a): add x"')"
@@ -101,19 +113,19 @@ cfg '{"workflow":"autopilot"}'
 expect "autopilot merge ok" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
 cfg '{"workflow":"autopilot"}'
 expect "autopilot merge ok again" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
-expect "merge wrong number" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#6)" --body "- 1a2b3c4 fix(a): x"')"
-expect "merge commit is refused" 2 "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
-expect "rebase is refused" 2 "$(bash_json 'gh pr merge 5 --rebase')"
-expect "squash needs a subject" 2 "$(bash_json 'gh pr merge 5 --squash --body "- 1a2b3c4 fix(a): x"')"
-expect "squash needs a body" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)"')"
-expect "squash empty body is refused" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body ""')"
-expect "squash prose body is refused" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "long text"')"
+expect "merge wrong number is not checked" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#6)" --body "- 1a2b3c4 fix(a): x"')"
+expect_ask "merge commit asks when the repo merges by squash" "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
+expect_ask "rebase asks when the repo merges by squash" "$(bash_json 'gh pr merge 5 --rebase')"
+expect "squash needs no subject" 0 "$(bash_json 'gh pr merge 5 --squash --body "- 1a2b3c4 fix(a): x"')"
+expect "squash needs no body" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)"')"
+expect "squash empty body passes" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body ""')"
+expect "squash prose body passes" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "long text"')"
 expect "squash body with a co-author is refused" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x
 Co-Authored-By: X <x@y.z>"')"
 expect "squash body with many commits ok" 0 "$(bash_json 'gh pr merge 5 --squash --delete-branch --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x
 - 5d6e7f8 test(a): y"')"
-expect "squash body file is refused" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body-file b.md')"
-expect "merge subject needs number" 2 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a" --body "- 1a2b3c4 fix(a): x"')"
+expect "squash body file passes" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body-file b.md')"
+expect "merge subject needs no number" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a" --body "- 1a2b3c4 fix(a): x"')"
 cfg '{}'
 
 # em dash in written files
@@ -168,7 +180,7 @@ sh "$guard" phase plan >/dev/null
 printf '{"hook_event_name":"SessionStart"}' | sh "$guard" >/dev/null
 expect "session start clears the plan marker" 0 '{"tool_name":"Write","tool_input":{"file_path":"src/a.go","content":"x"}}'
 sh "$guard" phase plan >/dev/null
-touch -t 200001010000 "$tmp/proj/.dotagent/phase"
+printf '{"t": 1, "phase": "plan"}\n' > "$tmp/proj/.dotagent/runs.jsonl"
 expect "a stale plan marker is ignored" 0 '{"tool_name":"Write","tool_input":{"file_path":"src/a.go","content":"x"}}'
 sh "$guard" phase done >/dev/null
 
@@ -182,7 +194,7 @@ expect "config set via run.sh ok" 0 "$(bash_json 'sh /p/hooks/run.sh set workflo
 seq 1 501 > "$tmp/big.txt"
 seq 1 500 > "$tmp/ok.txt"
 seq 1 900 > "$tmp/big.g.dart"
-expect "read big blocked" 2 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$tmp/big.txt\"}}"
+expect "read big is never blocked" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$tmp/big.txt\"}}"
 expect "read 500 ok" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$tmp/ok.txt\"}}"
 expect "read big with range ok" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$tmp/big.txt\",\"offset\":10,\"limit\":50}}"
 expect "read generated ok" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$tmp/big.g.dart\"}}"
@@ -296,12 +308,7 @@ out="$(ask_out "$(bash_json 'git push origin feat/a')")"
 case "$out" in *'"permissionDecision": "ask"'*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL checkpoint push does not ask: $out" ;; esac
 expect "checkpoint asks, it does not block" 0 "$(bash_json 'git push origin feat/a')"
 expect "checkpoint commits locally" 0 "$(bash_json 'git commit -m "feat(a): add a"')"
-sh "$guard" approve >/dev/null
-out="$(ask_out "$(bash_json 'git push origin feat/a')")"
-case "$out" in *'"permissionDecision"'*) fail=$((fail + 1)); echo "FAIL checkpoint asks after a yes: $out" ;; *) pass=$((pass + 1)) ;; esac
-expect "checkpoint merges after a yes" 0 "$(bash_json "gh pr merge 5 $SQ")"
-out="$(ask_out "$(bash_json "gh pr merge 5 $SQ")")"
-case "$out" in *'"permissionDecision": "ask"'*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a yes covers more than one PR: $out" ;; esac
+expect_ask "checkpoint merge asks, the prompt is the yes" "$(bash_json "gh pr merge 5 $SQ")"
 # the modes are local, ask, and auto. The old names adapt, checkpoint, and autopilot stay as aliases and are saved under the new name
 cfg '{"workflow":"local"}'
 expect "local never pushes" 2 "$(bash_json 'git push origin feat/a')"
@@ -311,12 +318,8 @@ cfg '{"workflow":"auto"}'
 expect "auto pushes" 0 "$(bash_json 'git push origin feat/a')"
 expect "auto merges" 0 "$(bash_json "gh pr merge 5 $SQ")"
 cfg '{"workflow":"ask"}'
-rm -f "$tmp/proj/.dotagent/approved"
 out="$(ask_out "$(bash_json 'git push origin feat/a')")"
 case "$out" in *'"permissionDecision": "ask"'*"workflow is ask"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL ask does not ask: $out" ;; esac
-sh "$guard" approve >/dev/null
-out="$(ask_out "$(bash_json 'git push origin feat/a')")"
-case "$out" in *'"permissionDecision"'*) fail=$((fail + 1)); echo "FAIL ask asks after a yes: $out" ;; *) pass=$((pass + 1)) ;; esac
 for pair in "autopilot auto" "checkpoint ask" "adapt local" "auto auto" "ask ask" "local local"; do
   set -- $pair
   [ "$(sh "$guard" set workflow "$1")" = "workflow=$2" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set workflow $1 is not saved as $2"; }
@@ -364,13 +367,13 @@ out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
 case "$out" in *"setup=minimal hooks=declined"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL answers in the session line: $out" ;; esac
 cfg '{}'
 
-# deleting a test to get green is refused, other deletes are not
+# deleting a test asks the user, other deletes pass
 cfg '{}'
-expect "rm of a js test" 2 "$(bash_json 'rm tests/a.test.js')"
-expect "git rm of a go test" 2 "$(bash_json 'git rm internal/x/x_test.go')"
-expect "rm of a python test" 2 "$(bash_json 'rm -f pkg/test_login.py')"
-expect "rm of the tests folder" 2 "$(bash_json 'rm -rf tests')"
-expect "git rm after another command" 2 "$(bash_json 'git add a && git rm -q src/__tests__/a.js')"
+expect "rm of a js test passes" 0 "$(bash_json 'rm tests/a.test.js')"
+expect "git rm of a go test passes" 0 "$(bash_json 'git rm internal/x/x_test.go')"
+expect "rm of a python test passes" 0 "$(bash_json 'rm -f pkg/test_login.py')"
+expect "rm of the tests folder passes" 0 "$(bash_json 'rm -rf tests')"
+expect "git rm after another command passes" 0 "$(bash_json 'git add a && git rm -q src/__tests__/a.js')"
 expect "rm of a source file" 0 "$(bash_json 'rm src/a.js')"
 expect "git rm of a source file" 0 "$(bash_json 'git rm src/login.go')"
 expect "rm of a log" 0 "$(bash_json 'rm -f build/out.log')"
@@ -390,16 +393,16 @@ expect "an optional scope may be given" 0 "$(bash_json 'git commit -m "feat(a): 
 expect "an optional scope still needs a type" 2 "$(bash_json 'git commit -m "added a"')"
 cfg '{"merge_method":"merge"}'
 expect "merge method merge accepts --merge" 0 "$(bash_json 'gh pr merge 5 --merge --delete-branch')"
-expect "merge method merge refuses --squash" 2 "$(bash_json "gh pr merge 5 $SQ")"
-expect "merge method merge refuses --rebase" 2 "$(bash_json 'gh pr merge 5 --rebase')"
+expect_ask "merge method merge refuses --squash" "$(bash_json "gh pr merge 5 $SQ")"
+expect_ask "merge method merge refuses --rebase" "$(bash_json 'gh pr merge 5 --rebase')"
 expect "merge method merge refuses --admin" 2 "$(bash_json 'gh pr merge 5 --merge --admin')"
 expect "merge method merge refuses a trailer" 2 "$(bash_json 'gh pr merge 5 --merge --body "Co-Authored-By: a <a@b>"')"
 cfg '{"merge_method":"rebase"}'
 expect "merge method rebase accepts --rebase" 0 "$(bash_json 'gh pr merge 5 --rebase --delete-branch')"
-expect "merge method rebase refuses --merge" 2 "$(bash_json 'gh pr merge 5 --merge')"
-expect "merge method rebase refuses a bare merge" 2 "$(bash_json 'gh pr merge 5')"
+expect_ask "merge method rebase refuses --merge" "$(bash_json 'gh pr merge 5 --merge')"
+expect_ask "merge method rebase refuses a bare merge" "$(bash_json 'gh pr merge 5')"
 cfg '{"workflow":"auto"}'
-expect "the default merge is still a squash" 2 "$(bash_json 'gh pr merge 5 --merge')"
+expect_ask "the default merge is still a squash" "$(bash_json 'gh pr merge 5 --merge')"
 for pair in "merge_method rebase" "merge_method merge" "commit_scope optional" "commit_types feat,fix" "base_branch develop" "base_branch release/1.x"; do
   set -- $pair
   [ "$(sh "$guard" set "$1" "$2")" = "$1=$2" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set $1 $2"; }

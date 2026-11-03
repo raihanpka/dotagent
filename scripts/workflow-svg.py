@@ -15,7 +15,7 @@ import sys
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 SRC = os.path.join(ROOT, "docs", "workflow.excalidraw")
 OUT = os.path.join(ROOT, "docs", "workflow.svg")
-FONT = "Inter, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif"
+FONT = "sans-serif"
 BOLD_WORDS = ["Hooks", "no trailer", "protected paths", "workflow mode", "read only"]
 MARKER = (
     '<marker id="{id}" viewBox="0 0 10 10" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" refX="10" refY="5" '

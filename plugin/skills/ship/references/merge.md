@@ -26,7 +26,7 @@ The workflow mode decides who acts:
 
 - **auto** (the default): push, open the PR, and merge when the reviewer said `clean` and CI is green. Fix review gaps first, then go on to the next PR.
 - **ask**: build and commit locally as in auto, but before any push, PR, or merge ask the user in the chat and wait for a
-  yes ("yes", "approve", "ya"). After a yes run `sh "$RUN" approve` (it covers one PR), then go on. Without it the hook asks the user itself.
+  yes ("yes", "approve", "ya"). After a yes, run the command. The hook then shows its permission prompt, and the user answers it there. No other command is needed.
 - **local**: never push, open a PR, or merge on the remote. See By workflow.
 
 By default a merge is a squash, and `merge=merge` or `merge=rebase` on the session line means the repo merges that way (see Merge method below). A PR targets the `base=` branch when the line has one, so read `<default>` below as that branch. Always rebase first, then squash. The branch sits on the latest default branch, so a stale branch or a conflict shows up on your

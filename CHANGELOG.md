@@ -3,6 +3,31 @@
 Versions follow [semver](https://semver.org). The version lives in `plugin/.claude-plugin/plugin.json` and, equal to it, in `.codex-plugin/plugin.json`.
 Claude Code caches a plugin per version, so bump it on every change users should receive.
 
+## 0.5.0
+
+Upgrading: run `/plugin update dotagent@dotagent` and `/reload-plugins`. The session line no longer shows `read-limit=`. Delete `.dotagent/approved`, `.dotagent/gate`, and `.dotagent/phase` if they are there, nothing reads them now.
+
+### Fewer blocks, more decisions
+
+- Open points are decided, not asked. A run with clear requirements goes to the end: the lead picks the option it would defend, writes `question: choice, because reason` under `## decisions` in `docs/TODO.md`, and lists it in the final report. A question comes only when the answer lives with you alone (a secret, a product call with no sensible default), when an action cannot be undone and was not asked for, or when the request is wrong.
+- A wrong request is said out loud: two lines on what is wrong and where, the best version built, and one question at the end whether you want your version instead. The question never pauses the run.
+- Removed: the 500 line whole read block. `docs/PRACTICES.md` keeps the reason.
+- An `rm` of a test is no longer gated. The reviewer flags a test deleted without your yes.
+- An edit outside the PR's `files:` is still refused, but the message says what to do: add the path with a reason to `docs/TODO.md`, then retry. It is no longer a stop.
+- Merge checks are looser: a squash needs no PR number in the subject and no commit list in the body, and a merge method other than `merge_method` asks instead of refusing.
+- Still refused outright: a `protected` path, a force push, `--admin`, `--no-verify`, a trailer, and a push or merge the workflow mode does not allow.
+
+### State
+
+- `.dotagent/` holds `config.json` and `runs.jsonl` only. `runs.jsonl` keeps one JSON line per event: a subagent spawn, a gate pass, a plan phase.
+- There is no `approve` command, so no `!` command is needed. In `ask` the permission prompt is the yes.
+
+### Lessons and bug reports
+
+- The ship skill keeps `docs/LESSONS.md`, untracked like `docs/TODO.md`: one line after each correction from you, read at the start of a run.
+- A bug report is reproduced from the log or the failing test, then the root cause is fixed.
+- The Codex skill (`skills/dotagent-ship`, the template copy in `.agents/skills/dotagent-ship`) and `.codex/agents/reviewer.toml` have the same rules.
+
 ## 0.4.0
 
 Upgrading: `/dotagent:scale` and the `large` run are gone, and so are the planner and worker agents. A saved `scale` key in `.dotagent/config.json` is ignored, `sh hooks/run.sh set scale ...` now says why it refuses. Add nothing, run `/plugin update dotagent@dotagent` and `/reload-plugins`. If you allowed `Workflow` in `.claude/settings.json` for `ship-large.js`, you can remove it.

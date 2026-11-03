@@ -132,7 +132,7 @@ How far a run goes on its own: `local` stops at local commits, `ask` stops to as
 | Mode | What happens |
 |---|---|
 | `auto` *(default)* | Runs the whole TODO and finishes every PR: pushes, opens the PR, watches CI, fixes a red check (two tries), rebases, squash merges when the review is clean and CI is green, then starts the next PR. It stops on a failure, an open question, or a PR that cannot merge. |
-| `ask` | The same run and local commits, one PR per plan item, but it asks for your yes in the chat ("yes", "approve", "ya") before any push, PR, or merge. A yes covers one PR. |
+| `ask` | The same run and local commits, one PR per plan item, but it asks for your yes in the chat ("yes", "approve", "ya") before any push, PR, or merge, and each one then shows a permission prompt. |
 | `local` | Asks first, sets up the minimum (no CI files, no PR template, git hooks stay), puts the whole TODO on one local branch, never pushes, never opens a PR. It ends with a local squash or leaves the branch to you. |
 
 ### settings
@@ -156,7 +156,7 @@ One file, `.dotagent/config.json`, per machine and ignored by git (written by `r
 
 ### how a run works
 
-1. One path for every task. If the whole diff fits one sentence there is no plan: change, check, commit, PR. Otherwise the lead plans read only, writing only `docs/TODO.md`, and builds each subtask itself, one commit each. Ambiguity becomes a question with a recommended answer, never a guess, and the lead revises the plan when the work differs from it.
+1. One path for every task. If the whole diff fits one sentence there is no plan: change, check, commit, PR. Otherwise the lead plans read only, writing only `docs/TODO.md`, and builds each subtask itself, one commit each. Open points are decided with a reason and listed in the report. A question comes only when the answer lives with you alone or the request is wrong, and then the lead builds the best version and asks once at the end. The lead revises the plan when the work differs from it.
 2. The repo gate (build, lint, test) runs once per commit: `run.sh gate run <the gate command>` runs it and records the commit only when it exits 0, `gate check` says `ok` or `stale`, so the lead, the reviewer, and a `continue` do not repeat it.
 3. A fresh `reviewer` checks the diff against the plan before the PR. `Explore` reads wide. Every spawn gets an objective, an output shape, and boundaries. A failure gets two tries from the lead, then it stops.
 4. The ship skill is a small core plus two references, `plan.md` and `merge.md`, read when that step comes, so a one sentence task never loads the rest.
@@ -172,9 +172,8 @@ One file, `.dotagent/config.json`, per machine and ignored by git (written by `r
 - no `Co-Authored-By` or "Generated with" trailer in a commit, the PR body, or the squash body, and a PR whose commits carry one is not merged
 - no em dash or emoji unless you set `allow`, no `--no-verify`, no `--force` (only `--force-with-lease`), no `--admin`
 - push, PR, and merge follow the workflow: `ask` asks first, `local` refuses
-- while building, no edit outside the PR's `files:` list in `docs/TODO.md`, and none in a `protected` path
-- no whole read of a file over 500 lines
-- no `rm` or `git rm` of a test file, a removed test hides a failure
+- while building, an edit outside the PR's `files:` is refused until the path is added to `docs/TODO.md` with a reason, and a `protected` path is never edited
+- a test deleted without your yes is flagged by the reviewer, the hook does not block the delete
 - `sh hooks/run.sh receipt` prints which subagents really ran (`reviewer 1, Explore 2`)
 
 </details>
