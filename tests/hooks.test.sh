@@ -369,11 +369,11 @@ cfg '{}'
 
 # deleting a test asks the user, other deletes pass
 cfg '{}'
-expect "rm of a js test passes" "$(bash_json 'rm tests/a.test.js')"
-expect "git rm of a go test passes" "$(bash_json 'git rm internal/x/x_test.go')"
-expect "rm of a python test passes" "$(bash_json 'rm -f pkg/test_login.py')"
-expect "rm of the tests folder passes" "$(bash_json 'rm -rf tests')"
-expect "git rm after another command passes" "$(bash_json 'git add a && git rm -q src/__tests__/a.js')"
+expect "rm of a js test passes" 0 "$(bash_json 'rm tests/a.test.js')"
+expect "git rm of a go test passes" 0 "$(bash_json 'git rm internal/x/x_test.go')"
+expect "rm of a python test passes" 0 "$(bash_json 'rm -f pkg/test_login.py')"
+expect "rm of the tests folder passes" 0 "$(bash_json 'rm -rf tests')"
+expect "git rm after another command passes" 0 "$(bash_json 'git add a && git rm -q src/__tests__/a.js')"
 expect "rm of a source file" 0 "$(bash_json 'rm src/a.js')"
 expect "git rm of a source file" 0 "$(bash_json 'git rm src/login.go')"
 expect "rm of a log" 0 "$(bash_json 'rm -f build/out.log')"
@@ -393,16 +393,16 @@ expect "an optional scope may be given" 0 "$(bash_json 'git commit -m "feat(a): 
 expect "an optional scope still needs a type" 2 "$(bash_json 'git commit -m "added a"')"
 cfg '{"merge_method":"merge"}'
 expect "merge method merge accepts --merge" 0 "$(bash_json 'gh pr merge 5 --merge --delete-branch')"
-expect "merge method merge refuses --squash" 2 "$(bash_json "gh pr merge 5 $SQ")"
-expect "merge method merge refuses --rebase" 2 "$(bash_json 'gh pr merge 5 --rebase')"
+expect_ask "merge method merge refuses --squash" "$(bash_json "gh pr merge 5 $SQ")"
+expect_ask "merge method merge refuses --rebase" "$(bash_json 'gh pr merge 5 --rebase')"
 expect "merge method merge refuses --admin" 2 "$(bash_json 'gh pr merge 5 --merge --admin')"
 expect "merge method merge refuses a trailer" 2 "$(bash_json 'gh pr merge 5 --merge --body "Co-Authored-By: a <a@b>"')"
 cfg '{"merge_method":"rebase"}'
 expect "merge method rebase accepts --rebase" 0 "$(bash_json 'gh pr merge 5 --rebase --delete-branch')"
-expect "merge method rebase refuses --merge" 2 "$(bash_json 'gh pr merge 5 --merge')"
-expect "merge method rebase refuses a bare merge" 2 "$(bash_json 'gh pr merge 5')"
+expect_ask "merge method rebase refuses --merge" "$(bash_json 'gh pr merge 5 --merge')"
+expect_ask "merge method rebase refuses a bare merge" "$(bash_json 'gh pr merge 5')"
 cfg '{"workflow":"auto"}'
-expect "the default merge is still a squash" 2 "$(bash_json 'gh pr merge 5 --merge')"
+expect_ask "the default merge is still a squash" "$(bash_json 'gh pr merge 5 --merge')"
 for pair in "merge_method rebase" "merge_method merge" "commit_scope optional" "commit_types feat,fix" "base_branch develop" "base_branch release/1.x"; do
   set -- $pair
   [ "$(sh "$guard" set "$1" "$2")" = "$1=$2" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set $1 $2"; }
