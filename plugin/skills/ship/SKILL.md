@@ -15,7 +15,7 @@ work, see Start.
   - `${CLAUDE_SKILL_DIR}/references/plan.md` before you plan: the read only plan, the TODO layout, the loop over the PRs.
   - `${CLAUDE_SKILL_DIR}/references/merge.md` before you push, open a PR, or merge: the workflow modes, the PR, CI, the squash.
 
-Read the `[dotagent] workflow=... read-limit=... style=...` line from session start. It comes from the saved settings
+Read the `[dotagent] workflow=... style=...` line from session start. It comes from the saved settings
 (it may end with `protected=...`, `setup=...`, `hooks=...`, `big_plan=...`), and `workflow=auto` is the default. A repo flow that is not the
 default adds `merge=`, `types=`, `scope=`, or `base=` to that line: follow them, they come from `/dotagent:setup`.
 `RUN` is `${CLAUDE_SKILL_DIR}/../../hooks/run.sh`. If it also says `unfinished`, `docs/TODO.md` holds work
@@ -32,22 +32,30 @@ If a `[dotagent] first run` line is there, do what it says before anything else:
 A task is one or more PRs, each cut from the default branch (the `base=` branch when the line has one). Commits are atomic and one
 line, `type(scope): summary`, with the repo's own `types=` and an optional scope when the line says so. Hooks enforce the format and the names.
 
+## Decide
+
+A task with clear requirements runs to the end. Decide open points: pick the option you would defend, write `question: choice, because
+reason` under `## decisions` in `docs/TODO.md`, and list it in the final report so the user can redirect it.
+
+Ask only when the answer lives with the user alone (a secret, a product call with no sensible default), when an action cannot be undone
+and was not asked for, or when the request is wrong (it breaks a requirement, a repo rule, or a known failure). A wrong request: say in two
+lines what is wrong and where, build the best version you would defend, and ask once in the final report if they want their version instead.
+That question never pauses the run.
+
 ## Questions
 
-Ask with AskUserQuestion. If it is missing or errors, load it with ToolSearch (`select:AskUserQuestion`) and retry once. Still missing:
-ask in plain text, a numbered list with the recommended option first, one line of reason each, then stop and wait. Headless
-(`claude -p`): take the recommended option, say so, go on. Ask only for what is missing, never guess what the plan depends on, and
-save each answer that can come back with `sh "$RUN" set` (`setup`, `hooks`, `big_plan`) so it is not asked twice.
+Ask with AskUserQuestion, recommended option first. If it is missing or errors, load it with ToolSearch (`select:AskUserQuestion`) and retry
+once. Still missing: ask in plain text, numbered, recommended first, one line of reason each, then stop and wait. Headless (`claude -p`): take
+the recommended option, say so, go on. Save each answer that can come back with `sh "$RUN" set` (`setup`, `hooks`, `big_plan`).
 
 ## Tools and speed
 
-Prefer harness tools to shell: Grep and Glob to find, Read with offset and limit, independent calls together in one turn. For wide
-reading over many files send the `Explore` agent and keep only its summary. Watch CI in the background. Agents cannot start
-agents, so only you spawn.
+Prefer harness tools to shell: Grep and Glob to find, Read ranges, independent calls together. Send `Explore` for wide reading and keep
+only its summary. Watch CI in the background. Agents cannot start agents, so only you spawn.
 
 ## Delegating
 
-Every spawn (`Explore`, `reviewer`) gets three lines, so it does not guess or repeat work:
+Every spawn (`Explore`, `reviewer`) gets three lines:
 
 - **Objective:** one line, what to find or check, for which PR (the base branch, the `covers`).
 - **Output:** the shape you want back. `reviewer`: `clean` or a numbered list of gaps with `path:line` and the fix. `Explore`: `path:line` hits only.
@@ -55,20 +63,19 @@ Every spawn (`Explore`, `reviewer`) gets three lines, so it does not guess or re
 
 ## Style skills
 
-Invoke each skill in `style=` once with the Skill tool before you start (skip `none` and any not installed). They change how you
-write replies, not the steps.
+Invoke each `style=` skill once with the Skill tool before you start (skip `none` and missing ones). They change replies, not steps.
 
 ## Start
 
-Check the git hooks first: `sh "$RUN" hooks` prints `on`, `off`, or `none`. They check every commit and push
-by anyone, which the agent hook cannot, so do not skip this. Skip the question below when the line says `hooks=declined`.
+Check the git hooks first: `sh "$RUN" hooks` prints `on`, `off`, or `none`. They guard every commit and push, not only the agent's.
+Skip the question below when the line says `hooks=declined`.
 
 - `off`: the repo ships `.githooks` but git does not use it. Say what is skipped (format, lint, names) and
   ask once with AskUserQuestion to turn them on with `git config core.hooksPath .githooks` (Recommended),
   or to go on without. Never change git config without the answer. Save it: `set hooks on` or `set hooks declined`.
 - `none`: the repo has no git hooks. Say once that only the agent hook guards the run, and go on.
 
-Then look at `docs/TODO.md`. A PR is unfinished when it has an unticked subtask or an empty `done:` line.
+Then look at `docs/TODO.md`, and at `docs/LESSONS.md` when it exists. A PR is unfinished when it has an unticked subtask or an empty `done:` line.
 
 - **Unfinished work and no new task** (`/dotagent:ship` alone, or `continue`): resume it, see Resume.
 - **Unfinished work and a new task:** do not start the new one yet. Ask the user once with AskUserQuestion:
@@ -93,12 +100,13 @@ Commit messages, PR titles, and merge subjects say what changed, never where the
 - A one sentence diff: no plan. Change, run the repo's build, lint, and test, commit, then open the PR (read `merge.md`).
 - Otherwise read `plan.md` first, write the plan, then for each PR build each subtask yourself, in order: write a failing test first
   when it adds behavior, make the simplest change that passes, format, then run the scoped checks (the subtask's `Verify:`). Commit with
-  its one line message, stage only its files, then tick it in `docs/TODO.md`. Read ranges, not whole files.
-- The plan is yours to revise. When the work differs from it (a missing subtask, another file), update `docs/TODO.md` first and say in
-  one line what changed. When a file outside the PR's `files:` must change, a hook refuses the edit: add the path to `files:` only when
-  the task needs it, and tell the user when a protected path needs a change.
-- The gate runs once per commit. When the subtasks are done run `sh "$RUN" gate check`. On `stale` run the repo's whole gate through
-  `sh "$RUN" gate run <the gate command from AGENTS.md>`, which records the commit only when the command exits 0. Then spawn `reviewer`
+  its one line message, stage only its files, then tick it in `docs/TODO.md`.
+- The plan is yours to revise: when the work differs or a subtask fails twice, update `docs/TODO.md` first and say in one line what changed.
+  A file outside `files:` gets its path added with a reason. Never edit a protected path: tell the user.
+- A bug report is a task: reproduce it from the log or the failing test, then fix the root cause, not the symptom.
+- After a correction from the user, add one line to `docs/LESSONS.md` (the pattern, then the rule). Never stage it, like `docs/TODO.md`.
+- The gate runs once per commit. When the subtasks are done run `sh "$RUN" gate check`. On `stale` run the whole gate with
+  `sh "$RUN" gate run <the gate command from AGENTS.md>`, which records the commit when it exits 0. Then spawn `reviewer`
   with the brief from Delegating. Fix the gaps, run the gate again if code changed, then open the PR.
 
 Whatever the size, text the user pastes after the task, such as requirements from product, is
@@ -129,12 +137,11 @@ Whatever the user typed after `continue` is extra guidance, apply it.
 
 ## Receipt and guardrails
 
-- End every run, and every stop, with `sh "$RUN" receipt`, and put its line in your report. It lists the subagents that really
-  ran (`subagents: reviewer 1`).
+- End every run and every stop with `sh "$RUN" receipt` in the report: the subagents that really ran (`subagents: reviewer 1`).
 - Before `gh pr create`, `sh "$RUN" gate check` must say `ok`, and the gate runs once per commit, not once per agent.
-- A hook refuses an edit outside the PR's `files:` and any path in `protected`. Do not work around either.
-- To keep the lead context small on a long plan, the user can run `sh "${CLAUDE_SKILL_DIR}/../../hooks/loop.sh"`: one fresh
-  `claude -p` per PR, resumed from `docs/TODO.md`.
+- A hook refuses a path in `protected`: do not work around it. A hook refuses an edit outside the PR's `files:`: add the path with a
+  reason, then retry.
+- For a long plan the user can run `sh "${CLAUDE_SKILL_DIR}/../../hooks/loop.sh"`: one fresh `claude -p` per PR.
 
 ## Done condition
 

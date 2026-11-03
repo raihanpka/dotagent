@@ -13,9 +13,10 @@ Plan like this, with `RUN` from Start:
 1. `sh "$RUN" phase plan`. Read as little as you can: Grep for symbols, then Read ranges, independent calls together. Treat pasted
    requirements as the source of truth and keep their words.
 2. Write `docs/TODO.md` (layout below), replacing any older file.
-3. **Ambiguity is never guessed.** Ask the user with AskUserQuestion, at most 4 per call, each with its options, your recommended one
-   listed first as `(Recommended)`, and a one line why from a best practice or from what the repo already does. Write each answer
-   under `## decisions`. Never plan a subtask that a question blocks. After 3 rounds stop and say what is still open.
+3. **Open points are decided, not guessed.** Follow `## Decide` in `SKILL.md`: pick the option you would defend, write it under
+   `## decisions` with its reason, and ask only when that section says to: AskUserQuestion, at most 4 per call, your recommended option
+   first as `(Recommended)`, a one line why from a best practice or from what the repo already does. Never plan a subtask that a
+   missing answer blocks. After 3 rounds stop and say what is still open.
 4. When the plan is settled, say what `docs/TODO.md` holds in two lines. Stop here if the user said plan only (run
    `sh "$RUN" phase done`). With more than 6 PRs, ask once whether to go on (skip it when the line says `big_plan=ok`) and save `set big_plan ok`.
 5. `sh "$RUN" phase build`, then build.
@@ -29,7 +30,7 @@ and write the PR url on `done:` after a merge. Layout:
 ```
 # TODO: the goal in one line
 ## requirements    (verbatim; with more than one point, number them R1, R2, keep the words)
-## decisions       (question: answer, recommended and accepted, or chosen)
+## decisions       (question: choice, because reason; a wrong request also notes what was built instead)
 ## PR 1: type(scope): summary          (this is the PR title)
 branch: feat/short-slug
 needs: none, or the PR that must merge first

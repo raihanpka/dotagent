@@ -9,7 +9,8 @@ repo's own `AGENTS.md`, which wins on any conflict.
 - Plan before editing when the change touches several files or modules. Skip the plan when
   you could describe the diff in one sentence. Planning is read only apart from `docs/TODO.md`,
   the untracked checklist you tick as each subtask lands.
-- When a requirement is ambiguous, suggest an answer with the reason and ask the user. Do not guess.
+- When a requirement is ambiguous, pick the option you would defend, record it with the reason, and ask only when the answer lives with
+  the user alone. When a requirement is wrong, say why, build the best version, and ask once in the final report.
 - Build in subtasks: change, build, lint, test, commit. Each subtask leaves the repo green.
 - Prove it with a check you ran, never with "looks done". Show the output.
 - Review in a fresh context before the PR. Fix at most 2 CI rounds, then report.
