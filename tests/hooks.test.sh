@@ -448,5 +448,44 @@ git -C "$g" checkout -q a.txt
 gate run no-such-command-here >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL gate run of a missing command"; } || pass=$((pass + 1))
 gate pass >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL gate pass still exists"; } || pass=$((pass + 1))
 
+# the Codex hook entry (--client codex): apply_patch paths go through the file rules, and an ask is a refusal, Codex has no prompt
+expect_codex() {
+  local name="$1" want="$2" json="$3" got
+  printf '%s' "$json" | sh "$guard" --client codex >/dev/null 2>&1
+  got=$?
+  if [ "$got" -eq "$want" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); echo "FAIL $name: want $want got $got"; fi
+}
+patch_json() { jq -nc --arg c "$1" '{tool_name:"apply_patch",tool_input:{command:$c}}'; }
+cfg '{"protected":"db/migrations/**"}'
+expect_codex "codex patch to a protected path is refused" 2 "$(patch_json "$(printf '*** Begin Patch\n*** Update File: db/migrations/001.sql\n@@\n-a\n+b\n*** End Patch')")"
+cfg '{}'
+expect_codex "codex patch to a source file passes" 0 "$(patch_json "$(printf '*** Begin Patch\n*** Add File: src/a.go\n+x\n*** End Patch')")"
+expect_codex "codex patch with an em dash is refused" 2 "$(patch_json "$(printf '*** Begin Patch\n*** Add File: src/a.md\n+a \xe2\x80\x94 b\n*** End Patch')")"
+cfg '{"workflow":"ask"}'
+expect_codex "codex ask refuses a push" 2 "$(bash_json 'git push origin feat/a')"
+cfg '{"workflow":"auto"}'
+expect_codex "codex auto pushes" 0 "$(bash_json 'git push origin feat/a')"
+cfg '{"workflow":"local"}'
+expect_codex "codex local never pushes" 2 "$(bash_json 'git push origin feat/a')"
+expect_codex "codex subagent spawn is never blocked" 0 '{"tool_name":"spawn_agent","tool_input":{}}'
+
+# a PR review, a review reply, or any gh api write follows the workflow mode, a read of PR comments does not
+cfg '{"workflow":"local"}'
+expect "local refuses a PR review" 2 "$(bash_json 'gh pr review 5 --comment --body "looks fine"')"
+expect "local refuses a review reply" 2 "$(bash_json 'gh api -X POST repos/o/r/pulls/5/comments/9/replies -f body=ok')"
+expect "local allows reading PR comments" 0 "$(bash_json 'gh api repos/o/r/pulls/5/comments')"
+cfg '{"workflow":"ask"}'
+expect_ask "ask asks before a PR review" "$(bash_json 'gh pr review 5 --approve')"
+cfg '{"workflow":"auto"}'
+expect "auto posts a PR review" 0 "$(bash_json 'gh pr review 5 --comment --body "ok"')"
+cfg '{}'
+
+# the saved answers: the agent the user runs dotagent with is one of four values
+cfg '{}'
+out="$(sh "$guard" set agents codex)"
+case "$out" in "agents=codex") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL set agents: $out" ;; esac
+sh "$guard" set agents cursor >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL agents accepts an unknown value"; } || pass=$((pass + 1))
+cfg '{}'
+
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]

@@ -26,3 +26,15 @@ test('the marketplace points at the root plugin, which has a manifest and a skil
   assert.ok(existsSync(new URL('../.codex-plugin/plugin.json', import.meta.url)))
   assert.ok(existsSync(new URL('../skills/dotagent-ship/SKILL.md', import.meta.url)))
 })
+
+test('the root Codex hook file runs the guard with --client codex, on the tools Codex names', () => {
+  const hooks = JSON.parse(read('hooks/hooks.json'))
+  const commands = Object.values(hooks.hooks).flat().flatMap((group) => group.hooks.map((h) => h.command))
+  assert.ok(commands.length >= 2, 'no hook commands')
+  for (const command of commands) {
+    assert.ok(command.includes('${PLUGIN_ROOT}/plugin/hooks/run.sh'), `not the plugin guard: ${command}`)
+    assert.ok(command.endsWith('--client codex'), `no --client codex: ${command}`)
+  }
+  assert.ok(hooks.hooks.PreToolUse[0].matcher.split('|').includes('apply_patch'), 'PreToolUse does not match apply_patch')
+  assert.ok(hooks.hooks.PreToolUse[0].matcher.split('|').includes('spawn_agent'), 'PreToolUse does not match spawn_agent')
+})

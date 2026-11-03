@@ -57,9 +57,11 @@ ANSWERS = {
     "setup": ("full", "minimal", "skipped"),  # how much setup the user chose
     "hooks": ("on", "declined"),  # the answer about git hooks
     "big_plan": ("ok",),  # the user agreed to a plan of more than 6 PRs
+    "agents": ("claude", "codex", "both", "other"),  # the AI agent the user runs dotagent with, from the setup interview
 }
 CONFIG = os.path.join(".dotagent", "config.json")
 _settings = None
+CLIENT = "claude"  # "codex" when the Codex hook entry runs it with --client codex, see hooks/hooks.json at the repo root
 
 
 def project_dir():
@@ -454,6 +456,9 @@ def commits_in(tokens):
 
 def ask(reason):
     # Lets the user decide: Claude Code shows its own permission prompt. In a headless run nobody can answer, so it is a no.
+    # Codex has no ask decision yet, so there the call is refused with the reason instead.
+    if CLIENT == "codex":
+        block(reason + " Codex cannot show a prompt: ask the user in the chat, they run the command or change the workflow.")
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask",
                                               "permissionDecisionReason": "dotagent: " + reason}}))
     sys.exit(0)
@@ -596,6 +601,25 @@ def on_bash(command):
                 gate("pull request")
             elif tokens[i + 2] == "merge":
                 check_pr_merge(tokens[i + 3 :])
+            elif tokens[i + 2] in ("review", "comment"):
+                gate("review or comment")
+    for i in range(len(tokens) - 1):
+        # gh api writes (POST, PUT, PATCH, DELETE, or fields that make it a POST) post a review or a reply, so they follow the mode too.
+        if tokens[i] == "gh" and tokens[i + 1] == "api":
+            rest = tokens[i + 2 :]
+            method = (flag_values(rest, "-X", "--method") or [""])[0].upper()
+            fields = any(t in ("-f", "-F", "--field", "--raw-field", "--input") for t in rest)
+            if method in ("POST", "PUT", "PATCH", "DELETE") or (fields and not method):
+                gate("review or comment")
+
+
+PATCH_PATH = re.compile(r"^\*\*\* (?:Add File|Update File|Delete File|Move to): (.+)$", re.M)
+
+
+def on_patch(text):
+    # Codex edits files with apply_patch: the paths sit in the patch text, and each one goes through the file rules.
+    for rel in PATCH_PATH.findall(text):
+        on_write({"file_path": rel.strip(), "content": text})
 
 
 def on_write(tool_input):
@@ -625,9 +649,13 @@ def on_write(tool_input):
 
 
 def main():
-    # Dispatches on the hook event and tool name.
-    if len(sys.argv) > 1:
-        return cli(sys.argv[1:])
+    # Dispatches on the hook event and tool name. `--client codex` comes first when the Codex hook entry runs the guard.
+    global CLIENT
+    args = sys.argv[1:]
+    if args[:2] == ["--client", "codex"]:
+        CLIENT, args = "codex", args[2:]
+    if args:
+        return cli(args)
     # Windows defaults stdin to the ANSI code page, which would garble an emoji before the check sees it.
     sys.stdin.reconfigure(encoding="utf-8")
     try:
@@ -666,7 +694,9 @@ def main():
         on_bash(tool_input.get("command", ""))
     elif tool in ("Write", "Edit"):
         on_write(tool_input)
-    elif tool in ("Agent", "Task"):
+    elif tool == "apply_patch":
+        on_patch(tool_input.get("command", ""))
+    elif tool in ("Agent", "Task", "spawn_agent"):
         log_spawn(tool_input)
 
 
