@@ -5,7 +5,7 @@ Read this when the diff is more than one sentence. `RUN` is defined in `SKILL.md
 ## The plan is read only
 
 Planning never edits code. Do not enter Claude Code plan mode, it would block `docs/TODO.md`.
-Use the plan marker instead, a hook enforces it: with the marker on, only `docs/TODO.md` can be
+Use the plan phase instead, `sh "$RUN" phase plan`, and a hook enforces it: while the phase is `plan`, only `docs/TODO.md` can be
 written, a shell command that writes files is refused, and so are `git commit`, `git push`, and `gh pr`.
 
 Plan like this, with `RUN` from Start:
@@ -15,7 +15,7 @@ Plan like this, with `RUN` from Start:
 2. Write `docs/TODO.md` (layout below), replacing any older file.
 3. **Open points are decided, not guessed.** Follow `## Decide` in `SKILL.md`: pick the option you would defend, write it under
    `## decisions` with its reason, and ask only when that section says to: AskUserQuestion, at most 4 per call, your recommended option
-   first as `(Recommended)`, a one line why from a best practice or from what the repo already does. Never plan a subtask that a
+   first as `(Recommended)`, a one-line reason from a best practice or from what the repo already does. Never plan a subtask that a
    missing answer blocks. After 3 rounds stop and say what is still open.
 4. When the plan is settled, say what `docs/TODO.md` holds in two lines. Stop here if the user said plan only (run
    `sh "$RUN" phase done`). With more than 6 PRs, ask once whether to go on (skip it when the line says `big_plan=ok`) and save `set big_plan ok`.
@@ -40,7 +40,8 @@ files: path/**, other/file.go          (every path the PR may edit, tests includ
 - [ ] 1.2 `type(scope): summary`. ...
 done:                                  (the PR url, filled when it is merged)
 ## PR 2: ...
-## fixes   ## noticed
+## fixes
+## noticed
 ```
 
 - One subtask is one commit: one logical change that builds and passes on its own, 1 to 3 files in one module, and the message
@@ -56,7 +57,7 @@ done:                                  (the PR url, filled when it is merged)
 
 ## The loop over the PRs
 
-Ship the PRs in order, one after another, without asking in between:
+Ship the PRs in order, one after another, without asking in between (in `ask`, the permission prompt for each push, PR, and merge is the only pause):
 
 1. Take the first unfinished PR whose `needs` is none or already merged (check with `gh pr view`).
 2. Ship it: branch, subtasks, review, open the PR, CI, merge, as below.
@@ -67,6 +68,6 @@ Stop the loop, run `sh "$RUN" phase done`, and report when:
 
 - a fix ran out of tries (a failed subtask, review gaps, or a red CI after two tries),
 - a question is left open,
-- the workflow is `ask` and the user has not said yes, or the PR cannot merge (a conflict, a required review): leave the PR open and
-  say what is needed, then the user says `continue`,
+- a push, PR, or merge is refused (a permission prompt answered no, or no user to answer it), or the PR cannot merge (a conflict,
+  a required review): leave the PR open and say what is needed, then the user says `continue`,
 - the next PR `needs` a PR that is not merged.

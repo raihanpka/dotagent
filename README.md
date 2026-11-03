@@ -17,10 +17,11 @@ So I made my own, *small on purpose*, built on engineering habits I trust. I wan
 
 ## prerequisites
 
-- [Claude Code](https://code.claude.com) (recent) and `git`
-- [GitHub CLI](https://cli.github.com), signed in
+- [Claude Code](https://code.claude.com) (recent), install with the [setup guide](https://code.claude.com/docs/en/setup)
+- [Git](https://git-scm.com/downloads), and on Windows [Git for Windows](https://gitforwindows.org) (Claude Code needs it, and the hooks run through its `sh`)
+- [GitHub CLI `gh`](https://cli.github.com/manual/installation), then sign in once with `gh auth login`
 - [Python](https://www.python.org/downloads/) 3.8 or newer (runs the hooks; `python3`, `python`, or `py` all work)
-- on Windows, [Git for Windows](https://gitforwindows.org) (Claude Code needs it, and the hooks run through its `sh`)
+- optional, only to run dotagent's own tests: [Node](https://nodejs.org/en/download) and [jq](https://jqlang.org/download/)
 
 ## install
 
@@ -34,8 +35,9 @@ claude
 - `/dotagent:setup` reads your repo, then interviews you in rounds like [grill-me](https://www.aihero.dev/skills-grill-me), with a recommended answer per question. It shows every file before writing it, never overwrites one, and ends with `docs/DOTAGENT-SETUP.md`, a checklist to tick as you review.
 - Skip it and `/dotagent:ship <task>` still works. The first run says which defaults it uses, asks once whether to set up first or go on with only a TODO, and saves your answer.
 - See `examples/` for what setup writes.
-- Using another AI coding agent (Codex, Antigravity, Cursor, or others)? Install the ship skill, then set up the repo with the guide below.
-  - Codex: `codex plugin marketplace add raihanpka/dotagent`, then install dotagent from `/plugins`.
+- Using Codex? It is the same repo as a Codex plugin: `codex plugin marketplace add raihanpka/dotagent`, then install dotagent from `/plugins`,
+  and trust its hooks once in `/hooks`. Then run setup, which asks which agent you use.
+- Using Antigravity, Cursor, or another agent? Set it up with the guide below.
   - Antigravity CLI or any agent with the skills CLI: `npx skills add raihanpka/dotagent --skill dotagent-ship -a codex -a antigravity-cli -y`.
 
 <details>
@@ -112,9 +114,10 @@ Copy from `plugin/` and edit. Fill every `{{...}}`. `plugin/SETUP.md` lists the 
 | `/dotagent <task>` | The short form of `/dotagent:ship`. Alone it shows the saved settings. |
 | `/dotagent:ship <task>` | Ship the task. `continue` resumes unfinished work. |
 | `/dotagent:workflow local\|ask\|auto` | Save how far a run goes on its own, for every run. |
-| `/dotagent:setup` | Set dotagent up in this repo, once. |
+| `/dotagent:setup` | Set dotagent up in this repo, once. It asks which agent you use: Claude Code, Codex, both, or another. |
+| `/dotagent:review <pr>` | Review someone else's pull request. A fresh reviewer reads the diff, you choose what to post, and it goes to GitHub with `gh`. Nothing is pushed or merged. |
 
-Without an argument `workflow` shows the saved settings. In the `/` menu the first one is `/dotagent:dotagent`.
+Without an argument `workflow` shows the saved settings. In the `/` menu the short form is listed as `/dotagent:dotagent`.
 
 ```
 /dotagent add the billing endpoint. requirements from product: <paste them>
@@ -124,6 +127,11 @@ Without an argument `workflow` shows the saved settings. In the `/` menu the fir
 - Everything after the command is the task, pasted requirements included. Say *plan only* to stop after the plan.
 - A big task becomes several PRs and one run ships all of them in order. To go on after a stop, say `continue`.
 - Each new session, `/clear`, and compact prints one line with your saved settings, so nothing is repeated.
+
+### codex
+
+Codex runs the same skill as `$dotagent-ship <task>`. Its guard is the `hooks/hooks.json` at the repo root, which Codex runs once you trust it in `/hooks`.
+Codex cannot show a permission prompt, so there `ask` refuses every push, PR, and merge with the reason. Use `auto` or `local` in a Codex repo.
 
 ### workflow
 
@@ -174,6 +182,7 @@ One file, `.dotagent/config.json`, per machine and ignored by git (written by `r
 - push, PR, and merge follow the workflow: `ask` asks first, `local` refuses
 - while building, an edit outside the PR's `files:` is refused until the path is added to `docs/TODO.md` with a reason, and a `protected` path is never edited
 - a test deleted without your yes is flagged by the reviewer, the hook does not block the delete
+- a PR review, a review reply, or any `gh api` write follows the workflow mode: `local` refuses it, `ask` asks, `auto` posts
 - `sh hooks/run.sh receipt` prints which subagents really ran (`reviewer 1, Explore 2`)
 
 </details>

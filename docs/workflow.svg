@@ -17,40 +17,39 @@
 <rect x="30" y="490" width="1630" height="176" rx="16" fill="#fff9db" stroke="#ced4da" stroke-width="1.5"/>
 <text x="1642" y="517" text-anchor="end" font-size="17" font-weight="700" fill="#495057">Fixed Steps: Plain Commands, No Agent</text>
 <rect x="60" y="142" width="170" height="112" rx="14" fill="#e9ecef" stroke="#343a40" stroke-width="2.5"/>
-<text x="145" y="173" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Task</text>
-<text x="145" y="198" text-anchor="middle" font-size="15" fill="#343a40">Typed prompt and</text>
-<text x="145" y="220" text-anchor="middle" font-size="15" fill="#343a40">pasted requirements</text>
+<text x="145" y="185" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Task</text>
+<text x="145" y="208" text-anchor="middle" font-size="15" fill="#343a40">Typed prompt and</text>
+<text x="145" y="228" text-anchor="middle" font-size="15" fill="#343a40">pasted requirements</text>
 <rect x="260" y="142" width="170" height="112" rx="14" fill="#a5d8ff" stroke="#343a40" stroke-width="2.5"/>
-<text x="345" y="173" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Plan: Lead</text>
-<text x="345" y="198" text-anchor="middle" font-size="15" fill="#343a40">Writes docs/TODO.md,</text>
-<text x="345" y="220" text-anchor="middle" font-size="15" fill="#343a40">decides open points,</text>
-<text x="345" y="242" text-anchor="middle" font-size="15" fill="#343a40">asks only when blocked</text>
+<text x="345" y="176" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Plan: Lead</text>
+<text x="345" y="200" text-anchor="middle" font-size="15" fill="#343a40">Writes TODO.md,</text>
+<text x="345" y="219" text-anchor="middle" font-size="15" fill="#343a40">decides open points,</text>
+<text x="345" y="238" text-anchor="middle" font-size="15" fill="#343a40">asks if blocked</text>
 <rect x="1000" y="342" width="170" height="112" rx="14" fill="#b2f2bb" stroke="#343a40" stroke-width="2.5"/>
-<text x="1085" y="373" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Review</text>
-<text x="1085" y="398" text-anchor="middle" font-size="15" fill="#343a40">Fresh context,</text>
-<text x="1085" y="420" text-anchor="middle" font-size="15" fill="#343a40">reads the diff</text>
+<text x="1085" y="385" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Review</text>
+<text x="1085" y="408" text-anchor="middle" font-size="15" fill="#343a40">Fresh context,</text>
+<text x="1085" y="428" text-anchor="middle" font-size="15" fill="#343a40">reads the diff</text>
 <rect x="460" y="142" width="170" height="112" rx="14" fill="#a5d8ff" stroke="#343a40" stroke-width="2.5"/>
-<text x="545" y="173" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Build: Lead</text>
-<text x="545" y="198" text-anchor="middle" font-size="15" fill="#343a40">Each subtask,</text>
-<text x="545" y="220" text-anchor="middle" font-size="15" fill="#343a40">one commit, then</text>
-<text x="545" y="242" text-anchor="middle" font-size="15" fill="#343a40">ticks docs/TODO.md</text>
+<text x="545" y="185" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Build: Lead</text>
+<text x="545" y="208" text-anchor="middle" font-size="15" fill="#343a40">One commit each,</text>
+<text x="545" y="228" text-anchor="middle" font-size="15" fill="#343a40">then ticked in TODO</text>
 <rect x="60" y="542" width="170" height="112" rx="14" fill="#ffec99" stroke="#343a40" stroke-width="2.5"/>
-<text x="145" y="573" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Branch</text>
-<text x="145" y="598" text-anchor="middle" font-size="15" fill="#343a40">Cut from the</text>
-<text x="145" y="620" text-anchor="middle" font-size="15" fill="#343a40">default branch</text>
+<text x="145" y="585" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Branch</text>
+<text x="145" y="608" text-anchor="middle" font-size="15" fill="#343a40">Cut from the</text>
+<text x="145" y="628" text-anchor="middle" font-size="15" fill="#343a40">default branch</text>
 <rect x="1000" y="542" width="170" height="112" rx="14" fill="#ffec99" stroke="#343a40" stroke-width="2.5"/>
-<text x="1085" y="573" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Open Pull Request</text>
-<text x="1085" y="598" text-anchor="middle" font-size="15" fill="#343a40">Push the branch and</text>
-<text x="1085" y="620" text-anchor="middle" font-size="15" fill="#343a40">open the pull request</text>
+<text x="1085" y="585" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Pull Request</text>
+<text x="1085" y="608" text-anchor="middle" font-size="15" fill="#343a40">Push the branch, then</text>
+<text x="1085" y="628" text-anchor="middle" font-size="15" fill="#343a40">open the pull request</text>
 <rect x="1220" y="542" width="170" height="112" rx="14" fill="#ffec99" stroke="#343a40" stroke-width="2.5"/>
-<text x="1305" y="573" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Watch CI</text>
-<text x="1305" y="598" text-anchor="middle" font-size="15" fill="#343a40">Watch the checks,</text>
-<text x="1305" y="620" text-anchor="middle" font-size="15" fill="#343a40">a red check goes to fixes</text>
+<text x="1305" y="585" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Watch CI</text>
+<text x="1305" y="608" text-anchor="middle" font-size="15" fill="#343a40">Watch the checks,</text>
+<text x="1305" y="628" text-anchor="middle" font-size="15" fill="#343a40">red goes to fixes</text>
 <rect x="1440" y="542" width="170" height="112" rx="14" fill="#ffec99" stroke="#343a40" stroke-width="2.5"/>
-<text x="1525" y="573" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Merge</text>
-<text x="1525" y="597" text-anchor="middle" font-size="14" fill="#343a40">local: stays local</text>
-<text x="1525" y="618" text-anchor="middle" font-size="14" fill="#343a40">ask: permission prompt first</text>
-<text x="1525" y="638" text-anchor="middle" font-size="14" fill="#343a40">auto: merges itself</text>
+<text x="1525" y="576" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Merge</text>
+<text x="1525" y="598" text-anchor="middle" font-size="14" fill="#343a40">local: stays local</text>
+<text x="1525" y="617" text-anchor="middle" font-size="14" fill="#343a40">ask: prompt first</text>
+<text x="1525" y="635" text-anchor="middle" font-size="14" fill="#343a40">auto: merges itself</text>
 <polyline points="145,257 145,539" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
 <polyline points="233,598 317,598 317,257" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
 <polyline points="432,198 458,198" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
@@ -61,16 +60,16 @@
 <rect x="1220" y="336" width="340" height="124" rx="14" fill="#ffc9c9" stroke="#c92a2a" stroke-width="2" stroke-dasharray="8 6"/>
 <text x="1390" y="367" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Fix and Retry</text>
 <text x="1390" y="387" text-anchor="middle" font-size="14" fill="#343a40">A failed check, review gap, or red CI</text>
-<text x="1390" y="408" text-anchor="middle" font-size="14" fill="#343a40">1. Lead fixes, one try</text>
-<text x="1390" y="428" text-anchor="middle" font-size="14" fill="#343a40">2. Lead retries with the full log</text>
-<text x="1390" y="448" text-anchor="middle" font-size="14" fill="#343a40">Still failing: stop and report</text>
+<text x="1390" y="406" text-anchor="middle" font-size="14" fill="#343a40">1. Lead fixes, one try</text>
+<text x="1390" y="424" text-anchor="middle" font-size="14" fill="#343a40">2. Lead retries with the full log</text>
+<text x="1390" y="442" text-anchor="middle" font-size="14" fill="#343a40">Still failing: stop and report</text>
 <rect x="60" y="944" width="1570" height="96" rx="14" fill="#f8f9fa" stroke="#343a40" stroke-width="2.5"/>
 <text x="845" y="983" text-anchor="middle" font-size="17" fill="#212529"><tspan font-weight="700" fill="#212529">Hooks</tspan> refuse only what can never be right, and ask before what needs your yes.</text>
 <text x="845" y="1011" text-anchor="middle" font-size="17" fill="#212529">Commit and pull request names, <tspan font-weight="700" fill="#212529">no trailer</tspan>, <tspan font-weight="700" fill="#212529">protected paths</tspan>, <tspan font-weight="700" fill="#212529">workflow mode</tspan>, <tspan font-weight="700" fill="#212529">read only</tspan> planning.</text>
 <rect x="700" y="542" width="170" height="112" rx="14" fill="#ffec99" stroke="#343a40" stroke-width="2.5"/>
-<text x="785" y="573" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Full Gate</text>
-<text x="785" y="598" text-anchor="middle" font-size="15" fill="#343a40">Once per commit,</text>
-<text x="785" y="620" text-anchor="middle" font-size="15" fill="#343a40">recorded</text>
+<text x="785" y="585" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Full Gate</text>
+<text x="785" y="608" text-anchor="middle" font-size="15" fill="#343a40">Once per commit,</text>
+<text x="785" y="628" text-anchor="middle" font-size="15" fill="#343a40">recorded</text>
 <polyline points="873,598 935,598 935,398 1000,398" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
 <polyline points="1173,398 1217,398" fill="none" stroke="#c92a2a" stroke-width="2" stroke-dasharray="8 6" marker-end="url(#r)" marker-start="url(#r)"/>
 <polyline points="1305,542 1305,463" fill="none" stroke="#c92a2a" stroke-width="2" stroke-dasharray="8 6" marker-end="url(#r)" marker-start="url(#r)"/>

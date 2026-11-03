@@ -70,7 +70,7 @@ def text(e):
         fill = "#495057"
     out = []
     for i, line in enumerate(e["text"].split("\n")):
-        step = 28 if e["id"] == "e56" else size * 1.45
+        step = 28 if e["id"] == "e56" else size * 1.3
         y = e["y"] + (22 if size == 26 else size * 1.1) + i * step
         weight = ' font-weight="700"' if bold else ""
         body = footer_line(line) if e["id"] == "e56" else esc(line)

@@ -4,25 +4,22 @@ For the agent reading this. The user asked you to set up dotagent in their repo.
 and show each file before you write it. Never overwrite a file that exists: show a diff and ask.
 This holds for every row in step 4, also the rows marked "always", which means the file is offered,
 not forced. An existing CI workflow, git hook, template, or doc belongs to the user. Never push or
-merge anything.
+merge anything. `sh hooks/run.sh` below is the plugin's `hooks/run.sh`, not a file in the repo: run it by the path the setup skill gives you.
 
-**Other AI coding agents** (Codex, Antigravity, Cursor, or any agent that reads `AGENTS.md`). The plugin, its skills, its agents, and its guard
-hook are Claude Code only, so skip step 2. Everything else still applies:
-- Install the skill to `.agents/skills/dotagent-ship/SKILL.md`. Codex and Antigravity both read `.agents/skills/<name>/SKILL.md`.
-  It is the plain-steps version of `/dotagent:ship`. Either:
-  - Codex: `codex plugin marketplace add raihanpka/dotagent`, then install dotagent from `/plugins`.
-  - Any agent with the skills CLI (Antigravity CLI, Codex): `npx skills add raihanpka/dotagent --skill dotagent-ship -a codex -a antigravity-cli -y`.
-    Without `--skill` it also installs the Claude Code skills, which need Claude Code.
-  - By hand: copy `templates/.agents/skills/dotagent-ship/SKILL.md` to that path.
-- Codex can run the reviewer as a subagent. Copy `templates/.codex/agents/reviewer.toml` to `.codex/agents/`. Agents without
-  subagents skip that file and review in a fresh pass themselves.
-- Write `AGENTS.md`, `docs/`, and the `.github`, `.githooks` files from step 4 as usual. Set the git hooks on with
-  `git config core.hooksPath .githooks`.
-- Nothing reads `.dotagent/config.json` outside Claude Code, so write the settings in `docs/DOTAGENT-SETUP.md` instead of `run.sh set`.
-- The git hooks and the PR gate are the only checks outside Claude Code. The protected paths and the plan-only rule are not enforced:
-  say so in the open items.
-- Ask the questions in plain text, numbered, the recommended option first (see the fallback below).
-- Write nothing to `.claude/`.
+**Which agent** is the first answer of round 1 (step 3). It decides what steps 2 and 4 write, and the guard follows it:
+
+| `agents` | The agent that runs dotagent | Setup writes |
+|---|---|---|
+| `claude` | Claude Code | the plugin (step 2), `AGENTS.md`, `CLAUDE.md`, the docs, the config |
+| `codex` | OpenAI Codex | the Codex plugin (step 2), `AGENTS.md`, `.agents/skills/dotagent-ship/SKILL.md`, `.codex/agents/reviewer.toml`, the docs, the config |
+| `both` | Claude Code and Codex | everything for `claude` and `codex`, with one `AGENTS.md` and one `CLAUDE.md` |
+| `other` | Antigravity, Cursor, or any agent that reads `AGENTS.md` and `.agents/skills` | `AGENTS.md`, `.agents/skills/dotagent-ship/SKILL.md`, the docs, the config, and no hooks |
+
+For `other` the plugin, its skills, and its guard are not installed, so the git hooks and the PR gate are the only checks: say so in the
+open items. Setup never writes `.claude/` for `codex` or `other`.
+
+Without the plugin's `run.sh` (`codex`, `other`) write `.dotagent/config.json` yourself with the same keys and values as step 2, and check
+each value against that list.
 
 Ask with AskUserQuestion. If it is not in your tool list or errors, load it with ToolSearch (`select:AskUserQuestion`) and try once
 more. If it is still missing, ask in plain text: a numbered list, the recommended option first, one line of reason, then wait. In a
@@ -41,17 +38,17 @@ because nothing is pushed. It keeps the git hooks, they check every local commit
 
 ## 0. Prerequisites
 
-Check each with `command -v` and report what is missing. Do not install anything without asking.
+Check each with `command -v` and report what is missing, with its install link from the table. Do not install anything without asking.
 
 | Tool | Why | Check |
 |---|---|---|
-| Claude Code, recent | plugins, hooks, and workflows | `claude --version` |
-| Git | branches and commits | `git --version` |
-| GitHub CLI `gh`, signed in | the agent opens PRs, watches CI, and merges | `gh auth status` |
-| Python 3.8 or newer | runs `hooks/guard.py` through `hooks/run.sh`, which tries `python3`, `python`, then `py` | `python3 --version` or `python --version` |
+| [Claude Code](https://code.claude.com/docs/en/setup), recent | plugins and hooks | `claude --version` |
+| [Git](https://git-scm.com/downloads) | branches and commits | `git --version` |
+| [GitHub CLI `gh`](https://cli.github.com/manual/installation), signed in with `gh auth login` | the agent opens PRs, watches CI, and merges | `gh auth status` |
+| [Python](https://www.python.org/downloads/) 3.8 or newer | runs `hooks/guard.py` through `hooks/run.sh`, which tries `python3`, `python`, then `py` | `python3 --version` or `python --version` |
 | The repo's own toolchain | build, lint, and test commands | ask in step 3 |
-| A GitHub remote with Actions, squash merging allowed | the PR and CI steps, and the merge is always a squash | `git remote -v`, `gh repo view --json squashMergeAllowed` |
-| Node and jq (optional) | only to run dotagent's own tests | `node --version`, `jq --version` |
+| A GitHub remote with Actions, squash merging allowed | the PR and CI steps; the merge is a squash unless `merge_method` says otherwise | `git remote -v`, `gh repo view --json squashMergeAllowed` |
+| [Node](https://nodejs.org/en/download) and [jq](https://jqlang.org/download/) (optional) | only to run dotagent's own tests | `node --version`, `jq --version` |
 
 ## 1. Look first, cheaply
 
@@ -84,15 +81,30 @@ Also read the flow, because `ship` and the guard assume one and a repo may use a
 
 ## 2. Install the plugin
 
+Claude Code (`claude`, `both`):
+
 ```
 /plugin marketplace add raihanpka/dotagent
 /plugin install dotagent@dotagent
 ```
 
+Codex (`codex`, `both`). The same repo is a Codex plugin: the skill, and the guard hook in `hooks/hooks.json`:
+
+```
+codex plugin marketplace add raihanpka/dotagent
+```
+
+Then install dotagent from `/plugins` in Codex and open `/hooks` there. Codex does not run a hook until you trust it, and setup cannot
+trust it for you: ask the user to do it, and to confirm the dotagent hooks are listed as trusted. Codex runs the skill as `$dotagent-ship`.
+Codex has no permission prompt that `ask` can use, so there `ask` refuses a push, PR, or merge, and says why.
+
+Other agents install no plugin: step 4 writes their skill.
+
 Settings live in one file, `.dotagent/config.json`, local to the machine and ignored by git. Setup writes it with
 `sh hooks/run.sh set <key> <value>`, the same command behind
-`/dotagent:workflow`. Unset means the value in brackets.
+`/dotagent:workflow`. Unset means the value in brackets. The guard reads this file for Claude Code and Codex. Other agents keep their settings in `docs/DOTAGENT-SETUP.md`.
 
+- `agents` [unset]: `claude`, `codex`, `both`, or `other`, the answer to round 1. The session line shows it, so the ship skill knows which agent runs it.
 - `workflow` [auto]: `auto`, `ask`, or `local`, see round 1. Say what each does in a sentence.
 - `em_dash` [block] and `emoji` [block]: the agent writes neither, the default. Set `allow` only when the user asks. It stops the
   agent from writing either into files, commits, and PR text.
@@ -141,13 +153,16 @@ suggest depends on the repo:
 Say which of the two cases you are in before you recommend, so the user knows why.
 
 Round 1 (no prerequisites):
+- **Agent.** Ask which agent runs dotagent: `claude`, `codex`, `both`, or `other`. Recommend `claude` when this setup runs in Claude Code,
+  and `both` when the user names Codex too. Save it with `sh hooks/run.sh set agents <value>`, or write it into the config for `codex` and `other`.
 - **Commands.** Build, lint, test, and one test file. For a repo with many modules also the lint and test of one module, so a subtask checks only its module and the full gate runs once per commit before the PR. They must run the same locally and in CI,
   or the agent and CI will disagree.
 - **Architecture style.** Modular monolith, microservices, event driven, or layered, then vertical
   slices by feature or horizontal layers. Record the answer and the reason in `ARCHITECTURE.md`.
   If the user is unsure, see When the user is unsure: describe what the code shows in an established
   repo, recommend a simple architecture in a new one.
-- **Workflow.** `auto` (pushes, opens each PR, merges when the review is clean and CI is green, goes on to the next PR), `ask` (the same, but asks for a yes in the chat before any push, PR, or merge), or `local` (asks first, minimal setup, one local branch, never pushes). Recommend `auto` only when `ci-pr.yml` is a required status check, else `ask`.
+- **Workflow.** `auto` (pushes, opens each PR, merges when the review is clean and CI is green, goes on to the next PR), `ask` (the same, but asks for a yes in the chat before any push, PR, or merge), or `local` (asks first, minimal setup, one local branch, never pushes). Recommend `auto` only when `ci-pr.yml` is a required status check, else `ask`. For `codex` and `both` the `ask` answer refuses every push, PR,
+  and merge, so recommend `auto` or `local` there and say why in one line.
 
 Round 2 (needs the architecture and the commands):
 - **Coupling.** Aim for low coupling and high cohesion: a module owns one thing, hides its
@@ -210,7 +225,7 @@ Round 2 (needs the architecture and the commands):
   `lefthook.yml`, and `.pre-commit-config.yaml`. When one exists, the repo has its own hooks: do
   not change `core.hooksPath` and do not write `.githooks`, add an open item instead. When
   `.githooks` exists, show a diff per file. Turning them on runs `git config core.hooksPath .githooks`, a local
-  and reversible change, so confirm it once with the answer (Recommended) first. Say that a repo that ships
+  and reversible change, so ask once first, with the recommended option marked. Say that a repo that ships
   `.githooks` but has them off gets no check at all, and that every later `/dotagent` run checks this again.
 
 Round 3 (needs the answers above):
@@ -218,7 +233,7 @@ Round 3 (needs the answers above):
   only change how the agent writes replies. Install commands, only after the user agrees:
   - `caveman` for short replies: `/plugin marketplace add JuliusBrussee/caveman`
   - `ponytail:lite` for the simplest solution: `/plugin marketplace add DietrichGebert/ponytail`
-- **Em dash and emoji.** Do not ask. The agent writes neither by default. Set `allow` (with `sh hooks/run.sh set em_dash allow`, and `emoji`) only when the user asks for them.
+- **Em dash and emoji.** Do not ask. The agent writes neither by default. Set `allow` (`sh hooks/run.sh set em_dash allow`, and the same for `emoji`) only when the user asks for them.
 
 Between rounds, run the checks the answers make possible:
 - **Check the rule against the code.** For every module, grep all its files, tests included, for
@@ -247,8 +262,9 @@ content in the existing doc's own language and structure. A PR template under an
 | File | From | When |
 |---|---|---|
 | `AGENTS.md` | `templates/AGENTS.md` | always, under 60 lines, merged with existing rules |
-| `.agents/skills/dotagent-ship/SKILL.md` | `templates/.agents/skills/dotagent-ship/SKILL.md` | always, so Codex and Antigravity can ship the same way |
-| `CLAUDE.md` | `templates/CLAUDE.md`, one line, `@AGENTS.md` | when the repo has none |
+| `.agents/skills/dotagent-ship/SKILL.md` | `templates/.agents/skills/dotagent-ship/SKILL.md` | always, so Codex and other agents ship the same way |
+| `CLAUDE.md` | `templates/CLAUDE.md`, one line, `@AGENTS.md` | when `agents` is `claude` or `both`, and the repo has none |
+| `.codex/agents/reviewer.toml` | `templates/.codex/agents/reviewer.toml` | when `agents` is `codex` or `both`, the reviewer subagent for Codex |
 | `.github/PULL_REQUEST_TEMPLATE.md` | `templates/.github/PULL_REQUEST_TEMPLATE.md` | always, with the real commands |
 | `.github/PR_EXAMPLE.md` | `templates/.github/PR_EXAMPLE.md` | always, filled with a plausible finished example |
 | `.github/workflows/ci-pr.yml` | `templates/.github/workflows/ci-pr.yml` | always, the PR gate |
@@ -257,7 +273,7 @@ content in the existing doc's own language and structure. A PR template under an
 | `docs/README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md` | `templates/docs/` | only a role the repo does not cover yet, matched by meaning (see step 1), so an `architectures/` folder or an `arsitektur.md` counts as the architecture doc. For one that exists, show the new section (architecture style, coupling, current violations) as an addition and ask, never replace |
 | `docs/DOTAGENT-SETUP.md` | `templates/docs/DOTAGENT-SETUP.md` | always, so a human can track it |
 | `.dotagent/config.json` | `templates/.dotagent/config.json`, written with `run.sh set` | always |
-| `.gitignore` (repo root) | append `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, and `docs/TODO.md`, so none of dotagent's own files show up as untracked and nobody has to be shy about them. Skip a line already present, and skip any path that has tracked files (`git ls-files <path>`), such as a team `.claude/settings.json`. Do it without asking, then tell the user which lines you added and which you skipped | append, never overwrite |
+| `.gitignore` (repo root) | append `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, and `docs/TODO.md`, so dotagent's own files never show as untracked. Skip a line already present, and skip any path that has tracked files (`git ls-files <path>`), such as a team `.claude/settings.json`. Do it without asking, then tell the user which lines you added and which you skipped | append, never overwrite |
 
 `docs/TODO.md` is not generated here. The agent writes it for each task from `templates/docs/TODO.md`:
 one section per PR, each with subtasks that it ticks. It is ignored by git on purpose, a scratch report.
@@ -273,6 +289,9 @@ Run build, lint, and test once. Check the git hooks are on with `sh hooks/run.sh
 then run `.githooks/pre-commit` once to see it pass. Run `bash tests/hooks.test.sh` from the dotagent checkout
 if it is available. Offer one tiny task, a one sentence diff, as a smoke test.
 
+Per agent: for `claude` run `sh hooks/run.sh show` and check the saved settings print. For `codex` or `both` ask the user to open `/hooks`
+in Codex and confirm the dotagent hooks are listed as trusted. For `other` say that no guard runs, so only the git hooks and CI check the work.
+
 ## 6. Commit and report
 
 Commit the generated files in atomic commits, one line each, scope required, for example
@@ -281,4 +300,4 @@ the user's own uncommitted work stays out. Ignored files are not committed. Do n
 skipped, and what the user must still decide. The user ticks each file in `docs/DOTAGENT-SETUP.md`
 as they review it.
 
-End with one line `next:` that names the first thing to try, for example `/dotagent:ship <a small task>` as a smoke test.
+End with one line `next:` that names the first thing to try as a smoke test: `/dotagent:ship <a small task>` for `claude`, `$dotagent-ship <a small task>` for `codex`, or the path of the skill file for `other`.

@@ -39,7 +39,7 @@ WRITE = re.compile(
 TODO = os.path.join("docs", "TODO.md")
 RUNS = os.path.join(".dotagent", "runs.jsonl")  # one JSON line per event: a subagent spawn, a gate pass, a plan phase
 PHASE_TTL = 3600  # a forgotten plan phase must never lock a repo for long
-PHASE_TTL = 3600  # a forgotten plan marker must never lock a repo for long
+PHASE_TTL = 3600  # a forgotten plan phase must never lock a repo for long
 
 
 # Allowed values per setting, the first one is the default. A missing or invalid value falls back to it.
@@ -57,9 +57,11 @@ ANSWERS = {
     "setup": ("full", "minimal", "skipped"),  # how much setup the user chose
     "hooks": ("on", "declined"),  # the answer about git hooks
     "big_plan": ("ok",),  # the user agreed to a plan of more than 6 PRs
+    "agents": ("claude", "codex", "both", "other"),  # the AI agent the user runs dotagent with, from the setup interview
 }
 CONFIG = os.path.join(".dotagent", "config.json")
 _settings = None
+CLIENT = "claude"  # "codex" when the Codex hook entry runs it with --client codex, see hooks/hooks.json at the repo root
 
 
 def project_dir():
@@ -394,7 +396,7 @@ def cli(args):
     if key == "workflow":
         value = MODE_ALIASES.get(value, value)
     if key == "scale":
-        sys.exit("scale was removed, the ship skill sizes the run itself: a one sentence diff has no plan")
+        sys.exit("scale was removed: the ship skill sizes each run itself, and a one sentence diff has no plan")
     if key in CHOICES and value not in CHOICES[key]:
         sys.exit(f"{key} must be one of: {', '.join(CHOICES[key])}")
     if key in ANSWERS and value not in ANSWERS[key]:
@@ -454,6 +456,9 @@ def commits_in(tokens):
 
 def ask(reason):
     # Lets the user decide: Claude Code shows its own permission prompt. In a headless run nobody can answer, so it is a no.
+    # Codex has no ask decision yet, so there the call is refused with the reason instead.
+    if CLIENT == "codex":
+        block(reason + " Codex cannot show a prompt: ask the user in the chat, they run the command or change the workflow.")
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask",
                                               "permissionDecisionReason": "dotagent: " + reason}}))
     sys.exit(0)
@@ -465,7 +470,7 @@ def gate(kind):
     if mode == "local":
         block(f"workflow is local: nothing leaves this machine, so no {kind}. Keep the commits local and tell the user.")
     if mode == "ask":
-        ask(f"workflow is ask: the {kind} needs your yes. Ask in the chat, and answer this prompt yes once the user has said yes.")
+        ask(f"workflow is ask: this {kind} needs your yes. Confirm it in the chat first, then answer this prompt yes.")
 
 
 def no_label(text, where):
@@ -513,7 +518,9 @@ def check_commit(args):
     no_emoji(msg, "commit messages")
     no_label(msg, "commit messages")
     if not commit_pattern().match(msg):
-        block("commit message must look like `type(scope): summary` with a scope, for example `fix(auth): stop token reuse`.")
+        if opt("COMMIT_SCOPE") == "optional":
+            block("commit message must look like `type: summary` or `type(scope): summary`, for example `fix: stop token reuse`.")
+        block("commit message must look like `type(scope): summary`, for example `fix(auth): stop token reuse`.")
 
 
 def commit_types():
@@ -558,7 +565,7 @@ def check_pr_merge(tokens):
     flags = {"squash": {"-s", "--squash"}, "merge": {"-m", "--merge"}, "rebase": {"-r", "--rebase"}}
     others = set().union(*(f for m, f in flags.items() if m != method))
     if others & set(tokens) or not flags[method] & set(tokens):
-        ask(f"this repo merges with {method} (`merge_method`), and this command may not. Use --{method}, or confirm the method with the user.")
+        ask(f"this repo merges with {method} (`merge_method`), but this command uses another method. Use --{method}, or ask the user first.")
     for text in flag_values(tokens, "-t", "--subject") + flag_values(tokens, "-b", "--body"):
         if TRAILER.search(text):
             block("no generated-by line or Co-Authored-By in the merge text, GitHub would copy it into the default branch.")
@@ -594,6 +601,25 @@ def on_bash(command):
                 gate("pull request")
             elif tokens[i + 2] == "merge":
                 check_pr_merge(tokens[i + 3 :])
+            elif tokens[i + 2] in ("review", "comment"):
+                gate("review or comment")
+    for i in range(len(tokens) - 1):
+        # gh api writes (POST, PUT, PATCH, DELETE, or fields that make it a POST) post a review or a reply, so they follow the mode too.
+        if tokens[i] == "gh" and tokens[i + 1] == "api":
+            rest = tokens[i + 2 :]
+            method = (flag_values(rest, "-X", "--method") or [""])[0].upper()
+            fields = any(t in ("-f", "-F", "--field", "--raw-field", "--input") for t in rest)
+            if method in ("POST", "PUT", "PATCH", "DELETE") or (fields and not method):
+                gate("review or comment")
+
+
+PATCH_PATH = re.compile(r"^\*\*\* (?:Add File|Update File|Delete File|Move to): (.+)$", re.M)
+
+
+def on_patch(text):
+    # Codex edits files with apply_patch: the paths sit in the patch text, and each one goes through the file rules.
+    for rel in PATCH_PATH.findall(text):
+        on_write({"file_path": rel.strip(), "content": text})
 
 
 def on_write(tool_input):
@@ -623,9 +649,13 @@ def on_write(tool_input):
 
 
 def main():
-    # Dispatches on the hook event and tool name.
-    if len(sys.argv) > 1:
-        return cli(sys.argv[1:])
+    # Dispatches on the hook event and tool name. `--client codex` comes first when the Codex hook entry runs the guard.
+    global CLIENT
+    args = sys.argv[1:]
+    if args[:2] == ["--client", "codex"]:
+        CLIENT, args = "codex", args[2:]
+    if args:
+        return cli(args)
     # Windows defaults stdin to the ANSI code page, which would garble an emoji before the check sees it.
     sys.stdin.reconfigure(encoding="utf-8")
     try:
@@ -649,7 +679,7 @@ def main():
         if git_hooks() == "off":
             print(
                 "[dotagent] git hooks are off: .githooks exists but git does not use it, so format, lint, and name checks "
-                "skip every commit and push. Tell the user, and with their ok run `git config core.hooksPath .githooks`."
+                "skip every commit and push. Tell the user, and with their yes, run `git config core.hooksPath .githooks`."
             )
         left = unfinished()
         if left:
@@ -664,7 +694,9 @@ def main():
         on_bash(tool_input.get("command", ""))
     elif tool in ("Write", "Edit"):
         on_write(tool_input)
-    elif tool in ("Agent", "Task"):
+    elif tool == "apply_patch":
+        on_patch(tool_input.get("command", ""))
+    elif tool in ("Agent", "Task", "spawn_agent"):
         log_spawn(tool_input)
 
 

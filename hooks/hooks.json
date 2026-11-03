@@ -1,0 +1,14 @@
+{
+  "description": "dotagent guard for Codex. Review and trust it once with /hooks in Codex, Codex does not run an untrusted hook.",
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [{ "type": "command", "command": "sh \"${PLUGIN_ROOT}/plugin/hooks/run.sh\" --client codex" }] }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|apply_patch|spawn_agent",
+        "hooks": [{ "type": "command", "command": "sh \"${PLUGIN_ROOT}/plugin/hooks/run.sh\" --client codex" }]
+      }
+    ]
+  }
+}

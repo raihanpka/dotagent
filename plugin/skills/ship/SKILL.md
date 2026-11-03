@@ -1,22 +1,20 @@
 ---
-description: "Ship a clear task as clean PRs with the saved workflow (auto, ask, or local). The word continue resumes unfinished work. Asks only for what is missing."
+description: "Ship a clear task as clean PRs with the saved workflow (auto, ask, or local). Decides open points itself and asks only when it must. The word continue resumes unfinished work."
 argument-hint: "<task> | continue"
 ---
 # dotagent ship
 
-Usage: `/dotagent:ship <task>`, or `/dotagent <task>` for the same (`/dotagent` alone only shows the saved settings). The task
-can carry pasted requirements. With no task, or when the user only says `continue` (any wording), carry on with the unfinished
-work, see Start.
+Usage: `/dotagent:ship <task>`, or `/dotagent <task>` for the same. The task can carry pasted requirements. With no task, or when the user only says `continue` (any wording), carry on with the unfinished work, see Start.
 
 - One path for every task. If you can describe the whole diff in one sentence, there is no plan and no TODO: change, run the
-  gate, commit, open the PR, merge. Otherwise plan, build, and review.
-- A run goes on by itself until the whole plan is merged or something stops it. It does not wait between PRs.
+  gate, commit, then open the PR and merge as the workflow mode allows. Otherwise plan, build, and review.
+- A run goes on by itself until the whole plan is merged or something stops it. It does not wait between PRs, except for the permission prompt that `ask` shows before each push, PR, or merge.
 - This file is the core. Read a reference only when you reach that step, so a small task never loads the rest:
   - `${CLAUDE_SKILL_DIR}/references/plan.md` before you plan: the read only plan, the TODO layout, the loop over the PRs.
   - `${CLAUDE_SKILL_DIR}/references/merge.md` before you push, open a PR, or merge: the workflow modes, the PR, CI, the squash.
 
 Read the `[dotagent] workflow=... style=...` line from session start. It comes from the saved settings
-(it may end with `protected=...`, `setup=...`, `hooks=...`, `big_plan=...`), and `workflow=auto` is the default. A repo flow that is not the
+(it may end with `protected=...`, `setup=...`, `hooks=...`, `big_plan=...`), and `workflow=auto` applies when nothing is saved. A repo flow that is not the
 default adds `merge=`, `types=`, `scope=`, or `base=` to that line: follow them, they come from `/dotagent:setup`.
 `RUN` is `${CLAUDE_SKILL_DIR}/../../hooks/run.sh`. If it also says `unfinished`, `docs/TODO.md` holds work
 that is not done yet.
@@ -50,8 +48,7 @@ the recommended option, say so, go on. Save each answer that can come back with 
 
 ## Tools and speed
 
-Prefer harness tools to shell: Grep and Glob to find, Read ranges, independent calls together. Send `Explore` for wide reading and keep
-only its summary. Watch CI in the background. Agents cannot start agents, so only you spawn.
+Prefer harness tools to shell: Grep and Glob to find, Read ranges, independent calls together. Send `Explore` for wide reading, keep its summary, and watch CI in the background. Agents cannot start agents, so only you spawn.
 
 ## Delegating
 
@@ -109,8 +106,7 @@ Commit messages, PR titles, and merge subjects say what changed, never where the
   `sh "$RUN" gate run <the gate command from AGENTS.md>`, which records the commit when it exits 0. Then spawn `reviewer`
   with the brief from Delegating. Fix the gaps, run the gate again if code changed, then open the PR.
 
-Whatever the size, text the user pastes after the task, such as requirements from product, is
-input to the plan. Never summarize it away, keep it verbatim.
+Pasted requirements are the plan's input: keep them verbatim, never summarize.
 
 ## Resume
 
@@ -132,8 +128,7 @@ Whatever the user typed after `continue` is extra guidance, apply it.
 - A PR is reviewable in one sitting: aim for 3 to 8 subtasks and a few hundred changed lines. It is a
   range, not a limit. A bigger or riskier task becomes more PRs, never one huge PR.
 - Subtasks that touch the same file are never parallel, and you build them one at a time.
-- Every fix (a failed subtask, review gaps, a red CI) gets two tries from you: fix it, then retry with the full log. Then you stop
-  and report. Never loop past that.
+- Each fix (a failed subtask, review gaps, a red CI) gets two tries: fix it, retry with the full log, then stop and report.
 
 ## Receipt and guardrails
 

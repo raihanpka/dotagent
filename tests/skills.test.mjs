@@ -55,3 +55,27 @@ test('docs/workflow.svg is drawn from docs/workflow.excalidraw', () => {
   const run = spawnSync('python3', ['scripts/workflow-svg.py', '--check'], { cwd: new URL('..', import.meta.url), encoding: 'utf8' })
   assert.equal(run.status, 0, run.stderr)
 })
+
+test('the review command posts only what the user chooses and never merges or pushes the PR branch', () => {
+  const review = readFileSync(new URL('../plugin/skills/review/SKILL.md', import.meta.url), 'utf8')
+  assert.match(review, /^description: ".+"$/m)
+  assert.match(review, /^argument-hint: ".+"$/m)
+  assert.ok(review.includes('gh pr review'), 'no gh pr review')
+  assert.ok(review.includes('gh api -X POST'), 'no gh api review write')
+  assert.ok(!review.includes('gh pr merge'), 'the review command merges')
+  assert.ok(review.includes('Approve only when the user chooses it'), 'approve is not gated by the user')
+})
+
+test('setup asks which agent runs dotagent and branches on the four answers', () => {
+  const setup = readFileSync(new URL('../plugin/SETUP.md', import.meta.url), 'utf8')
+  for (const value of ['claude', 'codex', 'both', 'other']) assert.ok(setup.includes(`\`${value}\``), `SETUP.md does not offer ${value}`)
+  assert.ok(setup.includes('set agents'), 'SETUP.md does not save agents')
+  assert.ok(setup.includes('.codex/agents/reviewer.toml'), 'SETUP.md does not write the Codex reviewer')
+  assert.ok(setup.includes('/hooks'), 'SETUP.md does not ask the user to trust the Codex hooks')
+  assert.ok(!/Claude Code only, so skip step 2/.test(setup), 'SETUP.md still says the plugin is Claude Code only')
+})
+
+test('the setup skill names the agent choice in its description', () => {
+  const setup = readFileSync(new URL('../plugin/skills/setup/SKILL.md', import.meta.url), 'utf8')
+  assert.match(setup, /Claude Code, Codex, both, or another/)
+})
