@@ -5,7 +5,7 @@ disable-model-invocation: true
 ---
 Modes:
 - `auto`: runs the whole TODO and finishes every PR: pushes, opens it, watches CI, fixes a red check, merges when the review is clean and CI is green, then goes on to the next PR until all are merged or something stops it.
-- `ask`: the same run and local commits, but it asks for your yes in the chat before any push, PR, or merge.
+- `ask`: the same run and local commits, but it asks for your yes in the chat before any push, PR, or merge, and each one then shows a permission prompt.
 - `local`: asks first, sets up the minimum, keeps every commit on one local branch, and never pushes.
 
 With an argument run `sh "${CLAUDE_SKILL_DIR}/../../hooks/run.sh" set workflow <argument>`.

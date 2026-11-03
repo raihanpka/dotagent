@@ -1,5 +1,5 @@
 ---
-description: "Ship a clear task as clean PRs with the saved workflow (auto, ask, or local). The word continue resumes unfinished work. Asks only for what is missing."
+description: "Ship a clear task as clean PRs with the saved workflow (auto, ask, or local). Decides open points itself and asks only when it must. The word continue resumes unfinished work."
 argument-hint: "<task> | continue"
 ---
 # dotagent ship
@@ -9,14 +9,14 @@ can carry pasted requirements. With no task, or when the user only says `continu
 work, see Start.
 
 - One path for every task. If you can describe the whole diff in one sentence, there is no plan and no TODO: change, run the
-  gate, commit, open the PR, merge. Otherwise plan, build, and review.
-- A run goes on by itself until the whole plan is merged or something stops it. It does not wait between PRs.
+  gate, commit, then open the PR and merge as the workflow mode allows. Otherwise plan, build, and review.
+- A run goes on by itself until the whole plan is merged or something stops it. It does not wait between PRs, except for the permission prompt that `ask` shows before each push, PR, or merge.
 - This file is the core. Read a reference only when you reach that step, so a small task never loads the rest:
   - `${CLAUDE_SKILL_DIR}/references/plan.md` before you plan: the read only plan, the TODO layout, the loop over the PRs.
   - `${CLAUDE_SKILL_DIR}/references/merge.md` before you push, open a PR, or merge: the workflow modes, the PR, CI, the squash.
 
 Read the `[dotagent] workflow=... style=...` line from session start. It comes from the saved settings
-(it may end with `protected=...`, `setup=...`, `hooks=...`, `big_plan=...`), and `workflow=auto` is the default. A repo flow that is not the
+(it may end with `protected=...`, `setup=...`, `hooks=...`, `big_plan=...`), and `workflow=auto` applies when nothing is saved. A repo flow that is not the
 default adds `merge=`, `types=`, `scope=`, or `base=` to that line: follow them, they come from `/dotagent:setup`.
 `RUN` is `${CLAUDE_SKILL_DIR}/../../hooks/run.sh`. If it also says `unfinished`, `docs/TODO.md` holds work
 that is not done yet.
