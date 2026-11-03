@@ -132,7 +132,7 @@ How far a run goes on its own: `local` stops at local commits, `ask` stops to as
 | Mode | What happens |
 |---|---|
 | `auto` *(default)* | Runs the whole TODO and finishes every PR: pushes, opens the PR, watches CI, fixes a red check (two tries), rebases, squash merges when the review is clean and CI is green, then starts the next PR. It stops on a failure, an open question, or a PR that cannot merge. |
-| `ask` | The same run and local commits, one PR per plan item, but it asks for your yes in the chat ("yes", "approve", "ya") before any push, PR, or merge. A yes covers one PR. |
+| `ask` | The same run and local commits, one PR per plan item, but it asks for your yes in the chat ("yes", "approve", "ya") before any push, PR, or merge, and each one then shows a permission prompt. |
 | `local` | Asks first, sets up the minimum (no CI files, no PR template, git hooks stay), puts the whole TODO on one local branch, never pushes, never opens a PR. It ends with a local squash or leaves the branch to you. |
 
 ### settings
@@ -173,7 +173,7 @@ One file, `.dotagent/config.json`, per machine and ignored by git (written by `r
 - no em dash or emoji unless you set `allow`, no `--no-verify`, no `--force` (only `--force-with-lease`), no `--admin`
 - push, PR, and merge follow the workflow: `ask` asks first, `local` refuses
 - while building, an edit outside the PR's `files:` is refused until the path is added to `docs/TODO.md` with a reason, and a `protected` path is never edited
-- an `rm` or `git rm` of a test file asks you first, a removed test can hide a failure
+- a test deleted without your yes is flagged by the reviewer, the hook does not block the delete
 - `sh hooks/run.sh receipt` prints which subagents really ran (`reviewer 1, Explore 2`)
 
 </details>
