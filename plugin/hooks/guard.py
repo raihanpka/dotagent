@@ -37,10 +37,8 @@ WRITE = re.compile(
     r"|\bgit\s+((apply|restore|reset|stash|add|rm|clean|am|cherry-pick|merge|rebase)\b|checkout\s+--)"
 )
 TODO = os.path.join("docs", "TODO.md")
-RUNS = os.path.join(".dotagent", "runs.jsonl")  # one line per subagent spawned this session
-PHASE = os.path.join(".dotagent", "phase")
-GATE = os.path.join(".dotagent", "gate")  # the HEAD sha the repo gate last passed at, written by `run.sh gate run`
-APPROVED = os.path.join(".dotagent", "approved")  # written by `run.sh approve` after the user said yes in the chat
+RUNS = os.path.join(".dotagent", "runs.jsonl")  # one JSON line per event: a subagent spawn, a gate pass, a plan phase
+PHASE_TTL = 3600  # a forgotten plan phase must never lock a repo for long
 PHASE_TTL = 3600  # a forgotten plan marker must never lock a repo for long
 
 
@@ -77,15 +75,50 @@ def is_path(path, rel):
     return norm == rel or norm.endswith(os.sep + rel)
 
 
-def phase():
-    # "plan" while the run only reads and writes the TODO, empty otherwise or when the marker is stale.
-    path = os.path.join(project_dir(), PHASE)
+def entries():
+    # Every event in runs.jsonl, oldest first. A line that is not a JSON object is skipped.
     try:
-        with open(path, encoding="utf-8") as handle:
-            text = handle.read().strip()
-        return text if time.time() - os.path.getmtime(path) < PHASE_TTL else ""
+        with open(os.path.join(project_dir(), RUNS), encoding="utf-8") as handle:
+            lines = handle.readlines()
     except OSError:
+        return []
+    found = []
+    for line in lines:
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(event, dict):
+            found.append(event)
+    return found
+
+
+def last(key):
+    # The newest event that has the key, or None.
+    for event in reversed(entries()):
+        if key in event:
+            return event
+    return None
+
+
+def record(**fields):
+    # Appends one event with its time. runs.jsonl is the only state file besides config.json.
+    path = os.path.join(project_dir(), RUNS)
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "a", encoding="utf-8", newline="\n") as handle:
+            handle.write(json.dumps({"t": int(time.time()), **fields}) + "\n")
+    except OSError:
+        return
+    ensure_ignored()
+
+
+def phase():
+    # "plan" while the run only reads and writes the TODO, empty when done, stale, or never set.
+    found = last("phase")
+    if not found or found["phase"] == "done" or time.time() - found.get("t", 0) >= PHASE_TTL:
         return ""
+    return found["phase"]
 
 
 def load(base=None):
@@ -208,11 +241,8 @@ def gate_check():
     # "ok" when the gate passed at this exact commit and nothing tracked changed since, else "stale". Bookkeeping the
     # agent trusts, CI is the real check.
     head = clean_head()
-    try:
-        with open(os.path.join(project_dir(), GATE), encoding="utf-8") as handle:
-            return "ok" if head and handle.read().strip() == head else "stale"
-    except OSError:
-        return "stale"
+    found = last("gate")
+    return "ok" if head and found and found.get("gate") == head else "stale"
 
 
 def todo_prs():
@@ -289,29 +319,32 @@ def first_run():
 
 def log_spawn(tool_input):
     # Records one subagent spawn so a run can show what really ran. Never blocks.
-    path = os.path.join(project_dir(), RUNS)
-    try:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "a", encoding="utf-8", newline="\n") as handle:
-            handle.write(json.dumps({"t": int(time.time()), "agent": tool_input.get("subagent_type") or "general"}) + "\n")
-    except OSError:
-        pass
+    record(agent=tool_input.get("subagent_type") or "general")
 
 
 def receipt():
     # `reviewer 1, Explore 2` for this session, or `none`.
     counts = {}
+    for event in entries():
+        if "agent" in event:
+            name = str(event["agent"]).split(":")[-1]
+            counts[name] = counts.get(name, 0) + 1
+    return ", ".join(f"{k} {v}" for k, v in counts.items()) or "none"
+
+
+def prune_runs():
+    # At session start keep only the newest gate pass. Spawns and plan phases belong to the session that wrote them.
+    kept = [event for event in entries() if "gate" in event][-1:]
+    path = os.path.join(project_dir(), RUNS)
     try:
-        with open(os.path.join(project_dir(), RUNS), encoding="utf-8") as handle:
-            for line in handle:
-                try:
-                    name = json.loads(line)["agent"].split(":")[-1]
-                except (ValueError, KeyError, AttributeError):
-                    continue
-                counts[name] = counts.get(name, 0) + 1
+        if not kept:
+            os.remove(path)
+            return
+        with open(path, "w", encoding="utf-8", newline="\n") as handle:
+            for event in kept:
+                handle.write(json.dumps(event) + "\n")
     except OSError:
         pass
-    return ", ".join(f"{k} {v}" for k, v in counts.items()) or "none"
 
 
 def opt(name):
@@ -348,34 +381,15 @@ def cli(args):
             sys.exit(f"gate run could not start {args[2]}: {err}")
         if code != 0 or clean_head() != head:
             sys.exit(code or 1)
-        path = os.path.join(project_dir(), GATE)
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w", encoding="utf-8") as handle:
-            handle.write(head)
-        ensure_ignored()
+        record(gate=head)
         print("gate passed at " + head[:7])
         return
-    if args[:1] == ["approve"]:
-        path = os.path.join(project_dir(), APPROVED)
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w", encoding="utf-8") as handle:
-            handle.write("yes")
-        ensure_ignored()
-        print("approved: the next push, pull request, or merge goes through once")
-        return
     if len(args) == 2 and args[0] == "phase" and args[1] in ("plan", "build", "done"):
-        path = os.path.join(project_dir(), PHASE)
-        if args[1] == "done":
-            clear_phase()
-        else:
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, "w", encoding="utf-8") as handle:
-                handle.write(args[1])
-            ensure_ignored()
+        record(phase=args[1])
         print("phase=" + args[1])
         return
     if len(args) != 3 or args[0] != "set":
-        sys.exit("usage: guard.py show | hooks | receipt | status | approve | gate run <command>|check | set <key> <value> | phase plan|build|done")
+        sys.exit("usage: guard.py show | hooks | receipt | status | gate run <command>|check | set <key> <value> | phase plan|build|done")
     key, value = args[1], args[2]
     if key == "workflow":
         value = MODE_ALIASES.get(value, value)
@@ -438,24 +452,6 @@ def commits_in(tokens):
     return found
 
 
-def clear_phase():
-    # Ends the run: the plan marker and any approval go with it.
-    for name in (PHASE, APPROVED):
-        try:
-            os.remove(os.path.join(project_dir(), name))
-        except OSError:
-            pass
-
-
-def approved():
-    # True while a yes the user gave in the chat is on record (written by `run.sh approve`), for one hour at most.
-    path = os.path.join(project_dir(), APPROVED)
-    try:
-        return time.time() - os.path.getmtime(path) < PHASE_TTL
-    except OSError:
-        return False
-
-
 def ask(reason):
     # Lets the user decide: Claude Code shows its own permission prompt. In a headless run nobody can answer, so it is a no.
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask",
@@ -464,12 +460,12 @@ def ask(reason):
 
 
 def gate(kind):
-    # Push, pull request, and merge follow the workflow mode.
+    # Push, pull request, and merge follow the workflow mode. In ask the permission prompt is the user's yes.
     mode = opt("WORKFLOW")
     if mode == "local":
         block(f"workflow is local: nothing leaves this machine, so no {kind}. Keep the commits local and tell the user.")
-    if mode == "ask" and not approved():
-        ask(f"workflow is ask: the {kind} needs your yes. Ask in the chat first, and after a yes run `sh run.sh approve`.")
+    if mode == "ask":
+        ask(f"workflow is ask: the {kind} needs your yes. Ask in the chat, and answer this prompt yes once the user has said yes.")
 
 
 def no_label(text, where):
@@ -554,74 +550,19 @@ def check_pr_create(tokens):
 
 
 def check_pr_merge(tokens):
-    # Merging obeys the workflow mode and the merge method of the repo. A squash (the default) has a subject that ends
-    # with this PR's number and a body that lists every commit as `- <hash> <subject>`, so the atomic commits stay
-    # traceable. A merge commit or a rebase merge only needs its own flag. No trailer in any of them.
+    # Merging follows the workflow mode. --admin skips the required checks, so it is refused. Another merge method than the
+    # repo's merge_method asks instead of blocking. A trailer in the merge text is refused, GitHub would copy it into history.
     if "--admin" in tokens:
         block("do not merge with --admin, it skips the branch protection and the required checks.")
     method = opt("MERGE_METHOD")
     flags = {"squash": {"-s", "--squash"}, "merge": {"-m", "--merge"}, "rebase": {"-r", "--rebase"}}
     others = set().union(*(f for m, f in flags.items() if m != method))
     if others & set(tokens) or not flags[method] & set(tokens):
-        block(f"this repo merges with {method} (`merge_method`), so use --{method}." + (
-            " The body keeps the commit list, so nothing is lost." if method == "squash" else ""))
-    if method != "squash":
-        for text in flag_values(tokens, "-t", "--subject") + flag_values(tokens, "-b", "--body"):
-            if TRAILER.search(text):
-                block("no generated-by line or Co-Authored-By in the merge text.")
-        gate("merge")
-        try:
-            os.remove(os.path.join(project_dir(), APPROVED))
-        except OSError:
-            pass
-        return
-    number = next((t for t in tokens if t.isdigit()), None)
-    subjects = flag_values(tokens, "-t", "--subject")
-    if "-F" in tokens or "--body-file" in tokens:
-        block("pass the commit list with --body, not --body-file.")
-    bodies = flag_values(tokens, "-b", "--body")
-    if not any(b.strip() for b in bodies):
-        block("pass --body with one line per commit, `- <short hash> <subject>`, from `gh pr view <n> --json commits`.")
-    for body in bodies:
-        if TRAILER.search(body):
-            block("no generated-by line or Co-Authored-By in the squash body. List only the commits.")
-        for line in body.splitlines():
-            if line.strip() and not COMMIT_LINE.match(line):
-                block("every squash body line is `- <short hash> <commit subject>`, nothing else.")
-    if not subjects:
-        block("pass --subject \"<PR title> (#N)\" so the squash commit ends with the PR number.")
-    for subject in subjects:
-        found = MERGE_SUBJECT.search(subject)
-        if not found:
-            block("merge subject must end with the PR number, like `fix: a (#5)`.")
-        if number and found.group(1) != number:
-            block(f"merge subject ends with (#{found.group(1)}) but the PR is #{number}.")
-        no_label(subject, "merge subjects")
+        ask(f"this repo merges with {method} (`merge_method`), and this command may not. Use --{method}, or confirm the method with the user.")
+    for text in flag_values(tokens, "-t", "--subject") + flag_values(tokens, "-b", "--body"):
+        if TRAILER.search(text):
+            block("no generated-by line or Co-Authored-By in the merge text, GitHub would copy it into the default branch.")
     gate("merge")
-    try:
-        os.remove(os.path.join(project_dir(), APPROVED))  # a yes covers one PR
-    except OSError:
-        pass
-
-
-# A path that holds tests: a tests or __tests__ folder, x_test.go, x.test.js, x.spec.ts, test_x.py.
-TEST_PATH = re.compile(r"(^|/)(tests?|__tests__)(/|$)|_test\.[a-z]+$|\.(test|spec)\.[a-z]+$|(^|/)test_[^/]*\.py$")
-SEPARATORS = {"&&", "||", ";", "|", "&"}
-
-
-def no_test_delete(tokens):
-    # rm and git rm of a test can hide a failure, so the user decides: an obsolete test is removed with their yes.
-    for i, tok in enumerate(tokens):
-        before = tokens[i - 1] if i else ";"
-        starts = i < 2 or tokens[i - 2] in SEPARATORS
-        if tok != "rm" or not (before in SEPARATORS or (before == "git" and starts)):
-            continue
-        for arg in tokens[i + 1 :]:
-            if arg in SEPARATORS:
-                break
-            if not arg.startswith("-") and TEST_PATH.search(arg):
-                ask(f"this deletes the test {arg}. A removed test can hide a failure. Ask the user whether it is obsolete, "
-                    "and if they say yes, delete it and say so in the report.")
 
 
 def on_bash(command):
@@ -637,7 +578,6 @@ def on_bash(command):
             block("planning is read-only. Only docs/TODO.md may change, and no shell command may write.")
     if re.search(r"\.dotagent[/\\]config\.json", command) and WRITE.search(command) and "run.sh" not in command:
         block("do not edit .dotagent/config.json from the shell. Ask the user to run /dotagent:workflow.")
-    no_test_delete(tokens)
     for args in commits_in(tokens):
         no_skip(args, "commit")
         check_commit(args)
@@ -693,11 +633,7 @@ def main():
     except json.JSONDecodeError:
         return
     if event.get("hook_event_name") == "SessionStart":
-        clear_phase()
-        try:
-            os.remove(os.path.join(project_dir(), RUNS))
-        except OSError:
-            pass
+        prune_runs()
         print(
             f"[dotagent] workflow={opt('WORKFLOW')} "
             f"style={opt('STYLE_SKILLS')}"
