@@ -5,16 +5,22 @@ Claude Code caches a plugin per version, so bump it on every change users should
 
 ## 0.5.0
 
-Upgrading: nothing to save. Run `/plugin update dotagent@dotagent` and `/reload-plugins`. The session line no longer shows `read-limit=`.
+Upgrading: run `/plugin update dotagent@dotagent` and `/reload-plugins`. The session line no longer shows `read-limit=`. Delete `.dotagent/approved`, `.dotagent/gate`, and `.dotagent/phase` if they are there, nothing reads them now.
 
 ### Fewer blocks, more decisions
 
 - Open points are decided, not asked. A run with clear requirements goes to the end: the lead picks the option it would defend, writes `question: choice, because reason` under `## decisions` in `docs/TODO.md`, and lists it in the final report. A question comes only when the answer lives with you alone (a secret, a product call with no sensible default), when an action cannot be undone and was not asked for, or when the request is wrong.
 - A wrong request is said out loud: two lines on what is wrong and where, the best version built, and one question at the end whether you want your version instead. The question never pauses the run.
 - Removed: the 500 line whole read block. `docs/PRACTICES.md` keeps the reason.
-- An `rm` of a test asks you first (a permission prompt) instead of refusing. The reviewer flags a test deleted without your yes.
+- An `rm` of a test is no longer gated. The reviewer flags a test deleted without your yes.
 - An edit outside the PR's `files:` is still refused, but the message says what to do: add the path with a reason to `docs/TODO.md`, then retry. It is no longer a stop.
+- Merge checks are looser: a squash needs no PR number in the subject and no commit list in the body, and a merge method other than `merge_method` asks instead of refusing.
 - Still refused outright: a `protected` path, a force push, `--admin`, `--no-verify`, a trailer, and a push or merge the workflow mode does not allow.
+
+### State
+
+- `.dotagent/` holds `config.json` and `runs.jsonl` only. `runs.jsonl` keeps one JSON line per event: a subagent spawn, a gate pass, a plan phase.
+- There is no `approve` command, so no `!` command is needed. In `ask` the permission prompt is the yes.
 
 ### Lessons and bug reports
 
