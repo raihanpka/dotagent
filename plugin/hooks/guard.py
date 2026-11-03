@@ -1,8 +1,9 @@
-"""Deterministic guards for the dotagent: commit style, PR title, no plan labels in names, the workflow mode, read-only planning, big reads.
+"""Guards for the dotagent: commit style, PR title, no plan labels in names, the workflow mode, read-only planning.
 
-Reads one hook event as JSON on stdin. Exit 2 with a reason on stderr blocks the tool call.
-Settings live in one file, .dotagent/config.json in the project. Edit it by hand or run
-`sh run.sh set <key> <value>` (the /dotagent:workflow command does).
+Reads one hook event as JSON on stdin. Exit 2 with a reason on stderr blocks the tool call, a rule that needs a
+human yes returns `ask` so Claude Code shows its own prompt, and everything else passes. Only the rules that
+can never be right (a trailer, a force push, a protected path) block outright. Settings live in one file,
+.dotagent/config.json in the project. Edit it by hand or run `sh run.sh set <key> <value>` (the /dotagent:workflow command does).
 """
 import json
 import os
@@ -12,8 +13,6 @@ import subprocess
 import sys
 import time
 
-# Top of the usual file size range (ESLint recommends 100 to 500, Clean Code says 500 at most): see docs/PRACTICES.md.
-READ_LINES = 500
 EM_DASH = chr(0x2014)
 EMOJI = re.compile("[" + chr(0x1F300) + "-" + chr(0x1FAFF) + chr(0x2600) + "-" + chr(0x27BF) + chr(0x1F000) + "-" + chr(0x1F2FF) + "]")
 TYPES = "feat|fix|hotfix|docs|style|refactor|test|chore|perf|revert|ci|build"
@@ -43,10 +42,6 @@ PHASE = os.path.join(".dotagent", "phase")
 GATE = os.path.join(".dotagent", "gate")  # the HEAD sha the repo gate last passed at, written by `run.sh gate run`
 APPROVED = os.path.join(".dotagent", "approved")  # written by `run.sh approve` after the user said yes in the chat
 PHASE_TTL = 3600  # a forgotten plan marker must never lock a repo for long
-SKIP_READ = re.compile(
-    r"(\.(g|freezed|pb)\.\w+$|\.(lock|min\.js|min\.css|png|jpe?g|gif|webp|pdf|ipynb|svg)$|"
-    r"(^|/)(node_modules|dist|build|generated|vendor|\.dart_tool)/|package-lock\.json$)"
-)
 
 
 # Allowed values per setting, the first one is the default. A missing or invalid value falls back to it.
@@ -615,7 +610,7 @@ SEPARATORS = {"&&", "||", ";", "|", "&"}
 
 
 def no_test_delete(tokens):
-    # rm and git rm never delete a test, a test removed to get green hides the failure. A test that is truly obsolete is the user's call.
+    # rm and git rm of a test can hide a failure, so the user decides: an obsolete test is removed with their yes.
     for i, tok in enumerate(tokens):
         before = tokens[i - 1] if i else ";"
         starts = i < 2 or tokens[i - 2] in SEPARATORS
@@ -625,7 +620,8 @@ def no_test_delete(tokens):
             if arg in SEPARATORS:
                 break
             if not arg.startswith("-") and TEST_PATH.search(arg):
-                block(f"do not delete {arg}, a removed test hides a failure. If the test is obsolete, ask the user to remove it.")
+                ask(f"this deletes the test {arg}. A removed test can hide a failure. Ask the user whether it is obsolete, "
+                    "and if they say yes, delete it and say so in the report.")
 
 
 def on_bash(command):
@@ -675,8 +671,8 @@ def on_write(tool_input):
         allowed = pr_files()
         if allowed and not matches(rel, allowed):
             block(
-                f"{rel} is outside this PR's `files:` in docs/TODO.md ({', '.join(allowed)}). Stop and tell the lead, "
-                "who adds the path to `files:` only when the task needs it."
+                f"{rel} is outside this PR's `files:` in docs/TODO.md ({', '.join(allowed)}). Add the path to `files:` "
+                "with one line of reason in docs/TODO.md, then retry, and name it in the final report."
             )
     # Refuses an em dash in text the agent writes, unless the user allowed it.
     if opt("EM_DASH") == "allow":
@@ -684,23 +680,6 @@ def on_write(tool_input):
     text = tool_input.get("content") or tool_input.get("new_string") or ""
     if EM_DASH in text:
         block("no em dash in files. Use a comma, period, or parentheses.")
-
-
-def on_read(tool_input):
-    # Blocks a whole read of a source file over the read limit, a range read passes.
-    path = tool_input.get("file_path", "")
-    if tool_input.get("offset") or tool_input.get("limit") or SKIP_READ.search(path):
-        return
-    try:
-        with open(path, "rb") as handle:
-            lines = sum(1 for _ in handle)
-    except OSError:
-        return
-    if lines > READ_LINES:
-        block(
-            f"{path} has {lines} lines (whole read limit {READ_LINES}). Grep for the symbol, then Read with "
-            "offset and limit, or ask a subagent to summarize it."
-        )
 
 
 def main():
@@ -721,7 +700,7 @@ def main():
             pass
         print(
             f"[dotagent] workflow={opt('WORKFLOW')} "
-            f"read-limit={READ_LINES} style={opt('STYLE_SKILLS')}"
+            f"style={opt('STYLE_SKILLS')}"
             # A repo flow that is not the default shows up here, so the ship skill follows it.
             + "".join(f" {tag}={opt(key)}" for tag, key, default in (
                 ("merge", "MERGE_METHOD", "squash"), ("types", "COMMIT_TYPES", ""), ("scope", "COMMIT_SCOPE", "required"), ("base", "BASE_BRANCH", ""))
@@ -749,8 +728,6 @@ def main():
         on_bash(tool_input.get("command", ""))
     elif tool in ("Write", "Edit"):
         on_write(tool_input)
-    elif tool == "Read":
-        on_read(tool_input)
     elif tool in ("Agent", "Task"):
         log_spawn(tool_input)
 

@@ -26,6 +26,18 @@ expect() {
   fi
 }
 
+# expect_ask <name> <json>: the guard returns an ask (Claude Code shows its own prompt), it does not block
+expect_ask() {
+  local name="$1" json="$2" out got
+  out="$(printf '%s' "$json" | sh "$guard" 2>/dev/null)"
+  got=$?
+  case "$out" in
+    *'"permissionDecision": "ask"'*) [ "$got" -eq 0 ] && pass=$((pass + 1)) && return ;;
+  esac
+  fail=$((fail + 1))
+  echo "FAIL $name: want an ask, got exit $got: $out"
+}
+
 bash_json() { jq -nc --arg c "$1" '{tool_name:"Bash",tool_input:{command:$c}}'; }
 
 # commit style
@@ -182,7 +194,7 @@ expect "config set via run.sh ok" 0 "$(bash_json 'sh /p/hooks/run.sh set workflo
 seq 1 501 > "$tmp/big.txt"
 seq 1 500 > "$tmp/ok.txt"
 seq 1 900 > "$tmp/big.g.dart"
-expect "read big blocked" 2 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$tmp/big.txt\"}}"
+expect "read big is never blocked" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$tmp/big.txt\"}}"
 expect "read 500 ok" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$tmp/ok.txt\"}}"
 expect "read big with range ok" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$tmp/big.txt\",\"offset\":10,\"limit\":50}}"
 expect "read generated ok" 0 "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$tmp/big.g.dart\"}}"
@@ -364,13 +376,13 @@ out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
 case "$out" in *"setup=minimal hooks=declined"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL answers in the session line: $out" ;; esac
 cfg '{}'
 
-# deleting a test to get green is refused, other deletes are not
+# deleting a test asks the user, other deletes pass
 cfg '{}'
-expect "rm of a js test" 2 "$(bash_json 'rm tests/a.test.js')"
-expect "git rm of a go test" 2 "$(bash_json 'git rm internal/x/x_test.go')"
-expect "rm of a python test" 2 "$(bash_json 'rm -f pkg/test_login.py')"
-expect "rm of the tests folder" 2 "$(bash_json 'rm -rf tests')"
-expect "git rm after another command" 2 "$(bash_json 'git add a && git rm -q src/__tests__/a.js')"
+expect_ask "rm of a js test asks" "$(bash_json 'rm tests/a.test.js')"
+expect_ask "git rm of a go test asks" "$(bash_json 'git rm internal/x/x_test.go')"
+expect_ask "rm of a python test asks" "$(bash_json 'rm -f pkg/test_login.py')"
+expect_ask "rm of the tests folder asks" "$(bash_json 'rm -rf tests')"
+expect_ask "git rm after another command asks" "$(bash_json 'git add a && git rm -q src/__tests__/a.js')"
 expect "rm of a source file" 0 "$(bash_json 'rm src/a.js')"
 expect "git rm of a source file" 0 "$(bash_json 'git rm src/login.go')"
 expect "rm of a log" 0 "$(bash_json 'rm -f build/out.log')"
