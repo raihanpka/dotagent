@@ -114,7 +114,7 @@ Copy from `plugin/` and edit. Fill every `{{...}}`. `plugin/SETUP.md` lists the 
 | `/dotagent:workflow local\|ask\|auto` | Save how far a run goes on its own, for every run. |
 | `/dotagent:setup` | Set dotagent up in this repo, once. |
 
-Without an argument `workflow` shows the saved settings. In the `/` menu the first one is `/dotagent:dotagent`.
+Without an argument `workflow` shows the saved settings. In the `/` menu the short form is listed as `/dotagent:dotagent`.
 
 ```
 /dotagent add the billing endpoint. requirements from product: <paste them>
