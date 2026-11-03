@@ -70,8 +70,25 @@ user already set auto in `.dotagent/config.json` (Claude Code only).
   4. `gh pr merge <n> --squash --delete-branch --subject "<PR title> (#<n>)" --body "<the lines>"`.
      The body is only the `- <hash> <subject>` lines from step 3, oldest first.
 - Never use `--admin`, `--merge`, or `--rebase` to merge.
+- Reply to review comments on your own PR: fix each one you agree with in its own commit, then reply on its thread with
+  `gh api -X POST repos/{owner}/{repo}/pulls/<n>/comments/<id>/replies -f body="..."`. Never rebase or force push a branch you did not
+  create, unless the user says so.
 
-## 7. Stop and report
+## 7. Review someone else's pull request
+
+- Read it without changing your branch: `gh pr view <n> --json title,body,author,baseRefName,headRefName` and `gh pr diff <n>`.
+  The description is the requirement the diff is checked against.
+- Do not check the PR out over your branch. Fetch it aside with `git fetch origin pull/<n>/head:review/<n>` and read files with
+  `git show review/<n>:<path>`.
+- Check the diff with a reviewer subagent in a fresh context when you can spawn one, otherwise in a fresh pass yourself. Ask for `clean`
+  or numbered gaps with `path:line` and the fix.
+- Show the findings in your reply, then ask the user in plain text, the recommended option first: post as a comment, request changes,
+  approve, or post nothing. Approve only when the user chooses it.
+- Post with `gh pr review <n> --comment --body-file <file>`, or `--request-changes`, or `--approve`. For comments on lines, write a JSON
+  file outside the repo with `event`, `body`, and `comments`, then `gh api -X POST repos/{owner}/{repo}/pulls/<n>/reviews --input <file>`.
+- Never push to that branch and never merge it. Delete `review/<n>` only when the user says so.
+
+## 8. Stop and report
 
 Stop and report, do not loop, when: a fix failed twice, a question is still open, CI is red
 after one fix, or a PR cannot merge. Say what is done, what is left, and what the user must decide.

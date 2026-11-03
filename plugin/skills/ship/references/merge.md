@@ -20,6 +20,17 @@ trailer, a hook refuses it. Tick only what was done and delete every unchecked l
 After the push run `gh pr checks --watch`. On a failure read the failing log, fix it, push, and watch again. Never skip, weaken, or
 delete a check to get green.
 
+## Review comments
+
+- Read them on your PR, and on any PR you fix: `gh pr view <n> --comments` for the conversation, `gh api repos/{owner}/{repo}/pulls/<n>/comments`
+  for comments on lines (each has `id`, `path`, `line`, and `body`).
+- Fix each comment you agree with in its own commit, push, then reply once on its thread:
+  `gh api -X POST repos/{owner}/{repo}/pulls/<n>/comments/<id>/replies -f body="<what changed, one line>"`. A comment you do not take gets
+  a reply with the reason, and no change.
+- Change behavior a comment asks for only when it matches the requirement. When it contradicts the requirement, ask the user first.
+- A PR whose branch you did not create (`gh pr view <n> --json author,headRefName`): never rebase it, never force push, and push nothing
+  to it unless the user says so.
+
 ## Merge
 
 The workflow mode decides who acts:
