@@ -4,7 +4,7 @@ For the agent reading this. The user asked you to set up dotagent in their repo.
 and show each file before you write it. Never overwrite a file that exists: show a diff and ask.
 This holds for every row in step 4, also the rows marked "always", which means the file is offered,
 not forced. An existing CI workflow, git hook, template, or doc belongs to the user. Never push or
-merge anything.
+merge anything. `sh hooks/run.sh` below is the plugin's `hooks/run.sh`, not a file in the repo: run it by the path the setup skill gives you.
 
 **Other AI coding agents** (Codex, Antigravity, Cursor, or any agent that reads `AGENTS.md`). The plugin, its skills, its agents, and its guard
 hook are Claude Code only, so skip step 2. Everything else still applies:
@@ -16,8 +16,7 @@ hook are Claude Code only, so skip step 2. Everything else still applies:
   - By hand: copy `templates/.agents/skills/dotagent-ship/SKILL.md` to that path.
 - Codex can run the reviewer as a subagent. Copy `templates/.codex/agents/reviewer.toml` to `.codex/agents/`. Agents without
   subagents skip that file and review in a fresh pass themselves.
-- Write `AGENTS.md`, `docs/`, and the `.github`, `.githooks` files from step 4 as usual. Set the git hooks on with
-  `git config core.hooksPath .githooks`.
+- Write `AGENTS.md`, `docs/`, and the `.github`, `.githooks` files from step 4 as usual. Turn the git hooks on (`git config core.hooksPath .githooks`) once the user says yes in step 3.
 - Nothing reads `.dotagent/config.json` outside Claude Code, so write the settings in `docs/DOTAGENT-SETUP.md` instead of `run.sh set`.
 - The git hooks and the PR gate are the only checks outside Claude Code. The protected paths and the plan-only rule are not enforced:
   say so in the open items.
@@ -45,12 +44,12 @@ Check each with `command -v` and report what is missing. Do not install anything
 
 | Tool | Why | Check |
 |---|---|---|
-| Claude Code, recent | plugins, hooks, and workflows | `claude --version` |
+| Claude Code, recent | plugins and hooks | `claude --version` |
 | Git | branches and commits | `git --version` |
 | GitHub CLI `gh`, signed in | the agent opens PRs, watches CI, and merges | `gh auth status` |
 | Python 3.8 or newer | runs `hooks/guard.py` through `hooks/run.sh`, which tries `python3`, `python`, then `py` | `python3 --version` or `python --version` |
 | The repo's own toolchain | build, lint, and test commands | ask in step 3 |
-| A GitHub remote with Actions, squash merging allowed | the PR and CI steps, and the merge is always a squash | `git remote -v`, `gh repo view --json squashMergeAllowed` |
+| A GitHub remote with Actions, squash merging allowed | the PR and CI steps; the merge is a squash unless `merge_method` says otherwise | `git remote -v`, `gh repo view --json squashMergeAllowed` |
 | Node and jq (optional) | only to run dotagent's own tests | `node --version`, `jq --version` |
 
 ## 1. Look first, cheaply
@@ -210,7 +209,7 @@ Round 2 (needs the architecture and the commands):
   `lefthook.yml`, and `.pre-commit-config.yaml`. When one exists, the repo has its own hooks: do
   not change `core.hooksPath` and do not write `.githooks`, add an open item instead. When
   `.githooks` exists, show a diff per file. Turning them on runs `git config core.hooksPath .githooks`, a local
-  and reversible change, so confirm it once with the answer (Recommended) first. Say that a repo that ships
+  and reversible change, so ask once first, with the recommended option marked. Say that a repo that ships
   `.githooks` but has them off gets no check at all, and that every later `/dotagent` run checks this again.
 
 Round 3 (needs the answers above):
@@ -218,7 +217,7 @@ Round 3 (needs the answers above):
   only change how the agent writes replies. Install commands, only after the user agrees:
   - `caveman` for short replies: `/plugin marketplace add JuliusBrussee/caveman`
   - `ponytail:lite` for the simplest solution: `/plugin marketplace add DietrichGebert/ponytail`
-- **Em dash and emoji.** Do not ask. The agent writes neither by default. Set `allow` (with `sh hooks/run.sh set em_dash allow`, and `emoji`) only when the user asks for them.
+- **Em dash and emoji.** Do not ask. The agent writes neither by default. Set `allow` (`sh hooks/run.sh set em_dash allow`, and the same for `emoji`) only when the user asks for them.
 
 Between rounds, run the checks the answers make possible:
 - **Check the rule against the code.** For every module, grep all its files, tests included, for
@@ -257,7 +256,7 @@ content in the existing doc's own language and structure. A PR template under an
 | `docs/README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md` | `templates/docs/` | only a role the repo does not cover yet, matched by meaning (see step 1), so an `architectures/` folder or an `arsitektur.md` counts as the architecture doc. For one that exists, show the new section (architecture style, coupling, current violations) as an addition and ask, never replace |
 | `docs/DOTAGENT-SETUP.md` | `templates/docs/DOTAGENT-SETUP.md` | always, so a human can track it |
 | `.dotagent/config.json` | `templates/.dotagent/config.json`, written with `run.sh set` | always |
-| `.gitignore` (repo root) | append `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, and `docs/TODO.md`, so none of dotagent's own files show up as untracked and nobody has to be shy about them. Skip a line already present, and skip any path that has tracked files (`git ls-files <path>`), such as a team `.claude/settings.json`. Do it without asking, then tell the user which lines you added and which you skipped | append, never overwrite |
+| `.gitignore` (repo root) | append `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, and `docs/TODO.md`, so dotagent's own files never show as untracked. Skip a line already present, and skip any path that has tracked files (`git ls-files <path>`), such as a team `.claude/settings.json`. Do it without asking, then tell the user which lines you added and which you skipped | append, never overwrite |
 
 `docs/TODO.md` is not generated here. The agent writes it for each task from `templates/docs/TODO.md`:
 one section per PR, each with subtasks that it ticks. It is ignored by git on purpose, a scratch report.
