@@ -39,7 +39,7 @@ WRITE = re.compile(
 TODO = os.path.join("docs", "TODO.md")
 RUNS = os.path.join(".dotagent", "runs.jsonl")  # one JSON line per event: a subagent spawn, a gate pass, a plan phase
 PHASE_TTL = 3600  # a forgotten plan phase must never lock a repo for long
-PHASE_TTL = 3600  # a forgotten plan marker must never lock a repo for long
+PHASE_TTL = 3600  # a forgotten plan phase must never lock a repo for long
 
 
 # Allowed values per setting, the first one is the default. A missing or invalid value falls back to it.
@@ -394,7 +394,7 @@ def cli(args):
     if key == "workflow":
         value = MODE_ALIASES.get(value, value)
     if key == "scale":
-        sys.exit("scale was removed, the ship skill sizes the run itself: a one sentence diff has no plan")
+        sys.exit("scale was removed: the ship skill sizes each run itself, and a one sentence diff has no plan")
     if key in CHOICES and value not in CHOICES[key]:
         sys.exit(f"{key} must be one of: {', '.join(CHOICES[key])}")
     if key in ANSWERS and value not in ANSWERS[key]:
@@ -465,7 +465,7 @@ def gate(kind):
     if mode == "local":
         block(f"workflow is local: nothing leaves this machine, so no {kind}. Keep the commits local and tell the user.")
     if mode == "ask":
-        ask(f"workflow is ask: the {kind} needs your yes. Ask in the chat, and answer this prompt yes once the user has said yes.")
+        ask(f"workflow is ask: this {kind} needs your yes. Confirm it in the chat first, then answer this prompt yes.")
 
 
 def no_label(text, where):
@@ -513,7 +513,9 @@ def check_commit(args):
     no_emoji(msg, "commit messages")
     no_label(msg, "commit messages")
     if not commit_pattern().match(msg):
-        block("commit message must look like `type(scope): summary` with a scope, for example `fix(auth): stop token reuse`.")
+        if opt("COMMIT_SCOPE") == "optional":
+            block("commit message must look like `type: summary` or `type(scope): summary`, for example `fix: stop token reuse`.")
+        block("commit message must look like `type(scope): summary`, for example `fix(auth): stop token reuse`.")
 
 
 def commit_types():
@@ -558,7 +560,7 @@ def check_pr_merge(tokens):
     flags = {"squash": {"-s", "--squash"}, "merge": {"-m", "--merge"}, "rebase": {"-r", "--rebase"}}
     others = set().union(*(f for m, f in flags.items() if m != method))
     if others & set(tokens) or not flags[method] & set(tokens):
-        ask(f"this repo merges with {method} (`merge_method`), and this command may not. Use --{method}, or confirm the method with the user.")
+        ask(f"this repo merges with {method} (`merge_method`), but this command uses another method. Use --{method}, or ask the user first.")
     for text in flag_values(tokens, "-t", "--subject") + flag_values(tokens, "-b", "--body"):
         if TRAILER.search(text):
             block("no generated-by line or Co-Authored-By in the merge text, GitHub would copy it into the default branch.")
@@ -649,7 +651,7 @@ def main():
         if git_hooks() == "off":
             print(
                 "[dotagent] git hooks are off: .githooks exists but git does not use it, so format, lint, and name checks "
-                "skip every commit and push. Tell the user, and with their ok run `git config core.hooksPath .githooks`."
+                "skip every commit and push. Tell the user, and with their yes, run `git config core.hooksPath .githooks`."
             )
         left = unfinished()
         if left:
