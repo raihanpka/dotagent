@@ -126,7 +126,7 @@ the url on `done:`), an open PR (go on at CI), commits but no PR (review, then o
 
 - Aim for 3 to 8 subtasks and a few hundred changed lines per PR. It is a range, not a limit. A bigger task becomes more PRs.
 - Subtasks that touch the same file are never parallel, and you build them one at a time.
-- Each fix (a failed subtask, review gaps, a red CI) gets two tries: fix it, retry with the full log, then stop and report the reason.
+- A failed check gets two tries on one hypothesis. A different hypothesis gets its own two tries. A repeated premise stops `premise`.
 
 ## Receipt and guardrails
 

@@ -114,7 +114,8 @@ Never stop silently, never retry the same unit, and never relax `finish:` to mak
 ## 8. CI and merge
 
 - Watch CI: `gh pr checks --watch`. On red, read the log, fix with one more commit, push. Never skip or weaken a check to get green.
-  Two failed fixes are a stop, not a third fix: `error`, or `premise` when they share one premise.
+  Two failed fixes on the same hypothesis are a stop, not a third fix: `error`, or `premise` when they share one premise. A different
+  hypothesis gets its own two tries.
 - Ask the user for a yes before the merge.
 - Rebase first, then squash, so the default branch stays linear:
   1. `git fetch origin && git rebase origin/<default>`. Resolve conflicts, do not skip them. Two failed tries is a `conflict` stop.

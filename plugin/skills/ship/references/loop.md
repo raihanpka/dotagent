@@ -27,6 +27,14 @@ One turn of the circle:
 
 The loop is the default. Nothing waits between units. The only pauses are a stop and the user.
 
+## Retry, pivot, and the next task
+
+- A failed check gets two tries on one hypothesis. A different hypothesis gets its own two tries. Do not repeat the same fix a third time.
+- Two `same` rows are a pivot: write the new hypothesis in `## log` and change the approach. Four are `stalled=yes` and `stop no-progress`.
+- The TODO is a queue. Take the first unfinished PR whose `needs:` is merged. After a merge, write the url on `done:`, switch to the base,
+  pull, and take the next PR. A stop is not the end of the queue: `continue` resumes at the next unit.
+- `loop.sh` runs one fresh process per PR and exits when no PR is left or a stop fires.
+
 ## Progress and stalls
 
 A unit made progress when either of these changed since the previous `progress` row:

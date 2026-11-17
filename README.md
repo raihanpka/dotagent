@@ -53,7 +53,7 @@ with only a TODO.
 
 ```
 Goal and finish -> Plan -> One unit -> Verify -> Prove -> Review -> Ship -> Progress -> next unit
-                                  \-> stop: two tries, no progress, or a blocker -> report + next
+                                  \-> stop: pivot, then no progress, a blocker, or budget -> report + next
 ```
 
 1. **Goal.** `docs/TODO.md` starts with `goal:` and `finish:`. The finish is a command or artifact that can pass or fail. A run is done
@@ -67,6 +67,10 @@ Goal and finish -> Plan -> One unit -> Verify -> Prove -> Review -> Ship -> Prog
 6. **Ship.** PR, CI, rebase, squash merge. The gate runs once per commit and is recorded.
 7. **Progress.** `run.sh progress` records HEAD and the unfinished count. `moved` goes on. Two `same` rows are a pivot: change the idea.
    Four `same` rows are a `no-progress` stop.
+
+A failed check gets two tries on the same hypothesis. A different hypothesis gets its own two tries. Two `same` rows are a pivot, not a
+stop: change the idea and log it. Four are a `no-progress` stop. The TODO is a queue: after a merge, the next PR is the next task.
+`loop.sh` runs one fresh process per PR until no PR is left or a stop fires.
 
 For a wide verification, a competing design, or an adversarial pass, `fanout.md` covers swarm, arena, interrogate, and panel. For a release,
 `production.md` covers the canary, the watch window, the rollback, and the post-release checks. The state and logs are in
@@ -144,7 +148,10 @@ One file, `.dotagent/config.json`, per machine and ignored by git.
 - no `Co-Authored-By` or "Generated with" trailer, no `--no-verify`, no `--force`, no `--admin`
 - push, PR, and merge follow the workflow mode
 - an edit outside the PR's `files:` is refused until the path is added with a reason
-- a `protected` path is never edited
+- an edit or a shell write to a `protected` path is refused. A shell write is a redirect, `sed -i`, `cp`/`mv`/`rm`, or a `git`
+  restore/checkout/apply/rm that names the path
+- the guard sees the tool call. A script or tool that writes internally, a path built at runtime, or another agent without the hook is
+  outside it; CI and branch protection are the backstop
 - the guard runs in Claude Code, Codex, and Command Code; other agents get the git hooks and CI
 
 </details>
@@ -181,7 +188,9 @@ python3 scripts/workflow-svg.py --check
 - Built for my own workflow. The guard needs Python 3.8 or newer.
 - The gate record is bookkeeping the agent trusts. CI is the real check, and the proof is what the reviewer reads.
 - Cursor, Antigravity, and other agents get the portable skill, the git hooks, and CI, but not the guard hook.
-- Tried on Windows and macOS. Found something? Open an issue.
+- Tried on Linux and macOS. Windows not tested.
+
+**Found something?** Open an issue.
 
 ## credits
 
