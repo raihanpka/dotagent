@@ -4,7 +4,7 @@
 
 - System: a plugin package of files, no service, because the product is skills, agents, a guard hook, and templates that run inside Claude Code and in a user's repo.
 - Structure: by role, one folder per kind of file.
-- Coupling rule: `plugin/` never reads `tests/`, `examples/`, or `scripts/`. Dependencies point from the tests to the plugin, never back.
+- Coupling rule: `plugin/` never reads `tests/` or `scripts/`. Dependencies point from the tests to the plugin, never back.
 
 ## Shape
 
@@ -21,12 +21,12 @@ The plugin is what users install. Everything else in the repo tests it, measures
 | `plugin/templates/` | files copied into a user's repo, including `.codex/` and `.commandcode/` | nothing in the repo | the repo path it mirrors |
 | `skills/dotagent-ship/` | the portable skill for Codex, Command Code, and other agents | nothing in the repo | `SKILL.md`, byte identical to the template copy |
 | `tests/` | `hooks.test.sh`, `ship.test.mjs`, `skills.test.mjs`, `marketplace.test.mjs` | `plugin/` | the four files |
-| `examples/`, `scripts/` | the example app, the release notes script and the diagram svg script | `plugin/`, read only | their `README.md` |
+| `scripts/` | the release notes script and the diagram svg script | `plugin/`, read only | their files |
 | `docs/` | the practices, the state and log reference, the setup guide, and the loop diagram | `plugin/`, read only | their files |
 
 ## Current violations
 
-None. `grep -rnE "tests/|examples/|scripts/" plugin` finds one comment in `plugin/hooks/guard.py` and no import.
+None. `grep -rnE "tests/|scripts/" plugin` finds one comment in `plugin/hooks/guard.py` and no import.
 
 ## Boundary check
 

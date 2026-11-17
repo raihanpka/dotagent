@@ -138,7 +138,7 @@ cfg '{"em_dash":"allow"}'
 expect "commit em dash allowed when the user asks" 0 "$(bash_json 'git commit -m "feat(a): add — login"')"
 cfg '{"em_dash":"block","emoji":"block"}'
 expect "config edit blocked" 2 "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$tmp/proj/.dotagent/config.json\",\"content\":\"{}\"}}"
-expect "a config copy in a subfolder is not the config" 0 "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$tmp/proj/examples/x/.dotagent/config.json\",\"content\":\"{}\"}}"
+expect "a config copy in a subfolder is not the config" 0 "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$tmp/proj/sub/x/.dotagent/config.json\",\"content\":\"{}\"}}"
 
 # set validates and writes the config
 set_out="$(sh "$guard" set workflow adapt)"

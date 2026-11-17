@@ -18,6 +18,9 @@ stops with one reason you can act on. A green build is not a green feature.
 | **Command Code** | `cmd skills add raihanpka/dotagent -s dotagent-ship` | follow the setup prompt below, then `/dotagent-ship <task>` |
 | **Cursor, Antigravity, other** | `npx skills add raihanpka/dotagent --skill dotagent-ship -a codex -a antigravity-cli -y` | follow the setup prompt below, then `/dotagent-ship <task>` |
 
+`plugin/skills/*` are the Claude Code editions. Each one names `${CLAUDE_SKILL_DIR}` once to find the plugin. The portable edition is
+`skills/dotagent-ship/SKILL.md`, with no Claude-only tool or path token, for Codex, Command Code, Cursor, and other agents.
+
 Run setup once per repo. It reads the repo, asks one short round, and writes `AGENTS.md`, the guard, the git hooks, the PR gate, and
 `docs/VERIFICATION.md`, showing each file before it writes it.
 
@@ -157,7 +160,7 @@ dotagent/
 │   └── templates/              # mirrors a repo 1:1
 ├── skills/dotagent-ship/       # the portable skill
 ├── hooks/hooks.json            # the Codex hook entry
-├── examples/  scripts/  docs/  tests/
+├── scripts/  docs/  tests/
 └── CHANGELOG.md
 ```
 

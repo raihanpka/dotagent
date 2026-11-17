@@ -13,7 +13,7 @@ A Claude Code plugin: skills, agents, a guard hook, and templates for a small ag
 ## Architecture
 
 - Style: a plugin package of files, no service. Structure: by role, one folder per kind of file.
-- Coupling: `plugin/` never reads `tests/`, `examples/`, or `scripts/`. Dependencies point from the tests to the plugin, never back. Enforced by grep for now, no boundary check yet.
+- Coupling: `plugin/` never reads `tests/` or `scripts/`. Dependencies point from the tests to the plugin, never back. Enforced by grep for now, no boundary check yet.
 
 ## Modules
 
@@ -24,7 +24,7 @@ A Claude Code plugin: skills, agents, a guard hook, and templates for a small ag
 - `skills/dotagent-ship/`: the portable skill, byte identical to the template copy. May depend on: nothing.
 - `hooks/`: the Codex hook entry at the repo root. May depend on: `plugin/hooks/run.sh`.
 - `tests/`: the guard tests and the skill tests. May depend on: `plugin/`.
-- `examples/`, `scripts/`: the example app, the release notes script and the diagram svg script. May read `plugin/`, never written back by it.
+- `scripts/`: the release notes script and the diagram svg script. May read `plugin/`, never written back by it.
 
 ## Rules
 

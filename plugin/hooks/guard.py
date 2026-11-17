@@ -309,7 +309,7 @@ def is_first_run():
 
 
 def is_config(path):
-    # Only this project's config, not a copy of one in a subfolder such as examples/.
+    # Only this project's config, not a copy of one in a subfolder.
     return os.path.abspath(path) == os.path.abspath(config_path())
 
 
