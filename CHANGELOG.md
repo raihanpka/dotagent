@@ -133,7 +133,8 @@ Upgrading: `/dotagent:scale` and the `large` run are gone, and so are the planne
 ### One loop for every task
 
 - `/dotagent:ship <task>` has one path. If the whole diff fits one sentence there is no plan and no TODO. Otherwise the lead writes `docs/TODO.md` read only, builds each subtask itself with one commit each, and a fresh `reviewer` checks the diff. The lead revises the plan when the work differs from it. A fix gets two tries from the lead, then the run stops.
-- Why: [Anthropic's guide to folding subagents into the main loop](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop), and the repo's own benchmark run 1 (every arm resolved 15/15, the workflow cost 1.6x to 1.8x and took 1.5x to 1.8x longer than plain Claude Code, `large` matched `medium`). The single loop was measured on two tasks (5 runs, all resolved): it is not faster or cheaper than plain Claude Code, see `docs/BENCHMARK.md`.
+- Why: [Anthropic's guide to folding subagents into the main loop](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop), and the repo's own benchmark run 1 (every arm resolved 15/15, the workflow cost 1.6x to 1.8x and took 1.5x to 1.8x longer than plain Claude Code, `large` matched `medium`). The single loop was measured on two tasks (5 runs, all resolved): it is not faster or cheaper than plain Claude Code, see the benchmark,
+removed in 0.7.0.
 - Every spawn (`reviewer`, `Explore`) gets an objective, an output shape, and boundaries.
 - Removed: `/dotagent:scale`, the size word before a task, `plugin/workflows/ship-large.js`, `planner`, `worker`, the Codex `planner.toml` and `worker.toml`, the `Workflow` permission, and the Scale question in setup.
 - `ship` is a small core plus `references/plan.md` and `references/merge.md`, read when that step comes. A one sentence task never loads the plan layout or the merge steps, and the core is about half the size it was.
@@ -247,7 +248,7 @@ Hotfix for `/dotagent:setup`: it must not overwrite what the repo already has.
 ### Benchmark and example
 
 - `examples/go-backend` is now `examples/taskboard-backend`: a small gin task board with real code and a green `make ci`, plus the files setup writes. It is the base app of the benchmark.
-- New `benchmark/`: 5 tasks with hidden graders, `run.sh` (one run, plain or `/dotagent:ship small|medium|large`), `report.py`, and `check-graders.sh`. `run-all.sh` runs the matrix. `docs/BENCHMARK.md` describes the method, the limits, and the first results: 60 runs, all resolved, dotagent costs about 1.6x to 1.8x plain Claude Code on these small tasks and never adds a trailer or a wrong commit subject, where plain added a trailer in 8 of 15.
+- New `benchmark/` (removed in 0.7.0): 5 tasks with hidden graders, `run.sh` (one run, plain or `/dotagent:ship small|medium|large`), `report.py`, and `check-graders.sh`. `run-all.sh` runs the matrix. The removed benchmark describes the method, the limits, and the first results: 60 runs, all resolved, dotagent costs about 1.6x to 1.8x plain Claude Code on these small tasks and never adds a trailer or a wrong commit subject, where plain added a trailer in 8 of 15.
 - Shorter `ship` and `planner` prompts: the naming rule is stated once per file, not four times.
 
 ## 0.2.0
@@ -310,7 +311,7 @@ Upgrading: the old `/plugin configure` options are ignored. Run `/dotagent:scale
 
 - Described as a minimalist agent swarm workflow, with `plugin.json` metadata (author, homepage, repository, keywords).
 - README rewritten in short points. The workflow diagram has thinner arrows with small heads that stop short of the boxes, bold key words, and only high level descriptions.
-- Added `docs/BENCHMARK.md`, the plan to measure the workflow, and rows in `docs/PRACTICES.md` for the TODO, plan before code, and names.
+- Added `docs/BENCHMARK.md` (removed in 0.7.0), the plan to measure the workflow, and rows in `docs/PRACTICES.md` for the TODO, plan before code, and names.
 
 ## 0.1.0
 
