@@ -27,6 +27,18 @@ test('the marketplace points at the root plugin, which has a manifest and a skil
   assert.ok(existsSync(new URL('../skills/dotagent-ship/SKILL.md', import.meta.url)))
 })
 
+test('the Command Code hook file runs the guard with --client commandcode, on the tools Command Code names', () => {
+  const hooks = JSON.parse(read('plugin/templates/.commandcode/settings.json'))
+  const commands = Object.values(hooks.hooks).flat().flatMap((group) => group.hooks.map((h) => h.command))
+  assert.ok(commands.length >= 2, 'no hook commands')
+  for (const command of commands) {
+    assert.ok(command.includes('.dotagent/run.sh'), `not the repo guard: ${command}`)
+    assert.ok(command.includes('--client commandcode'), `no --client commandcode: ${command}`)
+  }
+  const matcher = hooks.hooks.PreToolUse[0].matcher
+  for (const tool of ['shell_command', 'write_file', 'edit_file']) assert.ok(matcher.includes(tool), `matcher misses ${tool}`)
+})
+
 test('the root Codex hook file runs the guard with --client codex, on the tools Codex names', () => {
   const hooks = JSON.parse(read('hooks/hooks.json'))
   const commands = Object.values(hooks.hooks).flat().flatMap((group) => group.hooks.map((h) => h.command))

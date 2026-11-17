@@ -5,18 +5,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"${COMMANDCODE_PROJECT_DIR}/.dotagent/run.sh\" --client commandcode"
+            "command": "sh \"$(git rev-parse --show-toplevel)/.dotagent/run.sh\" --client commandcode"
           }
         ]
       }
     ],
     "PreToolUse": [
       {
-        "matcher": "shell|write|edit",
+        "matcher": "shell|write|edit|shell_command|write_file|edit_file",
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"${COMMANDCODE_PROJECT_DIR}/.dotagent/run.sh\" --client commandcode"
+            "command": "sh \"$(git rev-parse --show-toplevel)/.dotagent/run.sh\" --client commandcode"
           }
         ]
       }
