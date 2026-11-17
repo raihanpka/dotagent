@@ -24,8 +24,15 @@ jobs:
           fetch-depth: 0
       - name: Test
         run: |
+          python3 -m py_compile plugin/hooks/guard.py
+          sh -n plugin/hooks/run.sh
+          sh -n plugin/hooks/loop.sh
+          bash -n .githooks/pre-commit .githooks/commit-msg .githooks/pre-push
           bash tests/hooks.test.sh
           node --test tests/ship.test.mjs
+          node --test tests/skills.test.mjs
+          node --test tests/marketplace.test.mjs
+          python3 scripts/workflow-svg.py --check
       - name: Tag and release
         env:
           GH_TOKEN: ${{ github.token }}

@@ -1,7 +1,7 @@
 {
   "name": "dotagent",
-  "version": "0.6.1",
-  "description": "A minimalist single-loop agent workflow: clear requirements in, clean pull request out. The portable ship skill for Codex and other agents that read .agents/skills.",
+  "version": "0.7.0",
+  "description": "A verified agent loop: a checkable finish, a real-artifact proof, fresh review, fan-out, and a production watch, in auto or local mode. The portable ship skill for Codex, Command Code, and other agents that read .agents/skills.",
   "author": {
     "name": "Raihan Putra Kirana",
     "url": "https://github.com/raihanpka"
@@ -11,9 +11,13 @@
   "license": "MIT",
   "keywords": [
     "workflow",
+    "verification",
+    "fan-out",
+    "production",
     "pull-request",
     "ci",
     "atomic-commits",
-    "codex"
+    "codex",
+    "command-code"
   ]
 }

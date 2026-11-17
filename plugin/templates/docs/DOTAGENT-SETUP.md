@@ -7,7 +7,8 @@ You tick Reviewed once you have read it.
 
 | Setting | Value | Why |
 |---|---|---|
-| workflow | {{auto, ask, or local}} | {{reason}} |
+| agent | {{claude, codex, commandcode, both, or other}} | {{the agent that runs dotagent here}} |
+| workflow | {{auto or local}} | {{reason}} |
 | em dash and emoji | {{block (default) or allow}} | {{reason}} |
 | companion skills | {{plan, build, style skills, or none}} | {{reason}} |
 | commit scopes | {{list}} | {{reason}} |
@@ -15,6 +16,7 @@ You tick Reviewed once you have read it.
 | commit types and scope | {{the default list, or the repo's own list, scope required or optional}} | {{reason}} |
 | base branch | {{the default branch, or the branch PRs target}} | {{reason}} |
 | git hooks on | {{yes (`git config core.hooksPath .githooks`) or no}} | {{reason}} |
+| verification | {{the proof command, or "docs/VERIFICATION.md written", or "none yet"}} | {{how a change is proved against the real artifact}} |
 
 ## Generated files
 
@@ -22,12 +24,20 @@ You tick Reviewed once you have read it.
 |---|---|---|---|
 | `AGENTS.md` | `templates/AGENTS.md` | [ ] | [ ] |
 | `CLAUDE.md` | `templates/CLAUDE.md` | [ ] | [ ] |
+| `.agents/skills/dotagent-ship/` | `templates/.agents/skills/dotagent-ship/` (with `references/`) | [ ] | [ ] |
+| `.codex/agents/reviewer.toml` | `templates/.codex/agents/reviewer.toml` | [ ] | [ ] |
+| `.codex/hooks.json` | `templates/.codex/hooks.json` | [ ] | [ ] |
+| `.commandcode/settings.json` | `templates/.commandcode/settings.json` | [ ] | [ ] |
+| `.commandcode/agents/reviewer.md` | `templates/.commandcode/agents/reviewer.md` | [ ] | [ ] |
 | `.github/PULL_REQUEST_TEMPLATE.md` | `templates/.github/PULL_REQUEST_TEMPLATE.md` | [ ] | [ ] |
 | `.github/PR_EXAMPLE.md` | `templates/.github/PR_EXAMPLE.md` | [ ] | [ ] |
 | `.github/workflows/ci-pr.yml` | `templates/.github/workflows/ci-pr.yml` | [ ] | [ ] |
+| `.github/workflows/ci-default.yml` | `templates/.github/workflows/ci-default.yml` (when the repo has heavier checks) | [ ] | [ ] |
 | `.githooks/pre-commit`, `commit-msg`, `pre-push` | `templates/.githooks/` | [ ] | [ ] |
 | `docs/README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md` | `templates/docs/` | [ ] | [ ] |
+| `docs/VERIFICATION.md` | `templates/docs/VERIFICATION.md` | [ ] | [ ] |
 | `.dotagent/config.json` | `templates/.dotagent/config.json`, set with `run.sh`, ignored by git | [ ] | [ ] |
+| `.dotagent/guard.py`, `.dotagent/run.sh` | `hooks/guard.py`, `hooks/run.sh` (when the plugin is not installed) | [ ] | [ ] |
 | `.gitignore` | adds `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, `docs/TODO.md` | [ ] | [ ] |
 
 ## Open items

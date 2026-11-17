@@ -26,18 +26,6 @@ expect() {
   fi
 }
 
-# expect_ask <name> <json>: the guard returns an ask (Claude Code shows its own prompt), it does not block
-expect_ask() {
-  local name="$1" json="$2" out got
-  out="$(printf '%s' "$json" | sh "$guard" 2>/dev/null)"
-  got=$?
-  case "$out" in
-    *'"permissionDecision": "ask"'*) [ "$got" -eq 0 ] && pass=$((pass + 1)) && return ;;
-  esac
-  fail=$((fail + 1))
-  echo "FAIL $name: want an ask, got exit $got: $out"
-}
-
 bash_json() { jq -nc --arg c "$1" '{tool_name:"Bash",tool_input:{command:$c}}'; }
 
 # commit style
@@ -114,8 +102,8 @@ expect "autopilot merge ok" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fi
 cfg '{"workflow":"autopilot"}'
 expect "autopilot merge ok again" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
 expect "merge wrong number is not checked" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#6)" --body "- 1a2b3c4 fix(a): x"')"
-expect_ask "merge commit asks when the repo merges by squash" "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
-expect_ask "rebase asks when the repo merges by squash" "$(bash_json 'gh pr merge 5 --rebase')"
+expect "merge commit is refused when the repo merges by squash" 2 "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
+expect "rebase is refused when the repo merges by squash" 2 "$(bash_json 'gh pr merge 5 --rebase')"
 expect "squash needs no subject" 0 "$(bash_json 'gh pr merge 5 --squash --body "- 1a2b3c4 fix(a): x"')"
 expect "squash needs no body" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)"')"
 expect "squash empty body passes" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body ""')"
@@ -150,7 +138,7 @@ cfg '{"em_dash":"allow"}'
 expect "commit em dash allowed when the user asks" 0 "$(bash_json 'git commit -m "feat(a): add — login"')"
 cfg '{"em_dash":"block","emoji":"block"}'
 expect "config edit blocked" 2 "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$tmp/proj/.dotagent/config.json\",\"content\":\"{}\"}}"
-expect "a config copy in a subfolder is not the config" 0 "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$tmp/proj/examples/x/.dotagent/config.json\",\"content\":\"{}\"}}"
+expect "a config copy in a subfolder is not the config" 0 "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$tmp/proj/sub/x/.dotagent/config.json\",\"content\":\"{}\"}}"
 
 # set validates and writes the config
 set_out="$(sh "$guard" set workflow adapt)"
@@ -235,6 +223,15 @@ cfg '{"protected":"db/migrations/**,.github/CODEOWNERS"}'
 expect "protected path blocks" 2 '{"tool_name":"Edit","tool_input":{"file_path":"db/migrations/001_a.sql","new_string":"x"}}'
 expect "protected exact file blocks" 2 '{"tool_name":"Write","tool_input":{"file_path":".github/CODEOWNERS","content":"x"}}'
 expect "unprotected path ok" 0 '{"tool_name":"Write","tool_input":{"file_path":"src/a.go","content":"x"}}'
+expect "shell redirect to a protected path" 2 "$(bash_json 'echo x > db/migrations/001.sql')"
+expect "sed -i a protected path" 2 "$(bash_json 'sed -i s/a/b/ db/migrations/001.sql')"
+expect "rm a protected path" 2 "$(bash_json 'rm db/migrations/001.sql')"
+expect "git rm a protected path" 2 "$(bash_json 'git rm db/migrations/001.sql')"
+expect "git checkout a protected path" 2 "$(bash_json 'git checkout -- db/migrations/001.sql')"
+expect "cp to a protected path" 2 "$(bash_json 'cp /tmp/x db/migrations/002.sql')"
+expect "read a protected path" 0 "$(bash_json 'grep -rn foo db/migrations')"
+expect "read redirect to /dev/null" 0 "$(bash_json 'grep -rn foo db/migrations > /dev/null')"
+expect "write outside protected" 0 "$(bash_json 'echo x > src/a.js')"
 cfg '{}'
 printf '# TODO: x\n\n## PR 1: feat(a): add a\nfiles: internal/a/**, internal/app/app.go\n\n- [ ] 1.1 (S) `feat(a): add a`. x.\n\ndone:\n' > "$tmp/proj/docs/TODO.md"
 sh "$guard" phase build >/dev/null
@@ -249,11 +246,11 @@ sh "$guard" phase build >/dev/null
 expect "no files line means no scope" 0 '{"tool_name":"Edit","tool_input":{"file_path":"internal/b/z.go","new_string":"x"}}'
 sh "$guard" phase done >/dev/null
 printf '{"hook_event_name":"SessionStart"}' | sh "$guard" >/dev/null
-expect "agent spawn is never blocked" 0 '{"tool_name":"Agent","tool_input":{"subagent_type":"dotagent:worker"}}'
-expect "second spawn" 0 '{"tool_name":"Agent","tool_input":{"subagent_type":"dotagent:worker"}}'
+expect "agent spawn is never blocked" 0 '{"tool_name":"Agent","tool_input":{"subagent_type":"dotagent:explore"}}'
+expect "second spawn" 0 '{"tool_name":"Agent","tool_input":{"subagent_type":"dotagent:explore"}}'
 expect "reviewer spawn" 0 '{"tool_name":"Agent","tool_input":{"subagent_type":"dotagent:reviewer"}}'
 out="$(sh "$guard" receipt)"
-case "$out" in "subagents: worker 2, reviewer 1") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL receipt: $out" ;; esac
+case "$out" in "subagents: explore 2, reviewer 1") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL receipt: $out" ;; esac
 out="$(sh "$guard" status)"
 case "$out" in 1) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL status: $out" ;; esac
 printf '{"hook_event_name":"SessionStart"}' | sh "$guard" >/dev/null
@@ -272,8 +269,8 @@ cfg '{}'
 # saved answers, the git exclude entry, and the first run line
 sh "$guard" set setup minimal >/dev/null && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set setup"; }
 sh "$guard" set setup maybe >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL setup accepts a bad value"; } || pass=$((pass + 1))
-sh "$guard" set hooks declined >/dev/null && sh "$guard" set big_plan ok >/dev/null && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set hooks or big_plan"; }
-case "$(sh "$guard" show)" in *"setup=minimal"*"hooks=declined"*"big_plan=ok"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL show answers: $(sh "$guard" show)" ;; esac
+sh "$guard" set hooks declined >/dev/null && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set hooks"; }
+case "$(sh "$guard" show)" in *"setup=minimal"*"hooks=declined"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL show answers: $(sh "$guard" show)";; esac
 cfg '{}'
 x="$tmp/exproj"
 mkdir -p "$x" && git -C "$x" init -q
@@ -291,7 +288,7 @@ out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
 case "$out" in *"first run"*|*"scale"*) fail=$((fail + 1)); echo "FAIL an old scale key: $out" ;; *"workflow=auto"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old scale session line: $out" ;; esac
 cfg '{}'
 
-# workflow modes: autopilot, checkpoint, adapt
+# workflow modes: auto and local. The old names autopilot, checkpoint, adapt, and ask map to one of the two.
 SQ='--squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"'
 cfg '{"workflow":"autopilot"}'
 expect "autopilot pushes" 0 "$(bash_json 'git push origin feat/a')"
@@ -303,13 +300,10 @@ expect "adapt never merges on the remote" 2 "$(bash_json "gh pr merge 5 $SQ")"
 expect "adapt keeps local commits" 0 "$(bash_json 'git commit -m "feat(a): add a"')"
 expect "adapt allows a local squash" 0 "$(bash_json 'git merge --squash feat/a')"
 cfg '{"workflow":"checkpoint"}'
-ask_out() { printf '%s' "$1" | sh "$guard" 2>/dev/null; }
-out="$(ask_out "$(bash_json 'git push origin feat/a')")"
-case "$out" in *'"permissionDecision": "ask"'*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL checkpoint push does not ask: $out" ;; esac
-expect "checkpoint asks, it does not block" 0 "$(bash_json 'git push origin feat/a')"
-expect "checkpoint commits locally" 0 "$(bash_json 'git commit -m "feat(a): add a"')"
-expect_ask "checkpoint merge asks, the prompt is the yes" "$(bash_json "gh pr merge 5 $SQ")"
-# the modes are local, ask, and auto. The old names adapt, checkpoint, and autopilot stay as aliases and are saved under the new name
+expect "checkpoint maps to local and never pushes" 2 "$(bash_json 'git push origin feat/a')"
+expect "checkpoint keeps local commits" 0 "$(bash_json 'git commit -m "feat(a): add a"')"
+cfg '{"workflow":"ask"}'
+expect "ask maps to local and never pushes" 2 "$(bash_json 'git push origin feat/a')"
 cfg '{"workflow":"local"}'
 expect "local never pushes" 2 "$(bash_json 'git push origin feat/a')"
 expect "local never merges on the remote" 2 "$(bash_json "gh pr merge 5 $SQ")"
@@ -317,17 +311,15 @@ expect "local keeps local commits" 0 "$(bash_json 'git commit -m "feat(a): add a
 cfg '{"workflow":"auto"}'
 expect "auto pushes" 0 "$(bash_json 'git push origin feat/a')"
 expect "auto merges" 0 "$(bash_json "gh pr merge 5 $SQ")"
-cfg '{"workflow":"ask"}'
-out="$(ask_out "$(bash_json 'git push origin feat/a')")"
-case "$out" in *'"permissionDecision": "ask"'*"workflow is ask"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL ask does not ask: $out" ;; esac
-for pair in "autopilot auto" "checkpoint ask" "adapt local" "auto auto" "ask ask" "local local"; do
+for pair in "autopilot auto" "checkpoint local" "adapt local" "auto auto" "local local"; do
   set -- $pair
   [ "$(sh "$guard" set workflow "$1")" = "workflow=$2" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set workflow $1 is not saved as $2"; }
 done
+sh "$guard" set workflow ask >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL set workflow accepts ask"; } || pass=$((pass + 1))
 cfg '{"workflow":"adapt"}'
 case "$(sh "$guard" show)" in *"workflow=local"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old adapt in the file: $(sh "$guard" show)" ;; esac
 cfg '{"workflow":"checkpoint"}'
-case "$(sh "$guard" show)" in *"workflow=ask"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old checkpoint in the file: $(sh "$guard" show)" ;; esac
+case "$(sh "$guard" show)" in *"workflow=local"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old checkpoint in the file: $(sh "$guard" show)" ;; esac
 cfg '{"workflow":"autopilot"}'
 case "$(sh "$guard" show)" in *"workflow=auto"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old autopilot in the file: $(sh "$guard" show)" ;; esac
 # the old merge key is read once
@@ -336,7 +328,7 @@ case "$(sh "$guard" show)" in *"workflow=auto"*) pass=$((pass + 1)) ;; *) fail=$
 cfg '{"merge":"full"}'
 case "$(sh "$guard" show)" in *"workflow=auto"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old full: $(sh "$guard" show)" ;; esac
 cfg '{"merge":"off"}'
-case "$(sh "$guard" show)" in *"workflow=ask"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old off: $(sh "$guard" show)" ;; esac
+case "$(sh "$guard" show)" in *"workflow=local"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old off: $(sh "$guard" show)" ;; esac
 cfg '{"merge":"sometimes"}'
 case "$(sh "$guard" show)" in *"workflow=local"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old typo: $(sh "$guard" show)" ;; esac
 cfg 'not json'
@@ -393,16 +385,16 @@ expect "an optional scope may be given" 0 "$(bash_json 'git commit -m "feat(a): 
 expect "an optional scope still needs a type" 2 "$(bash_json 'git commit -m "added a"')"
 cfg '{"merge_method":"merge"}'
 expect "merge method merge accepts --merge" 0 "$(bash_json 'gh pr merge 5 --merge --delete-branch')"
-expect_ask "merge method merge refuses --squash" "$(bash_json "gh pr merge 5 $SQ")"
-expect_ask "merge method merge refuses --rebase" "$(bash_json 'gh pr merge 5 --rebase')"
+expect "merge method merge refuses --squash" 2 "$(bash_json "gh pr merge 5 $SQ")"
+expect "merge method merge refuses --rebase" 2 "$(bash_json 'gh pr merge 5 --rebase')"
 expect "merge method merge refuses --admin" 2 "$(bash_json 'gh pr merge 5 --merge --admin')"
 expect "merge method merge refuses a trailer" 2 "$(bash_json 'gh pr merge 5 --merge --body "Co-Authored-By: a <a@b>"')"
 cfg '{"merge_method":"rebase"}'
 expect "merge method rebase accepts --rebase" 0 "$(bash_json 'gh pr merge 5 --rebase --delete-branch')"
-expect_ask "merge method rebase refuses --merge" "$(bash_json 'gh pr merge 5 --merge')"
-expect_ask "merge method rebase refuses a bare merge" "$(bash_json 'gh pr merge 5')"
+expect "merge method rebase refuses --merge" 2 "$(bash_json 'gh pr merge 5 --merge')"
+expect "merge method rebase refuses a bare merge" 2 "$(bash_json 'gh pr merge 5')"
 cfg '{"workflow":"auto"}'
-expect_ask "the default merge is still a squash" "$(bash_json 'gh pr merge 5 --merge')"
+expect "the default merge is still a squash" 2 "$(bash_json 'gh pr merge 5 --merge')"
 for pair in "merge_method rebase" "merge_method merge" "commit_scope optional" "commit_types feat,fix" "base_branch develop" "base_branch release/1.x"; do
   set -- $pair
   [ "$(sh "$guard" set "$1" "$2")" = "$1=$2" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set $1 $2"; }
@@ -462,12 +454,42 @@ cfg '{}'
 expect_codex "codex patch to a source file passes" 0 "$(patch_json "$(printf '*** Begin Patch\n*** Add File: src/a.go\n+x\n*** End Patch')")"
 expect_codex "codex patch with an em dash is refused" 2 "$(patch_json "$(printf '*** Begin Patch\n*** Add File: src/a.md\n+a \xe2\x80\x94 b\n*** End Patch')")"
 cfg '{"workflow":"ask"}'
-expect_codex "codex ask refuses a push" 2 "$(bash_json 'git push origin feat/a')"
+expect_codex "codex ask maps to local and refuses a push" 2 "$(bash_json 'git push origin feat/a')"
 cfg '{"workflow":"auto"}'
 expect_codex "codex auto pushes" 0 "$(bash_json 'git push origin feat/a')"
 cfg '{"workflow":"local"}'
 expect_codex "codex local never pushes" 2 "$(bash_json 'git push origin feat/a')"
 expect_codex "codex subagent spawn is never blocked" 0 '{"tool_name":"spawn_agent","tool_input":{}}'
+
+# Command Code: --client commandcode reads its tool names and returns the SessionStart context as JSON
+expect_cc() {
+  local name="$1" want="$2" json="$3" got
+  printf '%s' "$json" | sh "$guard" --client commandcode >/dev/null 2>&1
+  got=$?
+  if [ "$got" -eq "$want" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); echo "FAIL $name: want $want got $got"; fi
+}
+cfg '{"workflow":"local"}'
+expect_cc "commandcode local never pushes" 2 '{"tool_name":"shell_command","tool_input":{"command":"git push origin feat/a"}}'
+cfg '{"workflow":"ask"}'
+expect_cc "commandcode ask maps to local and refuses a push" 2 '{"tool_name":"shell_command","tool_input":{"command":"git push origin feat/a"}}'
+cfg '{"workflow":"auto"}'
+expect_cc "commandcode auto pushes" 0 '{"tool_name":"shell_command","tool_input":{"command":"git push origin feat/a"}}'
+cfg '{}'
+expect_cc "commandcode write em dash" 2 '{"tool_name":"write_file","tool_input":{"file_path":"a.md","content":"a — b"}}'
+expect_cc "commandcode edit new_value em dash" 2 '{"tool_name":"edit_file","tool_input":{"file_path":"a.md","old_value":"a","new_value":"a — b"}}'
+expect_cc "commandcode clean write" 0 '{"tool_name":"write_file","tool_input":{"file_path":"a.md","content":"a, b"}}'
+cfg '{"protected":"db/migrations/**"}'
+expect_cc "commandcode protected path" 2 '{"tool_name":"write_file","tool_input":{"file_path":"db/migrations/001.sql","content":"x"}}'
+cfg '{}'
+out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard" --client commandcode)"
+case "$out" in *'"hookEventName": "SessionStart"'*'"additionalContext"'*"workflow="*"phase="*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL commandcode session JSON: $out" ;; esac
+x="$tmp/ccproj"
+mkdir -p "$x" && git -C "$x" init -q
+out="$(printf '{"hook_event_name":"SessionStart"}' | env -u CLAUDE_PROJECT_DIR COMMANDCODE_PROJECT_DIR="$x" sh "$guard" --client commandcode)"
+case "$out" in *"first run"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL commandcode project dir: $out" ;; esac
+out="$(sh "$guard" set agents commandcode)"
+case "$out" in "agents=commandcode") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL set agents commandcode: $out" ;; esac
+cfg '{}'
 
 # a PR review, a review reply, or any gh api write follows the workflow mode, a read of PR comments does not
 cfg '{"workflow":"local"}'
@@ -475,7 +497,7 @@ expect "local refuses a PR review" 2 "$(bash_json 'gh pr review 5 --comment --bo
 expect "local refuses a review reply" 2 "$(bash_json 'gh api -X POST repos/o/r/pulls/5/comments/9/replies -f body=ok')"
 expect "local allows reading PR comments" 0 "$(bash_json 'gh api repos/o/r/pulls/5/comments')"
 cfg '{"workflow":"ask"}'
-expect_ask "ask asks before a PR review" "$(bash_json 'gh pr review 5 --approve')"
+expect "ask maps to local and refuses a PR review" 2 "$(bash_json 'gh pr review 5 --approve')"
 cfg '{"workflow":"auto"}'
 expect "auto posts a PR review" 0 "$(bash_json 'gh pr review 5 --comment --body "ok"')"
 cfg '{}'
@@ -486,6 +508,88 @@ out="$(sh "$guard" set agents codex)"
 case "$out" in "agents=codex") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL set agents: $out" ;; esac
 sh "$guard" set agents cursor >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL agents accepts an unknown value"; } || pass=$((pass + 1))
 cfg '{}'
+
+# a run has a start, progress, a stall signal, and one stop reason; a fresh session keeps it
+r="$tmp/run"
+mkdir -p "$r/docs" && git -C "$r" init -q && git -C "$r" config user.email t@t && git -C "$r" config user.name t
+printf 'a\n' > "$r/a.txt" && git -C "$r" add a.txt && git -C "$r" commit -qm "feat(a): add a"
+printf '# TODO: x\n\n## PR 1: feat(a): add a\n\n- [ ] 1.1 `feat(a): add a`. x.\n\ndone:\n' > "$r/docs/TODO.md"
+run() { CLAUDE_PROJECT_DIR=$r sh "$guard" "$@"; }
+out="$(run state)"
+case "$out" in *"run=none"*"left=1"*"stalled=no"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL state before a run: $out" ;; esac
+out="$(run start "ship the a change")"
+case "$out" in "start=ship the a change") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL start: $out" ;; esac
+line="$(tail -1 "$r/.dotagent/runs.jsonl")"
+case "$line" in *'"v": 1'*'"run":'*'"start": "ship the a change"'*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL versioned start event: $line" ;; esac
+out="$(run state)"
+case "$out" in *"run=active"*"reason=-"*"left=1"*"stalled=no"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL state after start: $out" ;; esac
+out="$(run progress 1.1)"
+case "$out" in "progress=moved") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL first progress: $out" ;; esac
+line="$(tail -1 "$r/.dotagent/runs.jsonl")"
+case "$line" in *'"kind": "moved"'*'"same": 0'*'"phase":'*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL versioned progress event: $line" ;; esac
+out="$(run progress 1.1)"
+case "$out" in "progress=same") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a repeat progress: $out" ;; esac
+line="$(tail -1 "$r/.dotagent/runs.jsonl")"
+case "$line" in *'"kind": "same"'*'"same": 1'*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL same progress event: $line" ;; esac
+out="$(run progress 1.1)"
+out="$(run state)"
+case "$out" in *"progress=3"*"same=2"*"stalled=no"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL pivot signal: $out" ;; esac
+out="$(run progress 1.1)"
+out="$(run progress 1.1)"
+out="$(run state)"
+case "$out" in *"progress=5"*"same=4"*"stalled=yes"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL stall signal: $out" ;; esac
+run stop nope >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL stop accepts an unknown reason"; } || pass=$((pass + 1))
+out="$(run stop no-progress "four same rows after one pivot")"
+case "$out" in "stop=no-progress") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL stop: $out" ;; esac
+line="$(tail -1 "$r/.dotagent/runs.jsonl")"
+case "$line" in *'"stop": "no-progress"'*'"left":'*'"same":'*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL versioned stop event: $line" ;; esac
+out="$(run state)"
+case "$out" in *"run=stopped"*"reason=no-progress"*"stalled=yes"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL stopped state: $out" ;; esac
+run progress 1.1 >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL progress resumes a stopped run"; } || pass=$((pass + 1))
+out="$(printf '{"hook_event_name":"SessionStart"}' | CLAUDE_PROJECT_DIR=$r sh "$guard")"
+case "$out" in *"stop=no-progress"*"stopped: no-progress"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL session keeps the stop: $out" ;; esac
+out="$(run state)"
+case "$out" in *"run=stopped"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a session dropped the run state: $out" ;; esac
+printf '{"tool_name":"Agent","tool_input":{"subagent_type":"reviewer"}}' | CLAUDE_PROJECT_DIR=$r sh "$guard" >/dev/null
+out="$(run receipt)"
+case "$out" in "subagents: reviewer 1") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL receipt before a session: $out" ;; esac
+printf '{"hook_event_name":"SessionStart"}' | CLAUDE_PROJECT_DIR=$r sh "$guard" >/dev/null
+out="$(run receipt)"
+case "$out" in "subagents: none") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL receipt does not reset inside a run: $out" ;; esac
+run start continue >/dev/null
+out="$(run state)"
+case "$out" in *"run=active"*"reason=-"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL continue clears the stop: $out" ;; esac
+printf '# TODO: x\n\n## PR 1: feat(a): add a\n\n- [x] 1.1 `feat(a): add a`. x.\n\ndone: https://x/1\n' > "$r/docs/TODO.md"
+out="$(run progress 1.1)"
+case "$out" in "progress=moved") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a tick is progress: $out" ;; esac
+out="$(run state)"
+case "$out" in *"left=0"*"next=\"none\""*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL state after the last PR: $out" ;; esac
+run progress 1.1 >/dev/null 2>&1 || true
+printf '# TODO: x\n\n## log\n\n| when | unit | decision | evidence | result |\n|---|---|---|---|---|\n| 2026-01-01T10:00Z | 1.1 | add the filter | commit 1a2b3c4 | done |\n' > "$r/docs/TODO.md"
+out="$(run log)"
+header="$(printf 'when\tunit\tdecision\tevidence\tresult')"
+row="$(printf '2026-01-01T10:00Z\t1.1\tadd the filter\tcommit 1a2b3c4\tdone')"
+case "$out" in *"$header"*"$row"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL log TSV: $out" ;; esac
+out="$(run stop regression "the watch failed")"
+case "$out" in "stop=regression") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL regression stop: $out" ;; esac
+out="$(run decision 1.1 "add the filter" "the leak" "commit 1a2b3c4" done)"
+case "$out" in "decision=add the filter") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL decision: $out" ;; esac
+out="$(run log)"
+decision_row="$(printf '1.1\tadd the filter\tcommit 1a2b3c4\tdone')"
+case "$out" in *"when	unit	decision	evidence	result"*"$decision_row"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL log from events: $out" ;; esac
+printf '{"tool_name":"Agent","tool_input":{"subagent_type":"reviewer"},"session_id":"s1"}' | CLAUDE_PROJECT_DIR=$r sh "$guard" >/dev/null
+line="$(tail -1 "$r/.dotagent/runs.jsonl")"
+case "$line" in *'"session": "s1"'*'"agent": "reviewer"'*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL session on the spawn event: $line" ;; esac
+
+# a stop recorded before a start is still visible: a fresh process can die before it begins
+s="$tmp/stopnostart"
+mkdir -p "$s" && git -C "$s" init -q
+out="$(CLAUDE_PROJECT_DIR=$s sh "$guard" stop needs-human "the process died before start")"
+case "$out" in "stop=needs-human") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL stop without a start: $out" ;; esac
+out="$(CLAUDE_PROJECT_DIR=$s sh "$guard" state)"
+case "$out" in *"run=stopped"*"reason=needs-human"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a lone stop is invisible: $out" ;; esac
+out="$(printf '{"hook_event_name":"SessionStart"}' | CLAUDE_PROJECT_DIR=$s sh "$guard")"
+case "$out" in *"stop=needs-human"*"stopped: needs-human"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a lone stop is not announced: $out" ;; esac
 
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]

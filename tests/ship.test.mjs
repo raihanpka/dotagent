@@ -13,8 +13,9 @@ const reviewer = readFileSync(new URL('../plugin/agents/reviewer.md', import.met
 const front = skill.match(/^---\n([\s\S]*?)\n---/)
 const headings = (text) => [...text.matchAll(/^## (.+)$/gm)].map((m) => m[1])
 
-test('frontmatter has a quoted description of one short sentence and an argument hint', () => {
+test('frontmatter has the name of the folder, a quoted description, and an argument hint', () => {
   assert.ok(front, 'frontmatter present')
+  assert.match(front[1], /^name: ship$/m)
   const description = front[1].match(/^description: "(.+)"$/m)?.[1]
   assert.ok(description, 'quoted description')
   assert.ok(description.length < 220, `description is ${description.length} characters`)
@@ -23,9 +24,9 @@ test('frontmatter has a quoted description of one short sentence and an argument
 
 test('the core stays small and every reference is linked from it and exists', () => {
   assert.ok(Buffer.byteLength(skill) < 10000, `SKILL.md is ${Buffer.byteLength(skill)} bytes, move text to a reference`)
-  assert.deepEqual(references.sort(), ['merge.md', 'plan.md'])
+  assert.deepEqual(references.sort(), ['fanout.md', 'loop.md', 'merge.md', 'plan.md', 'production.md', 'verify.md'])
   for (const file of references) {
-    assert.ok(skill.includes('${CLAUDE_SKILL_DIR}/references/' + file), `${file} is not linked from SKILL.md`)
+    assert.ok(skill.includes('$SKILL/references/' + file), `${file} is not linked from SKILL.md`)
   }
 })
 
@@ -67,9 +68,42 @@ test('every spawn gets an objective, an output, and boundaries', () => {
   for (const label of ['Objective', 'Output', 'Boundaries']) assert.ok(brief.includes(label), `no ${label}`)
 })
 
-test('the TODO layout keeps the fields the guard reads', () => {
+test('the TODO layout keeps the fields the guard reads and the run contract', () => {
   const plan = read('references/plan.md')
-  for (const field of ['## PR 1:', 'files:', 'done:', '- [ ]', 'branch:', 'needs:']) assert.ok(plan.includes(field), `no ${field}`)
+  for (const field of ['## PR 1:', 'files:', 'done:', '- [ ]', 'branch:', 'needs:', 'goal:', 'finish:', 'prove:', '## log', '## stopped']) {
+    assert.ok(plan.includes(field), `no ${field}`)
+  }
+})
+
+test('the loop reference names every stop reason and the no-progress rule', () => {
+  const loop = read('references/loop.md')
+  for (const reason of ['done', 'no-progress', 'premise', 'needs-human', 'question', 'red-base', 'conflict', 'denied', 'budget', 'error']) {
+    assert.ok(loop.includes('`' + reason + '`'), `no stop reason ${reason}`)
+  }
+  assert.match(loop, /pivot/i)
+  assert.match(loop, /no-progress/i)
+  assert.match(loop, /progress/i)
+})
+
+test('the verify reference covers the real artifact, the feature map, and formal verification', () => {
+  const verify = read('references/verify.md')
+  for (const token of ['real artifact', 'feature map', 'TLA+', 'Lean', 'able to fail', 'counterexample']) {
+    assert.ok(verify.toLowerCase().includes(token.toLowerCase()), `no ${token}`)
+  }
+})
+
+test('the fan-out reference covers swarm, arena, interrogate, and panel', () => {
+  const fanout = read('references/fanout.md')
+  for (const token of ['Swarm', 'Arena', 'Interrogate', 'Panel', 'PASS', 'ISSUES', 'BLOCKED', 'read-only']) {
+    assert.ok(fanout.includes(token), `no ${token}`)
+  }
+})
+
+test('the production reference covers the watch, rollback, and the post-release checks', () => {
+  const production = read('references/production.md')
+  for (const token of ['release:', 'watch:', 'rollback:', 'canary', 'monitoring', 'tracing', 'chaos', 'regression']) {
+    assert.ok(production.includes(token), `no ${token}`)
+  }
 })
 
 test('the ship skill and setup follow a repo flow that is not the default', () => {
@@ -78,13 +112,14 @@ test('the ship skill and setup follow a repo flow that is not the default', () =
   for (const token of ['types=', 'scope=', 'base=', 'merge=']) assert.ok(skill.includes(token), `SKILL.md does not mention ${token}`)
   const setup = readFileSync(new URL('../plugin/SETUP.md', import.meta.url), 'utf8')
   for (const key of ['merge_method', 'commit_types', 'commit_scope', 'base_branch']) assert.ok(setup.includes(key), `SETUP.md does not save ${key}`)
-  assert.match(setup, /A flow the plugin does not support/)
-  assert.match(setup, /set workflow local/)
+  assert.match(setup, /host is not GitHub/)
+  assert.match(setup, /workflow local/)
 })
 
-test('the three modes are local, ask, and auto', () => {
+test('the two modes are local and auto', () => {
   const merge = read('references/merge.md')
-  for (const mode of ['local', 'ask', 'auto']) assert.ok(merge.includes(`**${mode}**`), `merge.md does not explain ${mode}`)
+  for (const mode of ['local', 'auto']) assert.ok(merge.includes(`**${mode}**`), `merge.md does not explain ${mode}`)
+  assert.ok(!merge.includes('**ask**'), 'merge.md still explains the removed ask mode')
 })
 
 test('a merge is a squash after a rebase, with a safe push', () => {

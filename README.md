@@ -1,235 +1,207 @@
 # dotagent
 
-🚢 A **minimalist single-loop agent workflow** for Claude Code and other AI coding agents (Codex, Antigravity, Cursor, and more) that gets the job done: **clear requirements in, clean pull request out, merge, and ship.**
+A small agent loop that **verifies its own work**. Clear requirements in, one verified unit at a time, a proof against the real artifact,
+a fresh review, and a stop reason when it cannot move.
 
-New skills and plugins show up every week, and most of us feel it: you install five skills, forget what each does, the setup gets heavier than the work, so you end up overwhelmed. 
-So I made my own, *small on purpose*, built on engineering habits I trust. I want to share it, but it only works once you adapt it to your repo. The generic parts are here, the parts that depend on your code are yours to fill in.
+Most agent setups automate a bad loop: the agent writes, the human checks, issues come back, repeat. dotagent moves the check inside the
+loop. The agent runs the scoped check, drives the real artifact, logs the evidence, and only then opens the PR. When it cannot move, it
+stops with one reason you can act on. A green build is not a green feature.
 
-- Small on purpose: a few skills, one subagent (the reviewer), one hook script, one config file.
-- Habits behind each rule are listed in `docs/PRACTICES.md`, so you can judge which to keep.
-
-![the dotagent workflow](docs/workflow.svg)
-
-## what it is for
-
-- Shipping when the requirements are **already clear**: like you have sprint planning from the product team, a clear scope, and a defined set of acceptance criteria, and you're ready to implement.
-- **Not for** ideation, diagrams, or exploring a codebase. Use other skills for that and bring the result here.
-
-## prerequisites
-
-- [Claude Code](https://code.claude.com) (recent), install with the [setup guide](https://code.claude.com/docs/en/setup)
-- [Git](https://git-scm.com/downloads), and on Windows [Git for Windows](https://gitforwindows.org) (Claude Code needs it, and the hooks run through its `sh`)
-- [GitHub CLI `gh`](https://cli.github.com/manual/installation), then sign in once with `gh auth login`
-- [Python](https://www.python.org/downloads/) 3.8 or newer (runs the hooks; `python3`, `python`, or `py` all work)
-- optional, only to run dotagent's own tests: [Node](https://nodejs.org/en/download) and [jq](https://jqlang.org/download/)
+![the dotagent loop](docs/workflow.svg)
 
 ## install
 
-```bash
-claude
-/plugin marketplace add raihanpka/dotagent
-/plugin install dotagent@dotagent
-/dotagent:setup     # once per repo, optional
-```
+| Agent | Install | Run |
+|---|---|---|
+| **Claude Code** | `/plugin marketplace add raihanpka/dotagent`, then `/plugin install dotagent@dotagent` | `/dotagent:setup`, then `/dotagent:ship <task>` |
+| **Codex** | `codex plugin marketplace add raihanpka/dotagent`, install from `/plugins`, then trust its hooks in `/hooks` | follow the setup prompt below, then `$dotagent-ship <task>` |
+| **Command Code** | `cmd skills add raihanpka/dotagent -s dotagent-ship` | follow the setup prompt below, then `/dotagent-ship <task>` |
+| **Cursor, Antigravity, other** | `npx skills add raihanpka/dotagent --skill dotagent-ship -a codex -a antigravity-cli -y` | follow the setup prompt below, then `/dotagent-ship <task>` |
 
-- `/dotagent:setup` reads your repo, then interviews you in rounds like [grill-me](https://www.aihero.dev/skills-grill-me), with a recommended answer per question. It shows every file before writing it, never overwrites one, and ends with `docs/DOTAGENT-SETUP.md`, a checklist to tick as you review.
-- Skip it and `/dotagent:ship <task>` still works. The first run says which defaults it uses, asks once whether to set up first or go on with only a TODO, and saves your answer.
-- See `examples/` for what setup writes.
-- Using Codex? It is the same repo as a Codex plugin: `codex plugin marketplace add raihanpka/dotagent`, then install dotagent from `/plugins`,
-  and trust its hooks once in `/hooks`. Then run setup, which asks which agent you use.
-- Using Antigravity, Cursor, or another agent? Set it up with the guide below.
-  - Antigravity CLI or any agent with the skills CLI: `npx skills add raihanpka/dotagent --skill dotagent-ship -a codex -a antigravity-cli -y`.
+`plugin/skills/*` are the Claude Code editions. Each one names `${CLAUDE_SKILL_DIR}` once to find the plugin. The portable edition is
+`skills/dotagent-ship/SKILL.md`, with no Claude-only tool or path token, for Codex, Command Code, Cursor, and other agents.
 
-<details>
-<summary>setup by agent, for Codex, Antigravity, Cursor, or any other agent</summary>
+Run setup once per repo. It reads the repo, asks one short round, and writes `AGENTS.md`, the guard, the git hooks, the PR gate, and
+`docs/VERIFICATION.md`, showing each file before it writes it.
 
-For Humans:
-Copy and paste this prompt to your LLM agent (Codex, Antigravity, Cursor, etc.):
-
-```
+```text
 Set up dotagent in this repo by following the instructions here:
 https://raw.githubusercontent.com/raihanpka/dotagent/main/docs/SETUP-AGENT.md
 ```
 
-For LLM Agents:
-Fetch the setup guide and follow it:
-
-```bash
-curl -s https://raw.githubusercontent.com/raihanpka/dotagent/main/docs/SETUP-AGENT.md
-```
-
-The guide has every file it needs as a raw link, so the agent does not read the rest of this README. It asks in plain text when the agent has no question tool, and it commits locally but never pushes.
-
-</details>
-
-<details>
-<summary>install by hand, no plugin</summary>
-
-Copy from `plugin/` and edit. Fill every `{{...}}`. `plugin/SETUP.md` lists the questions worth answering.
-
-| Copy from `plugin/` | To your repo | Edit |
-|---|---|---|
-| `templates/AGENTS.md` (and `AGENTS.md`, the generic rules) | `AGENTS.md` | commands, modules, scopes |
-| `templates/CLAUDE.md` | `CLAUDE.md` | nothing |
-| `templates/.dotagent/config.json` | `.dotagent/config.json` | workflow, and the rest |
-| `hooks/guard.py`, `hooks/run.sh` | `.dotagent/` | nothing |
-| `templates/.github/PULL_REQUEST_TEMPLATE.md`, `PR_EXAMPLE.md` | `.github/` | the check commands |
-| `templates/.github/workflows/ci-pr.yml`, `ci-default.yml` | `.github/workflows/` | setup step, commands |
-| `templates/.githooks/` | `.githooks/` | then `git config core.hooksPath .githooks` |
-| `templates/docs/` (`README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md`, `DOTAGENT-SETUP.md`, `TODO.md`) | `docs/` | architecture, conventions |
-
-`plugin/templates/` mirrors your repo path for path, so what setup writes is what you copy. `docs/TODO.md` shows the layout of the task list, copy it only to read it.
-
-- Hooks for the manual path only (the plugin brings its own): merge this into `.claude/settings.json`.
-
-```json
-{
-  "hooks": {
-    "SessionStart": [{ "hooks": [{ "type": "command", "command": "sh .dotagent/run.sh" }] }],
-    "PreToolUse": [{ "matcher": "Bash|Write|Edit|Read", "hooks": [{ "type": "command", "command": "sh .dotagent/run.sh" }] }]
-  }
-}
-```
-
-- Ignore `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, and `docs/TODO.md` (the plugin path does it for you).
-- Without Claude Code, the files above and the git hooks still work. The agents and `.claude` hooks need it.
-
-</details>
-
-## update
-
-```
-/plugin marketplace update dotagent
-/plugin update dotagent@dotagent
-/reload-plugins
-```
-
-- Claude Code caches a plugin per version, so you get a change when the version in `plugin.json` goes up. `CHANGELOG.md` says what changed.
-- To try the repo as it is: `claude --plugin-dir ./plugin`.
+Skip it and `/dotagent:ship <task>` still works. The first run says which defaults it uses and asks once whether to set up first or go on
+with only a TODO.
 
 ## use
 
+```text
+/dotagent add the billing endpoint. requirements from product: <paste them>
+/dotagent:ship fix the board leak. repro first, then fix and prove it.
+/dotagent status
+/dotagent:ship continue
+```
+
 | Command | What it does |
 |---|---|
-| `/dotagent <task>` | The short form of `/dotagent:ship`. Alone it shows the saved settings. |
-| `/dotagent:ship <task>` | Ship the task. `continue` resumes unfinished work. |
-| `/dotagent:workflow local\|ask\|auto` | Save how far a run goes on its own, for every run. |
-| `/dotagent:setup` | Set dotagent up in this repo, once. It asks which agent you use: Claude Code, Codex, both, or another. |
-| `/dotagent:review [<pr>]` | With a PR: review someone else's pull request, and post what you choose to GitHub with `gh`. With no argument: review the unfinished work of this repo, the PRs left in `docs/TODO.md` and any uncommitted change, after a cut session. Nothing is pushed or merged. |
+| `/dotagent <task>` | The short form of `/dotagent:ship`. Alone it prints the run state and the next step. |
+| `/dotagent:ship <task>` | Run the task as one loop. `continue` resumes from the recorded state. |
+| `/dotagent:workflow local\|auto` | Save how far a run goes on its own. |
+| `/dotagent:setup` | Set the repo up once: Claude Code, Codex, Command Code, both, or another. |
+| `/dotagent:review [<pr>]` | Review a PR, or with no argument the unfinished work of this repo. Posts only what you choose. |
 
-Without an argument `workflow` shows the saved settings. In the `/` menu the short form is listed as `/dotagent:dotagent`.
+## the loop
 
 ```
-/dotagent add the billing endpoint. requirements from product: <paste them>
-/dotagent:ship add the billing endpoint. requirements: <paste them>
+Goal and finish -> Plan -> One unit -> Verify -> Prove -> Review -> Ship -> Progress -> next unit
+                                  \-> stop: pivot, then no progress, a blocker, or budget -> report + next
 ```
 
-- Everything after the command is the task, pasted requirements included. Say *plan only* to stop after the plan.
-- A big task becomes several PRs and one run ships all of them in order. To go on after a stop, say `continue`.
-- Each new session, `/clear`, and compact prints one line with your saved settings, so nothing is repeated.
+1. **Goal.** `docs/TODO.md` starts with `goal:` and `finish:`. The finish is a command or artifact that can pass or fail. A run is done
+   when it passes, not when the TODO looks empty.
+2. **Plan.** One sentence diff: no plan. Otherwise the lead writes the TODO read only: one section per PR, with `files:`, `prove:`, and
+   3 to 8 subtasks. Reversible points are decided and logged, not asked.
+3. **One unit.** The smallest change, only the planned files, one scoped check, one commit, one tick, one `## log` row.
+4. **Verify, then prove.** The scoped check proves the case. The `prove:` command drives the real artifact: run the feature, read the
+   stored value, take the screenshot, compare before and after.
+5. **Review.** A fresh `reviewer` checks the diff and the evidence. A behavior change proved only by the gate is a gap.
+6. **Ship.** PR, CI, rebase, squash merge. The gate runs once per commit and is recorded.
+7. **Progress.** `run.sh progress` records HEAD and the unfinished count. `moved` goes on. Two `same` rows are a pivot: change the idea.
+   Four `same` rows are a `no-progress` stop.
 
-### codex
+A failed check gets two tries on the same hypothesis. A different hypothesis gets its own two tries. Two `same` rows are a pivot, not a
+stop: change the idea and log it. Four are a `no-progress` stop. The TODO is a queue: after a merge, the next PR is the next task.
+`loop.sh` runs one fresh process per PR until no PR is left or a stop fires.
 
-Codex runs the same skill as `$dotagent-ship <task>`. Its guard is the `hooks/hooks.json` at the repo root, which Codex runs once you trust it in `/hooks`.
-Codex cannot show a permission prompt, so there `ask` refuses every push, PR, and merge with the reason. Use `auto` or `local` in a Codex repo.
+For a wide verification, a competing design, or an adversarial pass, `fanout.md` covers swarm, arena, interrogate, and panel. For a release,
+`production.md` covers the canary, the watch window, the rollback, and the post-release checks. The state and logs are in
+[`docs/STATE.md`](docs/STATE.md).
 
-### workflow
+<details>
+<summary>the stop reasons</summary>
 
-How far a run goes on its own: `local` stops at local commits, `ask` stops to ask before the remote, `auto` goes to the merge.
+Every stop names one reason, writes it to `.dotagent/runs.jsonl`, writes a `## stopped` block in the TODO, and ends with a `next:` line.
+
+| Reason | Fires when |
+|---|---|
+| `done` | The `finish:` predicate passes |
+| `no-progress` | Four units in a row moved neither HEAD nor the unfinished count, after one pivot |
+| `premise` | Two fixes that share one premise failed the same check |
+| `needs-human` | An irreversible action, a secret, or a user-only call blocks the next unit |
+| `question` | The requirement contradicts itself or the repo |
+| `red-base` | The gate fails on resume or on the base branch |
+| `conflict` | A rebase conflict survives two tries |
+| `denied` | The workflow mode or a permission prompt refused a push, PR, or merge |
+| `budget` | The unit, turn, or time budget is spent |
+| `error` | A tool or CLI failed twice |
+| `regression` | A post-merge `watch:` fails |
+
+For a long plan, `sh plugin/hooks/loop.sh` runs one fresh process per PR in `auto`, and one process for the whole TODO in `local`. It stops
+on a recorded stop or a stall and compares HEAD and the unfinished count after each PR. `CLAUDE_FLAGS="--max-turns 40"` caps each process.
+</details>
+
+## verification
+
+The ladder, from cheapest to strongest:
+
+1. Static: format, lint, types, build.
+2. Scoped test: the subtask `Verify:`.
+3. Runtime proof: drive the real artifact. This is the rung that proves the behavior a user gets.
+4. Formal: a property over every state or input in a stated scope, when tests rarely reach the case. TLA+ for interleavings, a
+   code-level verifier for every-input properties, a proof assistant when a bound is not enough.
+
+`docs/VERIFICATION.md` keeps the feature map (what exists, how a user reaches it, what proves it works) and one row per formal property
+with the tool, the covered code, the command, and the sync commit. A formal check you have never seen fail proves nothing.
+
+## workflow
 
 | Mode | What happens |
 |---|---|
-| `auto` *(default)* | Runs the whole TODO and finishes every PR: pushes, opens the PR, watches CI, fixes a red check (two tries), rebases, squash merges when the review is clean and CI is green, then starts the next PR. It stops on a failure, an open question, or a PR that cannot merge. |
-| `ask` | The same run and local commits, one PR per plan item, but it asks for your yes in the chat ("yes", "approve", "ya") before any push, PR, or merge, and each one then shows a permission prompt. |
-| `local` | Asks first, sets up the minimum (no CI files, no PR template, git hooks stay), puts the whole TODO on one local branch, never pushes, never opens a PR. It ends with a local squash or leaves the branch to you. |
+| `auto` *(default)* | Runs the whole TODO, opens each PR, watches CI, merges when the review is clean and CI is green, then starts the next PR. |
+| `local` | One local branch, never pushes, never opens a PR. |
 
-### settings
+There are two modes only. A run either finishes the task end to end or keeps every commit on the machine.
 
-One file, `.dotagent/config.json`, per machine and ignored by git (written by `run.sh set`, which adds it to `.git/info/exclude`).
+<details>
+<summary>settings</summary>
+
+One file, `.dotagent/config.json`, per machine and ignored by git.
 
 | Key | Default | Values |
 |---|---|---|
-| `workflow` | `auto` | `auto`, `ask`, `local` |
-| `merge_method` | `squash` | `squash`, `merge`, `rebase`, how a PR merges |
-| `commit_types`, `commit_scope` | the default list, `required` | a comma separated list of types, and `optional` when the repo writes `feat: add x` |
+| `workflow` | `auto` | `auto`, `local` |
+| `agents` | unset | `claude`, `codex`, `commandcode`, `both`, `other` |
+| `merge_method` | `squash` | `squash`, `merge`, `rebase` |
+| `commit_types`, `commit_scope` | the default list, `required` | a comma separated list, and `optional` |
 | `base_branch` | the default branch | the branch PRs target, such as `develop` |
 | `em_dash`, `emoji` | `block` | `block`, `allow` |
-| `style_skills` | `none` | comma separated skills, such as `caveman,ponytail:lite` |
-| `protected` | empty | globs no agent may edit, such as `db/migrations/**,.github/CODEOWNERS` |
-| `setup`, `hooks`, `big_plan` | unset | answers you gave once, saved so they are not asked twice |
+| `style_skills` | `none` | comma separated skills |
+| `protected` | empty | globs no agent may edit |
+| `setup`, `hooks` | unset | answers saved once |
 
-- `/dotagent:workflow` sets one of them. Any key: `sh hooks/run.sh set <key> <value>`. An old `scale` key is ignored.
-- A missing key means the default. A wrong value or a broken file means `local`, so a typo never turns pushing on.
-- The agent cannot edit this file, only you can.
-
-### how a run works
-
-1. One path for every task. If the whole diff fits one sentence there is no plan: change, check, commit, PR. Otherwise the lead plans read only, writing only `docs/TODO.md`, and builds each subtask itself, one commit each. Open points are decided with a reason and listed in the report. A question comes only when the answer lives with you alone or the request is wrong, and then the lead builds the best version and asks once at the end. The lead revises the plan when the work differs from it.
-2. The repo gate (build, lint, test) runs once per commit: `run.sh gate run <the gate command>` runs it and records the commit only when it exits 0, `gate check` says `ok` or `stale`, so the lead, the reviewer, and a `continue` do not repeat it.
-3. A fresh `reviewer` checks the diff against the plan before the PR. `Explore` reads wide. Every spawn gets an objective, an output shape, and boundaries. A failure gets two tries from the lead, then it stops.
-4. The ship skill is a small core plus two references, `plan.md` and `merge.md`, read when that step comes, so a one sentence task never loads the rest.
-5. A PR is reviewable in one sitting, 3 to 8 subtasks. `docs/TODO.md` is the report and the state, so a new session announces unfinished work.
-6. Git hooks (`pre-commit`, `commit-msg`, `pre-push`) check every commit and push by anyone, so CI stays green.
-7. A merge is a rebase onto the latest default branch, then a squash whose body lists each commit with its hash.
-8. A long plan keeps one context, so `sh plugin/hooks/loop.sh` runs one fresh `claude -p` per PR, and `CLAUDE_FLAGS="--max-budget-usd 5"` caps the spend of each.
+`sh plugin/hooks/run.sh set <key> <value>` writes one. A wrong value or a broken file means `local`, so a typo never turns pushing on.
+</details>
 
 <details>
 <summary>what the hooks enforce</summary>
 
-- one-line `type(scope): summary` commits, and names that say what changed, never `milestone-1`, `task-2`, `wip`, or `(#N)`
-- no `Co-Authored-By` or "Generated with" trailer in a commit, the PR body, or the squash body, and a PR whose commits carry one is not merged
-- no em dash or emoji unless you set `allow`, no `--no-verify`, no `--force` (only `--force-with-lease`), no `--admin`
-- push, PR, and merge follow the workflow: `ask` asks first, `local` refuses
-- while building, an edit outside the PR's `files:` is refused until the path is added to `docs/TODO.md` with a reason, and a `protected` path is never edited
-- a test deleted without your yes is flagged by the reviewer, the hook does not block the delete
-- a PR review, a review reply, or any `gh api` write follows the workflow mode: `local` refuses it, `ask` asks, `auto` posts
-- `sh hooks/run.sh receipt` prints which subagents really ran (`reviewer 1, Explore 2`)
+- one-line `type(scope): summary` commits, names that say what changed, no `milestone-1`, `task-2`, `wip`, or `(#N)`
+- no `Co-Authored-By` or "Generated with" trailer, no `--no-verify`, no `--force`, no `--admin`
+- push, PR, and merge follow the workflow mode
+- an edit outside the PR's `files:` is refused until the path is added with a reason
+- an edit or a shell write to a `protected` path is refused. A shell write is a redirect, `sed -i`, `cp`/`mv`/`rm`, or a `git`
+  restore/checkout/apply/rm that names the path
+- the guard sees the tool call. A script or tool that writes internally, a path built at runtime, or another agent without the hook is
+  outside it; CI and branch protection are the backstop
+- the guard runs in Claude Code, Codex, and Command Code; other agents get the git hooks and CI
 
 </details>
 
-## skills i use around it
-
-- [`idea-refine`](https://github.com/addyosmani/agent-skills/tree/main/skills/idea-refine) to shape
-an idea, other skills for diagrams or exploring. 
-- List style skills like `caveman` or `ponytail:lite` in `style_skills`. 
-- The ship skill already carries the fitting parts of [`planning-and-task-breakdown`](https://github.com/addyosmani/agent-skills/tree/main/skills/planning-and-task-breakdown) and [`incremental-implementation`](https://github.com/addyosmani/agent-skills/tree/main/skills/incremental-implementation), so those are not companions.
-
-## structure
+<details>
+<summary>structure</summary>
 
 ```
 dotagent/
-├── .claude-plugin/marketplace.json   # points at plugin/, only plugin/ is downloaded
-├── plugin/                           # everything that installs
-│   ├── SETUP.md  AGENTS.md           # setup interview, generic working rules
-│   ├── hooks/  agents/  skills/      # guard.py, reviewer, dotagent ship (core + references) workflow setup
-│   └── templates/                    # mirrors a repo 1:1: .github, .claude, .githooks, .dotagent, docs
-├── examples/                         # what setup generated for a real repo
-├── CHANGELOG.md                      # versions, set only in plugin.json
-├── scripts/release-notes.sh          # release notes: the CHANGELOG section plus the commits since the last tag
-├── scripts/workflow-svg.py           # draws docs/workflow.svg from docs/workflow.excalidraw (run it after editing the diagram)
-├── .github/workflows/release.yml     # tags and releases a version when it is bumped on main
-├── docs/                             # PRACTICES.md, BENCHMARK.md, workflow diagram (svg, excalidraw)
-└── tests/                            # hook tests, skill tests
+├── plugin/                     # what installs
+│   ├── hooks/  agents/  skills/
+│   ├── SETUP.md  SETUP-REFERENCE.md
+│   └── templates/              # mirrors a repo 1:1
+├── skills/dotagent-ship/       # the portable skill
+├── hooks/hooks.json            # the Codex hook entry
+├── scripts/  docs/  tests/
+└── CHANGELOG.md
 ```
 
-`docs/PRACTICES.md` says where each rule comes from, `docs/BENCHMARK.md` is the plan to measure it. After a
-change run `bash tests/hooks.test.sh` and `node --test tests/ship.test.mjs tests/skills.test.mjs`.
+`docs/STATE.md` documents every `.dotagent` event. `sh plugin/hooks/run.sh log` prints the human log as TSV. The release gate is in
+[`docs/RELEASE-CHECKLIST.md`](docs/RELEASE-CHECKLIST.md).
 
-To release: bump `version` in `plugin/.claude-plugin/plugin.json`, add a `## <version>` section to `CHANGELOG.md`, and push to `main`. The release workflow runs the tests, tags `v<version>`, and publishes the release with that section and the commits since the last tag.
+`docs/PRACTICES.md` says where each rule comes from. After a change:
 
-## known gaps or bugs
+```
+bash tests/hooks.test.sh
+node --test tests/ship.test.mjs tests/skills.test.mjs tests/marketplace.test.mjs
+python3 scripts/workflow-svg.py --check
+```
 
-- Built for my own workflow.
-- The gate record is bookkeeping the agent trusts, CI is the real check. Codex and Antigravity have no guard hook, so the gate rule there is only a step in the skill.
-- `examples/` was written from the templates by hand from me, setup is an interview and was not run again.
-- Tried on Windows and macOS, Python comes from the device.
-- Found something? Open an issue.
+</details>
+
+## known gaps
+
+- Built for my own workflow. The guard needs Python 3.8 or newer.
+- The gate record is bookkeeping the agent trusts. CI is the real check, and the proof is what the reviewer reads.
+- Cursor, Antigravity, and other agents get the portable skill, the git hooks, and CI, but not the guard hook.
+- Tried on Linux and macOS. Windows not tested.
+
+**Found something?** Open an issue.
 
 ## credits
 
-- [Lauren Tan, How I Shipped 2000 PRs Last Month](https://youtu.be/NjoZoUm85x0)
+- [Lauren Tan, How I Shipped 2000 PRs Last Month](https://youtu.be/NjoZoUm85x0), and the
+  [pstack skills](https://github.com/cursor/plugins/tree/main/pstack/skills): the trust pyramid, the stop-or-advance loop, the decision
+  log, and "prove it works".
 - [Stripe, Minions](https://stripe.dev/blog/minions-stripes-one-shot-end-to-end-coding-agents)
-- [Spotify, Portal cut Claude Code token usage by 90 percent](https://engineering.atspotify.com/2026/9/portal-by-spotify-cut-my-claude-code-token-usage-by-90)
+- [Spotify, Portal](https://engineering.atspotify.com/2026/9/portal-by-spotify-cut-my-claude-code-token-usage-by-90)
 - [Addy Osmani, agent-skills](https://github.com/addyosmani/agent-skills)
-- [caveman](https://github.com/JuliusBrussee/caveman) and [ponytail](https://github.com/DietrichGebert/ponytail)
-- The Claude Code docs, and the rest listed in `docs/PRACTICES.md`
+- [caveman](https://github.com/JuliusBrussee/caveman), [ponytail](https://github.com/DietrichGebert/ponytail), and the Anthropic posts
+  listed in `docs/PRACTICES.md`.
+
+MIT.

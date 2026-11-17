@@ -1,49 +1,44 @@
 <!--
-PR template = task tracker for this PR.
-
-How to fill it (people and agents):
-1. Keep only what this PR did. Tick the boxes you finished and DELETE every unchecked line.
-   Do not leave unchecked boxes in the description, they read as unfinished work.
-2. Each section below says what to keep. Delete the example text in the comments before you submit.
-3. Commit titles follow `type(scope): summary`, one line, no trailers.
+Keep only what this PR did. Tick the boxes you finished and delete every unchecked line.
+Put evidence, not a claim, under Test plan. Delete the comments before you submit.
+The title and every commit follow `type(scope): summary`, one line, no trailer.
 -->
 
 ## Summary
 
-<!-- One sentence: what changed and why. -->
+<!-- One or two sentences: what changed and why. -->
 
-## Type
+## Motivation
 
-<!-- Keep the one line that applies. Example: "- [x] fix (bug fix)" -->
+<!-- The problem, the requirement, or the issue. Delete this section for a trivial fix. -->
 
-- [ ] feat (new feature)
-- [ ] fix (bug fix)
-- [ ] refactor (no behavior change)
-- [ ] perf (performance improvement)
-- [ ] test (adding or fixing tests)
-- [ ] chore (tooling, config, docs)
-- [ ] docs (documentation only)
+## What changed
 
-## Changes
+<!-- One bullet per commit or logical change. Keep it short. -->
 
-<!-- One change per bullet, short. One bullet per commit is a good rule. -->
+## Test plan
 
-## Verification
-
-<!-- Keep only the checks you ran, ticked. -->
+<!-- Evidence, not a claim. For this repo, run every check before the PR. -->
 
 - [ ] `bash tests/hooks.test.sh` passes
 - [ ] `node --test tests/ship.test.mjs` passes
-- [ ] Manual check: paste the step and the result
+- [ ] `node --test tests/skills.test.mjs` passes
+- [ ] `node --test tests/marketplace.test.mjs` passes
+- [ ] `python3 scripts/workflow-svg.py --check` passes
+- [ ] Runtime proof or smoke test: `{{the command you ran, and the output or artifact path}}`
+
+## Risk and rollback
+
+<!-- The blast radius, the one fact that makes it safe, and how to undo it. -->
+
+- Risk: {{what could break, and where}}
+- Rollback: {{the flag, the deploy, or `git revert <sha>`}}
 
 ## Checklist
 
-<!-- Keep only the items this PR meets. -->
-
-- [ ] Commit messages and the PR title follow `type(scope): summary` and say what changed, with no milestone, task, or step number and no `(#N)`.
+- [ ] The title and commits say what changed, with no plan label and no `(#N)`.
+- [ ] The change stays inside the task and does not add unrequested files.
+- [ ] Tests cover the change, and none were deleted, skipped, or weakened.
+- [ ] Docs, the diagram, or config are updated when behavior or setup changed.
+- [ ] No secret, key, or generated file is committed.
 - [ ] A release is intended only if the plugin version or CHANGELOG changed, and the user said yes.
-- [ ] No secret, key, or connection string is committed or logged.
-
-## Screenshots or Logs
-
-<!-- Paste only the lines that prove the change: test summary, command output. -->

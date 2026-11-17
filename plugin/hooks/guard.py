@@ -1,8 +1,7 @@
 """Guards for the dotagent: commit style, PR title, no plan labels in names, the workflow mode, read-only planning.
 
-Reads one hook event as JSON on stdin. Exit 2 with a reason on stderr blocks the tool call, a rule that needs a
-human yes returns `ask` so Claude Code shows its own prompt, and everything else passes. Only the rules that
-can never be right (a trailer, a force push, a protected path) block outright. Settings live in one file,
+Reads one hook event as JSON on stdin. Exit 2 with a reason on stderr blocks the tool call, and everything else
+passes. The only workflow modes are `auto` (fully automated) and `local` (never pushes). Settings live in one file,
 .dotagent/config.json in the project. Edit it by hand or run `sh run.sh set <key> <value>` (the /dotagent:workflow command does).
 """
 import json
@@ -36,17 +35,25 @@ WRITE = re.compile(
     r"(?<![0-9])>(?!&)|\bsed\s+-[a-zA-Z]*i|\btee\b|\b(cp|mv|rm|touch|truncate|mkdir)\s"
     r"|\bgit\s+((apply|restore|reset|stash|add|rm|clean|am|cherry-pick|merge|rebase)\b|checkout\s+--)"
 )
+# A shell command that writes a named path: the redirect target or an argument of one of these writers.
+WRITER = re.compile(
+    r"\b(sed\s+-[a-zA-Z]*i|tee|cp|mv|rm|touch|truncate|mkdir|install|dd)\b"
+    r"|\bgit\s+(apply|restore|reset|stash|add|rm|clean|am|cherry-pick|merge|rebase)\b"
+    r"|\bgit\s+checkout\s+--"
+)
 TODO = os.path.join("docs", "TODO.md")
 RUNS = os.path.join(".dotagent", "runs.jsonl")  # one JSON line per event: a subagent spawn, a gate pass, a plan phase
 PHASE_TTL = 3600  # a forgotten plan phase must never lock a repo for long
-PHASE_TTL = 3600  # a forgotten plan phase must never lock a repo for long
+# A run ends for one reason. `done` is the finish predicate; every other reason stops the loop and asks for a human or a new experiment.
+STOP_REASONS = ("done", "no-progress", "premise", "needs-human", "question", "red-base", "conflict", "denied", "budget", "error", "regression")
+STALL_LIMIT = 4  # two same rows is a pivot, four is a stall. A plateau pivots before it stops.
 
 
 # Allowed values per setting, the first one is the default. A missing or invalid value falls back to it.
-# The workflow modes were autopilot, checkpoint, and adapt before 0.4.0. The old names still work and are saved under the new one.
-MODE_ALIASES = {"autopilot": "auto", "checkpoint": "ask", "adapt": "local"}
+# Two modes: auto and local. An old config value from an earlier release loads as the nearest of the two.
+MODE_ALIASES = {"autopilot": "auto", "checkpoint": "local", "adapt": "local", "ask": "local"}
 CHOICES = {
-    "workflow": ("auto", "ask", "local"),
+    "workflow": ("auto", "local"),
     "merge_method": ("squash", "merge", "rebase"),  # how a PR merges, squash unless the repo only allows another
     "commit_scope": ("required", "optional"),  # whether `type(scope): summary` needs its scope
     "em_dash": ("block", "allow"),
@@ -56,16 +63,16 @@ CHOICES = {
 ANSWERS = {
     "setup": ("full", "minimal", "skipped"),  # how much setup the user chose
     "hooks": ("on", "declined"),  # the answer about git hooks
-    "big_plan": ("ok",),  # the user agreed to a plan of more than 6 PRs
-    "agents": ("claude", "codex", "both", "other"),  # the AI agent the user runs dotagent with, from the setup interview
+    "agents": ("claude", "codex", "commandcode", "both", "other"),  # the AI agent the user runs dotagent with, from the setup interview
 }
 CONFIG = os.path.join(".dotagent", "config.json")
 _settings = None
-CLIENT = "claude"  # "codex" when the Codex hook entry runs it with --client codex, see hooks/hooks.json at the repo root
+CLIENT = "claude"  # "codex" or "commandcode" when that hook entry runs it with --client, see hooks/hooks.json and the setup guide
+SESSION = ""  # the agent session id, when the hook event or the environment carries one
 
 
 def project_dir():
-    return os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+    return os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get("COMMANDCODE_PROJECT_DIR") or os.getcwd()
 
 
 def config_path(base=None):
@@ -104,12 +111,20 @@ def last(key):
 
 
 def record(**fields):
-    # Appends one event with its time. runs.jsonl is the only state file besides config.json.
+    # Appends one versioned event. A new run gets a fresh id; every later event inherits it.
     path = os.path.join(project_dir(), RUNS)
+    events = entries()
+    run = fields.pop("run", None) or next((event.get("run", "") for event in reversed(events) if "start" in event), "")
+    event = {"v": 1, "t": int(time.time()), "n": len(events) + 1}
+    if run:
+        event["run"] = run
+    if SESSION:
+        event["session"] = SESSION
+    event.update(fields)
     try:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "a", encoding="utf-8", newline="\n") as handle:
-            handle.write(json.dumps({"t": int(time.time()), **fields}) + "\n")
+            handle.write(json.dumps(event) + "\n")
     except OSError:
         return
     ensure_ignored()
@@ -121,6 +136,153 @@ def phase():
     if not found or found["phase"] == "done" or time.time() - found.get("t", 0) >= PHASE_TTL:
         return ""
     return found["phase"]
+
+
+def current_run():
+    # The events of the newest run: the last `start` and everything after it. Empty before the first start.
+    events = entries()
+    for i in range(len(events) - 1, -1, -1):
+        if "start" in events[i]:
+            return events[i:]
+    return []
+
+
+def run_summary():
+    # What a fresh context needs: active or stopped, the reason, the progress count, and whether the loop stalled.
+    tail = current_run()
+    if not tail:
+        # A stop can be recorded before a start (a fresh process died before it began). Keep it visible.
+        stays = [event for event in entries() if "stop" in event]
+        if stays:
+            last_stop = stays[-1]
+            return {
+                "run": "stopped",
+                "reason": last_stop["stop"],
+                "detail": last_stop.get("detail", ""),
+                "progress": 0,
+                "stalled": False,
+                "same": 0,
+                "head": "",
+                "left": len(unfinished()),
+            }
+        return {"run": "none", "reason": "", "detail": "", "progress": 0, "stalled": False, "same": 0, "head": "", "left": len(unfinished())}
+    progress = [event for event in tail if "progress" in event]
+    stopped, detail = "", ""
+    for event in tail:
+        if "stop" in event:
+            stopped, detail = event["stop"], event.get("detail", "")
+        elif "progress" in event:
+            stopped, detail = "", ""
+    streak = 0  # the last N progress calls that moved neither HEAD nor the unfinished count
+    for event in reversed(progress):
+        if event.get("changed"):
+            break
+        streak += 1
+    return {
+        "run": "stopped" if stopped else "active",
+        "reason": stopped,
+        "detail": detail,
+        "progress": len(progress),
+        "stalled": streak >= STALL_LIMIT,
+        "same": streak,
+        "head": progress[-1].get("head", "") if progress else "",
+        "left": len(unfinished()),
+    }
+
+
+def run_start(goal):
+    # Clear a stop and start a new run. A fresh context resumes from here, not from memory.
+    goal = goal.strip() or "run"
+    record(run=os.urandom(4).hex(), start=goal, head=clean_head())
+    print("start=" + goal)
+
+
+def run_progress(unit):
+    # One call per unit, after its commit and tick. A row that moves HEAD or the unfinished count is progress.
+    if not current_run():
+        sys.exit("no run yet: call `run.sh start <goal>` before `progress`")
+    if run_summary()["run"] == "stopped":
+        sys.exit("the run is stopped: call `run.sh start continue` before `progress`")
+    prev = next((event for event in reversed(current_run()) if "progress" in event), None)
+    head = clean_head()
+    left = len(unfinished())
+    changed = not prev or prev.get("head") != head or prev.get("left") != left
+    same = 0 if changed else prev.get("same", 0) + 1
+    record(
+        progress=unit.strip(),
+        head=head,
+        left=left,
+        changed=changed,
+        kind="moved" if changed else "same",
+        same=same,
+        phase=phase() or "",
+    )
+    print("progress=" + ("moved" if changed else "same"))
+
+
+def run_stop(reason, detail):
+    # A stop is a feature: it names why the loop ended so a fresh context does not retry the same unit.
+    if reason not in STOP_REASONS:
+        sys.exit("stop reason must be one of: " + ", ".join(STOP_REASONS))
+    found = run_summary()
+    record(stop=reason, detail=detail.strip(), head=clean_head(), left=len(unfinished()), same=found["same"])
+    print("stop=" + reason)
+
+
+def run_decision(args):
+    # Record a decision, a pivot, or a revert in the machine log. The human `## log` row stays in the TODO.
+    if len(args) < 5:
+        sys.exit("decision needs: <phase> <decision> <why> <evidence> <result>")
+    phase_name, decision, why, evidence, result = args[:5]
+    record(phase=phase_name, decision=decision, why=why, evidence=evidence, result=result, detail=" ".join(args[5:]))
+    print("decision=" + decision)
+
+
+def state_line():
+    # One capsule line for the session start, the ship skill, and loop.sh.
+    found = run_summary()
+    titles = unfinished()
+    head = found["head"][:7] if found["head"] else "-"
+    return (
+        f"run={found['run']} reason={found['reason'] or '-'} phase={phase() or 'none'} "
+        f"left={found['left']} head={head} progress={found['progress']} same={found['same']} "
+        f"stalled={'yes' if found['stalled'] else 'no'} next=\"{titles[0] if titles else 'none'}\""
+    )
+
+
+def decision_tsv():
+    # The decision log as TSV. Prefer the decision events; fall back to the human `## log` table.
+    header = ["when", "unit", "decision", "evidence", "result"]
+    decisions = [event for event in entries() if "decision" in event]
+    if decisions:
+        print("\t".join(header))
+        for event in decisions:
+            when = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(event.get("t", 0)))
+            cells = [when, event.get("phase", ""), event.get("decision", ""), event.get("evidence", ""), event.get("result", "")]
+            print("\t".join(cell.replace("\t", " ").replace("\n", " ") for cell in cells))
+        return
+    try:
+        with open(os.path.join(project_dir(), TODO), encoding="utf-8") as handle:
+            lines = handle.read().splitlines()
+    except OSError:
+        lines = []
+    rows = []
+    in_log = False
+    for line in lines:
+        if line.startswith("## "):
+            in_log = line.strip() == "## log"
+            continue
+        if not in_log or not line.strip().startswith("|"):
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if cells and cells[0].lower() == "when":
+            continue
+        if all(set(cell) <= set("-: ") for cell in cells):
+            continue
+        rows.append(cells[:5] + [""] * max(0, 5 - len(cells)))
+    print("\t".join(header))
+    for cells in rows:
+        print("\t".join(cell.replace("\t", " ").replace("\n", " ") for cell in cells))
 
 
 def load(base=None):
@@ -159,16 +321,15 @@ def load(base=None):
 
 
 def workflow_mode(raw, broken):
-    # auto pushes and merges by itself, ask stops for your yes before anything leaves the machine, local never pushes.
-    # A wrong value or a broken file means local, the mode that sends nothing, so a typo never turns pushing on.
-    # The old `merge` key is read once: on-green and full were auto, off stopped before the merge (ask).
+    # auto pushes, opens, and merges by itself; local never pushes. A wrong value or a broken file means local.
+    # The old `merge` key is read once: on-green and full were auto, off stopped before the merge (now local).
     if broken:
         return "local"
     if "workflow" in raw:
         mode = MODE_ALIASES.get(raw["workflow"], raw["workflow"])
         return mode if mode in CHOICES["workflow"] else "local"
     if "merge" in raw:
-        return {"on-green": "auto", "full": "auto", "off": "ask"}.get(raw["merge"], "local")
+        return {"on-green": "auto", "full": "auto", "off": "local"}.get(raw["merge"], "local")
     return "auto"
 
 
@@ -189,7 +350,7 @@ def is_first_run():
 
 
 def is_config(path):
-    # Only this project's config, not a copy of one in a subfolder such as examples/.
+    # Only this project's config, not a copy of one in a subfolder.
     return os.path.abspath(path) == os.path.abspath(config_path())
 
 
@@ -286,6 +447,37 @@ def matches(rel, patterns):
     return any(glob_re(p.strip()).match(rel) for p in patterns if p.strip())
 
 
+def protected_name(text):
+    # The protected pattern whose literal prefix appears in the text, or "".
+    for pattern in opt("PROTECTED").split(","):
+        pattern = pattern.strip()
+        if not pattern:
+            continue
+        prefix = re.split(r"[*?\[]", pattern)[0].rstrip("/")
+        if prefix and prefix in text:
+            return pattern
+    return ""
+
+
+def protected_write(command):
+    # A shell write that names a protected path: a redirect target or an argument of a writer command.
+    for match in re.finditer(r">>?\s*([^\s;|&]+)", command):
+        hit = protected_name(match.group(1).strip("'\""))
+        if hit:
+            return hit
+    if not WRITER.search(command):
+        return ""
+    try:
+        tokens = shlex.split(command, posix=True)
+    except ValueError:
+        tokens = command.split()
+    for token in tokens:
+        hit = protected_name(token)
+        if hit:
+            return hit
+    return ""
+
+
 def rel_path(path):
     # The path relative to the project, with forward slashes.
     try:
@@ -321,7 +513,7 @@ def first_run():
 
 def log_spawn(tool_input):
     # Records one subagent spawn so a run can show what really ran. Never blocks.
-    record(agent=tool_input.get("subagent_type") or "general")
+    record(agent=tool_input.get("subagent_type") or "general", model=tool_input.get("model") or "")
 
 
 def receipt():
@@ -335,8 +527,20 @@ def receipt():
 
 
 def prune_runs():
-    # At session start keep only the newest gate pass. Spawns and plan phases belong to the session that wrote them.
-    kept = [event for event in entries() if "gate" in event][-1:]
+    # At session start keep the newest gate pass and the newest run, so a fresh context can resume from evidence.
+    # Spawns belong to the session that wrote them, so the receipt resets.
+    events = entries()
+    kept = [event for event in events if "gate" in event][-1:]
+    start = None
+    for i in range(len(events) - 1, -1, -1):
+        if "start" in events[i]:
+            start = i
+            break
+    if start is not None:
+        # The receipt is per session: keep the run state, drop earlier spawns.
+        kept += [event for event in events[start:] if "gate" not in event and "agent" not in event]
+    else:
+        kept += [event for event in events if "stop" in event][-1:]
     path = os.path.join(project_dir(), RUNS)
     try:
         if not kept:
@@ -369,6 +573,24 @@ def cli(args):
     if args[:1] == ["status"]:
         print(len(unfinished()))
         return
+    if args[:1] == ["state"]:
+        print(state_line())
+        return
+    if args[:1] == ["log"]:
+        decision_tsv()
+        return
+    if args[:1] == ["decision"]:
+        run_decision(args[1:])
+        return
+    if args[:1] == ["start"] and len(args) > 1:
+        run_start(" ".join(args[1:]))
+        return
+    if args[:1] == ["progress"]:
+        run_progress(" ".join(args[1:]))
+        return
+    if args[:1] == ["stop"] and len(args) > 1:
+        run_stop(args[1], " ".join(args[2:]))
+        return
     if args[:1] == ["gate"] and args[1:] == ["check"]:
         print(gate_check())
         return
@@ -377,13 +599,14 @@ def cli(args):
         head = clean_head()
         if not head:
             sys.exit("gate run needs a git repo with no uncommitted change to tracked files, commit first")
+        started = time.time()
         try:
             code = subprocess.run(args[2:], cwd=project_dir()).returncode
         except OSError as err:
             sys.exit(f"gate run could not start {args[2]}: {err}")
         if code != 0 or clean_head() != head:
             sys.exit(code or 1)
-        record(gate=head)
+        record(gate=head, cmd=" ".join(args[2:]), exit=0, dur=round(time.time() - started, 2))
         print("gate passed at " + head[:7])
         return
     if len(args) == 2 and args[0] == "phase" and args[1] in ("plan", "build", "done"):
@@ -391,8 +614,14 @@ def cli(args):
         print("phase=" + args[1])
         return
     if len(args) != 3 or args[0] != "set":
-        sys.exit("usage: guard.py show | hooks | receipt | status | gate run <command>|check | set <key> <value> | phase plan|build|done")
+        sys.exit(
+            "usage: guard.py show | state | log | decision <phase> <decision> <why> <evidence> <result> | start <goal> | "
+            "progress [unit] | stop <reason> [detail] | hooks | receipt | status | gate run <command>|check | set <key> <value> | "
+            "phase plan|build|done"
+        )
     key, value = args[1], args[2]
+    if key == "workflow" and value == "ask":
+        sys.exit("ask was removed: use auto (fully automated) or local (never pushes)")
     if key == "workflow":
         value = MODE_ALIASES.get(value, value)
     if key == "scale":
@@ -454,23 +683,10 @@ def commits_in(tokens):
     return found
 
 
-def ask(reason):
-    # Lets the user decide: Claude Code shows its own permission prompt. In a headless run nobody can answer, so it is a no.
-    # Codex has no ask decision yet, so there the call is refused with the reason instead.
-    if CLIENT == "codex":
-        block(reason + " Codex cannot show a prompt: ask the user in the chat, they run the command or change the workflow.")
-    print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask",
-                                              "permissionDecisionReason": "dotagent: " + reason}}))
-    sys.exit(0)
-
-
 def gate(kind):
-    # Push, pull request, and merge follow the workflow mode. In ask the permission prompt is the user's yes.
-    mode = opt("WORKFLOW")
-    if mode == "local":
+    # Push, pull request, and merge follow the workflow mode. Auto allows them, local never does.
+    if opt("WORKFLOW") == "local":
         block(f"workflow is local: nothing leaves this machine, so no {kind}. Keep the commits local and tell the user.")
-    if mode == "ask":
-        ask(f"workflow is ask: this {kind} needs your yes. Confirm it in the chat first, then answer this prompt yes.")
 
 
 def no_label(text, where):
@@ -565,7 +781,7 @@ def check_pr_merge(tokens):
     flags = {"squash": {"-s", "--squash"}, "merge": {"-m", "--merge"}, "rebase": {"-r", "--rebase"}}
     others = set().union(*(f for m, f in flags.items() if m != method))
     if others & set(tokens) or not flags[method] & set(tokens):
-        ask(f"this repo merges with {method} (`merge_method`), but this command uses another method. Use --{method}, or ask the user first.")
+        block(f"this repo merges with {method} (`merge_method`). Use --{method}, or ask the user to change merge_method.")
     for text in flag_values(tokens, "-t", "--subject") + flag_values(tokens, "-b", "--body"):
         if TRAILER.search(text):
             block("no generated-by line or Co-Authored-By in the merge text, GitHub would copy it into the default branch.")
@@ -585,6 +801,10 @@ def on_bash(command):
             block("planning is read-only. Only docs/TODO.md may change, and no shell command may write.")
     if re.search(r"\.dotagent[/\\]config\.json", command) and WRITE.search(command) and "run.sh" not in command:
         block("do not edit .dotagent/config.json from the shell. Ask the user to run /dotagent:workflow.")
+    if WRITE.search(command):
+        hit = protected_write(command)
+        if hit:
+            block(f"{hit} is a protected path (`protected` in .dotagent/config.json). Leave it and tell the user what needs to change.")
     for args in commits_in(tokens):
         no_skip(args, "commit")
         check_commit(args)
@@ -643,17 +863,17 @@ def on_write(tool_input):
     # Refuses an em dash in text the agent writes, unless the user allowed it.
     if opt("EM_DASH") == "allow":
         return
-    text = tool_input.get("content") or tool_input.get("new_string") or ""
+    text = tool_input.get("content") or tool_input.get("new_string") or tool_input.get("new_value") or ""
     if EM_DASH in text:
         block("no em dash in files. Use a comma, period, or parentheses.")
 
 
 def main():
     # Dispatches on the hook event and tool name. `--client codex` comes first when the Codex hook entry runs the guard.
-    global CLIENT
+    global CLIENT, SESSION
     args = sys.argv[1:]
-    if args[:2] == ["--client", "codex"]:
-        CLIENT, args = "codex", args[2:]
+    if len(args) >= 2 and args[0] == "--client" and args[1] in ("codex", "commandcode"):
+        CLIENT, args = args[1], args[2:]
     if args:
         return cli(args)
     # Windows defaults stdin to the ANSI code page, which would garble an emoji before the check sees it.
@@ -662,9 +882,15 @@ def main():
         event = json.load(sys.stdin)
     except json.JSONDecodeError:
         return
+    SESSION = (
+        event.get("session_id")
+        or os.environ.get("CLAUDE_SESSION_ID")
+        or os.environ.get("COMMANDCODE_SESSION_ID")
+        or ""
+    )
     if event.get("hook_event_name") == "SessionStart":
         prune_runs()
-        print(
+        lines = [
             f"[dotagent] workflow={opt('WORKFLOW')} "
             f"style={opt('STYLE_SKILLS')}"
             # A repo flow that is not the default shows up here, so the ship skill follows it.
@@ -673,23 +899,52 @@ def main():
                 if opt(key) != default)
             + (f" protected={opt('PROTECTED')}" if opt("PROTECTED") else "")
             + "".join(f" {k}={opt(k)}" for k in ANSWERS if opt(k))
+        ]
+        left = unfinished()
+        found = run_summary()
+        lines.append(
+            f"[dotagent] phase={phase() or 'none'} left={len(left)} stop={found['reason'] or 'none'} "
+            f"stalled={'yes' if found['stalled'] else 'no'} progress={found['progress']} same={found['same']} "
+            f"next=\"{left[0] if left else 'none'}\""
         )
+        if found["run"] == "stopped":
+            lines.append(
+                f"[dotagent] stopped: {found['reason']} ({found['detail'] or 'no detail'}). Say continue to resume, "
+                "or start a new task. Nothing loops until then."
+            )
+        if found["stalled"] and found["run"] == "active":
+            lines.append(
+                "[dotagent] no progress: the last two units moved neither HEAD nor the unfinished count. Stop with a "
+                "reason (`sh \"$RUN\" stop no-progress`) or pick the smallest next experiment."
+            )
         if is_first_run():
-            print(first_run())
+            lines.append(first_run())
         if git_hooks() == "off":
-            print(
+            lines.append(
                 "[dotagent] git hooks are off: .githooks exists but git does not use it, so format, lint, and name checks "
                 "skip every commit and push. Tell the user, and with their yes, run `git config core.hooksPath .githooks`."
             )
-        left = unfinished()
         if left:
-            print(
+            lines.append(
                 f"[dotagent] unfinished: {len(left)} PR(s) left in docs/TODO.md, first is {left[0]}. When the user says "
                 "continue, in any wording, invoke the dotagent ship skill with no new task and carry on."
             )
+        text = "\n".join(lines)
+        if CLIENT == "commandcode":
+            # Command Code reads a JSON payload on stdout, not plain lines.
+            print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": text}}))
+        else:
+            print(text)
         return
     tool = event.get("tool_name")
     tool_input = event.get("tool_input") or {}
+    if CLIENT == "commandcode":
+        # Command Code names its tools shell_command, write_file, edit_file, and read_file, and shows them as SHELL, WRITE, EDIT, READ.
+        if tool == "shell_command":
+            on_bash(tool_input.get("command", ""))
+        elif tool in ("write_file", "edit_file"):
+            on_write(tool_input)
+        return
     if tool == "Bash":
         on_bash(tool_input.get("command", ""))
     elif tool in ("Write", "Edit"):

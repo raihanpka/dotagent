@@ -28,6 +28,9 @@ jobs:
         run: "{{build}}"
       - name: Test
         run: "{{test}}"
+      # The `prove:` command from the PR is the real-artifact check. Add it here when the repo has one.
+      # - name: Prove
+      #   run: "{{prove}}"
       # Add what the stack has, keep the whole run under about 10 minutes:
       # - name: Vulnerabilities    run: "{{dependency-scan}}"   (govulncheck, npm audit, pip-audit)
       # - name: Secrets            uses: gitleaks/gitleaks-action  (secret scan)

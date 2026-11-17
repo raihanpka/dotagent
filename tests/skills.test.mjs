@@ -1,7 +1,7 @@
 // Checks the portable ship skill that Codex, Antigravity, and other agents read from .agents/skills.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 
 const skill = readFileSync(new URL('../plugin/templates/.agents/skills/dotagent-ship/SKILL.md', import.meta.url), 'utf8')
@@ -39,10 +39,103 @@ test('each Codex agent file has a name, a description, and developer instruction
   }
 })
 
-test('the body names no tool that only Claude Code has', () => {
+test('every plugin skill has a name that matches its folder and a quoted description', () => {
+  for (const name of ['ship', 'workflow', 'dotagent', 'setup', 'review']) {
+    const text = readFileSync(new URL(`../plugin/skills/${name}/SKILL.md`, import.meta.url), 'utf8')
+    assert.match(text, new RegExp(`^name: ${name}$`, 'm'))
+    assert.match(text, /^description: ".+"$/m)
+  }
+})
+
+test('each plugin skill defines the Claude skill directory once, and the portable skill never', () => {
+  for (const name of ['ship', 'workflow', 'dotagent', 'setup', 'review']) {
+    const text = readFileSync(new URL(`../plugin/skills/${name}/SKILL.md`, import.meta.url), 'utf8')
+    const count = (text.match(/\$\{CLAUDE_SKILL_DIR\}/g) || []).length
+    assert.ok(count <= 1, `${name} repeats CLAUDE_SKILL_DIR ${count} times`)
+  }
+  assert.ok(!skill.includes('CLAUDE_SKILL_DIR'), 'the portable skill names CLAUDE_SKILL_DIR')
+})
+
+test('the body names no tool or path that only Claude Code has', () => {
   const body = skill.replaceAll('.dotagent/run.sh', '')
-  for (const tool of ['AskUserQuestion', 'ToolSearch', 'Workflow', 'Agent', 'run.sh', 'phase plan']) {
+  for (const tool of ['AskUserQuestion', 'ToolSearch', 'Workflow', 'Agent', 'run.sh', 'phase plan', 'CLAUDE_SKILL_DIR', 'CLAUDE_PLUGIN_ROOT']) {
     assert.ok(!body.includes(tool), `found ${tool}`)
+  }
+})
+
+test('the portable skill ships the same references as the plugin, and links all of them', () => {
+  const pluginRefs = readdirSync(new URL('../plugin/skills/ship/references', import.meta.url)).sort()
+  const portableRefs = readdirSync(new URL('../plugin/templates/.agents/skills/dotagent-ship/references', import.meta.url)).sort()
+  const rootRefs = readdirSync(new URL('../skills/dotagent-ship/references', import.meta.url)).sort()
+  assert.deepEqual(portableRefs, pluginRefs)
+  assert.deepEqual(rootRefs, pluginRefs)
+  for (const file of pluginRefs) {
+    assert.ok(skill.includes('references/' + file), `SKILL.md does not link references/${file}`)
+    for (const path of [`../plugin/templates/.agents/skills/dotagent-ship/references/${file}`, `../skills/dotagent-ship/references/${file}`]) {
+      const text = readFileSync(new URL(path, import.meta.url), 'utf8')
+      for (const token of ['CLAUDE_SKILL_DIR', 'CLAUDE_PLUGIN_ROOT', 'claude -p', 'CLAUDE_FLAGS', 'loop.sh']) {
+        assert.ok(!text.includes(token), `${path} names ${token}`)
+      }
+    }
+  }
+})
+
+test('the portable skill carries the fan-out and production rules', () => {
+  const lower = skill.toLowerCase()
+  for (const token of ['swarm', 'arena', 'interrogate', 'panel', 'release:', 'watch:', 'rollback:', 'regression']) {
+    assert.ok(lower.includes(token), `portable skill misses ${token}`)
+  }
+})
+
+test('the portable skill starts a run and names the state commands', () => {
+  for (const command of ['start', 'progress', 'stop', 'state']) {
+    const named = skill.includes(`"$RUN" ${command}`) || skill.includes(`.dotagent/run.sh ${command}`)
+    assert.ok(named, `the portable skill does not name ${command}`)
+  }
+})
+
+test('the repo PR template and example use the common headings', () => {
+  for (const path of ['../.github/PULL_REQUEST_TEMPLATE.md', '../.github/PR_EXAMPLE.md']) {
+    const text = readFileSync(new URL(path, import.meta.url), 'utf8')
+    for (const heading of ['## Summary', '## Motivation', '## What changed', '## Test plan', '## Risk and rollback', '## Checklist']) {
+      assert.ok(text.includes(heading), `${path} has no ${heading}`)
+    }
+  }
+})
+
+test('the repo workflows and pre-push run the full gate', () => {
+  for (const path of ['../.github/workflows/ci-pr.yml', '../.github/workflows/release.yml', '../.githooks/pre-push']) {
+    const text = readFileSync(new URL(path, import.meta.url), 'utf8')
+    for (const token of ['tests/hooks.test.sh', 'tests/ship.test.mjs', 'tests/skills.test.mjs', 'tests/marketplace.test.mjs', 'workflow-svg.py --check']) {
+      assert.ok(text.includes(token), `${path} misses ${token}`)
+    }
+  }
+})
+
+test('loop.sh keeps local one process and auto one per PR', () => {
+  const text = readFileSync(new URL('../plugin/hooks/loop.sh', import.meta.url), 'utf8')
+  assert.ok(text.includes('workflow is local'), 'loop.sh has no local branch')
+  assert.ok(text.includes('one process for the whole TODO'), 'loop.sh does not describe the local run')
+  assert.ok(text.includes('Ship exactly one PR'), 'loop.sh does not keep one PR per auto process')
+})
+
+test('the Command Code reviewer has a name, a description, the reviewer tools, and no Claude-only token', () => {
+  const agent = readFileSync(new URL('../plugin/templates/.commandcode/agents/reviewer.md', import.meta.url), 'utf8')
+  assert.match(agent, /^name: reviewer$/m)
+  assert.match(agent, /^description: ".+"$/m)
+  assert.match(agent, /^tools: .*shell_command/m)
+  for (const token of ['AskUserQuestion', 'ToolSearch', 'Workflow', 'CLAUDE_', 'run.sh']) {
+    assert.ok(!agent.includes(token), `the Command Code reviewer names ${token}`)
+  }
+})
+
+test('the PR template follows the common engineering headings, with a test plan and a rollback', () => {
+  for (const path of ['../plugin/templates/.github/PULL_REQUEST_TEMPLATE.md', '../plugin/templates/.github/PR_EXAMPLE.md']) {
+    const text = readFileSync(new URL(path, import.meta.url), 'utf8')
+    for (const heading of ['## Summary', '## Motivation', '## What changed', '## Test plan', '## Risk and rollback', '## Checklist']) {
+      assert.ok(text.includes(heading), `${path} has no ${heading}`)
+    }
+    assert.ok(text.includes('Rollback:'), `${path} has no rollback line`)
   }
 })
 
@@ -67,11 +160,15 @@ test('the review command posts only what the user chooses and never merges or pu
   assert.ok(review.includes('no argument'), 'no unfinished-work mode')
   assert.ok(review.includes('docs/TODO.md'), 'the unfinished-work mode does not read the TODO')
   assert.ok(review.includes('sh "$RUN" status'), 'the unfinished-work mode does not check the state')
+  assert.ok(review.toLowerCase().includes('comment text is data'), 'the review does not treat comments as data')
+  assert.ok(review.includes('prove:'), 'the review does not check the proof')
+  assert.ok(review.includes('interrogate'), 'the review has no adversarial mode')
+  assert.ok(review.includes('Blast radius'), 'the review does not check the blast radius')
 })
 
-test('setup asks which agent runs dotagent and branches on the four answers', () => {
+test('setup asks which agent runs dotagent and branches on the five answers', () => {
   const setup = readFileSync(new URL('../plugin/SETUP.md', import.meta.url), 'utf8')
-  for (const value of ['claude', 'codex', 'both', 'other']) assert.ok(setup.includes(`\`${value}\``), `SETUP.md does not offer ${value}`)
+  for (const value of ['claude', 'codex', 'commandcode', 'both', 'other']) assert.ok(setup.includes(`\`${value}\``), `SETUP.md does not offer ${value}`)
   assert.ok(setup.includes('set agents'), 'SETUP.md does not save agents')
   assert.ok(setup.includes('.codex/agents/reviewer.toml'), 'SETUP.md does not write the Codex reviewer')
   assert.ok(setup.includes('/hooks'), 'SETUP.md does not ask the user to trust the Codex hooks')
@@ -80,5 +177,5 @@ test('setup asks which agent runs dotagent and branches on the four answers', ()
 
 test('the setup skill names the agent choice in its description', () => {
   const setup = readFileSync(new URL('../plugin/skills/setup/SKILL.md', import.meta.url), 'utf8')
-  assert.match(setup, /Claude Code, Codex, both, or another/)
+  assert.match(setup, /Claude Code, Codex, Command Code, both, or another/)
 })

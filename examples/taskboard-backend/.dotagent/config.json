@@ -1,8 +1,0 @@
-{
-  "em_dash": "block",
-  "emoji": "block",
-  "style_skills": "none",
-  "protected": "go.mod,go.sum",
-  "workflow": "ask",
-  "setup": "full"
-}

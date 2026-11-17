@@ -26,7 +26,8 @@
 - Branch from `{{default-branch}}`. One task is one branch and one PR. To ship a task, follow `.agents/skills/dotagent-ship/SKILL.md` when that file exists.
 - Commits are one line, `type(scope): summary`, no trailer. Scopes: {{scopes}}.
 - Names say what changed. Never a plan label such as `milestone-1`, `task-2`, `slice 3`, or "finishing task", and never `(#N)`, in a commit message, PR title, or branch.
-- Never edit protected paths (`protected` in `.dotagent/config.json`: {{migrations, CODEOWNERS, lockfiles}}), a hook refuses it.
+- Never edit protected paths (`protected` in `.dotagent/config.json`: {{migrations, CODEOWNERS, lockfiles}}). A hook refuses an edit and a
+  shell write that names the path.
 - Never edit generated files under `{{generated}}`. Run `{{codegen}}` instead.
 - A PR stays reviewable in one sitting, a few hundred changed lines is typical, a range and not a limit. A bigger task is more PRs that each build and pass.
 - {{a rule that differs from the language defaults, one per line}}

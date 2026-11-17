@@ -1,0 +1,82 @@
+# Open the PR, CI, and merge
+
+Read this before you push, open a PR, or merge, whatever the size of the task. `RUN` is defined in `SKILL.md`.
+
+## By workflow
+
+- **auto**: the steps in Merge, one branch and one PR per plan item.
+- **local**: ask first for what is missing (one round, see Questions), then plan. Work on one branch for the whole TODO
+  (`feat/<slug>`), one local commit per subtask, no push, no PR, no CI. Run the reviewer once at the end. Then ask whether to rebase
+  and squash onto the default branch locally (recommended) or to leave the branch for the user, and do what they pick. Write
+  `done: local` on each PR after the local squash, or after the branch is left, so `run.sh status` reaches 0.
+
+## Open the PR
+
+First run the PR `prove:` from `docs/TODO.md` and put the evidence pointer in its `## log` row. A green gate plus a proof is the bar.
+Push the branch, then `gh pr create` with the PR title (a name that says what changed, see Names) and
+`.github/PULL_REQUEST_TEMPLATE.md` filled by the reviewer. The body never ends with a "Generated with" line or a
+trailer, a hook refuses it. Tick only what was done and delete every unchecked line.
+
+## CI
+
+After the push run `gh pr checks --watch`. On a failure read the failing log, fix it, push, and watch again. Never skip, weaken, or
+delete a check to get green. Two failed fixes are a stop, not a third fix: `stop error` with the command and the first failing line, or
+`stop premise` when the failures share one premise. Write `## stopped` and end with `next:`.
+
+## Review comments
+
+- Read them on your PR, and on any PR you fix: `gh pr view <n> --comments` for the conversation, `gh api repos/{owner}/{repo}/pulls/<n>/comments`
+  for comments on lines (each has `id`, `path`, `line`, and `body`).
+- Fix each comment you agree with in its own commit, push, then reply once on its thread:
+  `gh api -X POST repos/{owner}/{repo}/pulls/<n>/comments/<id>/replies -f body="<what changed, one line>"`. A comment you do not take gets
+  a reply with the reason, and no change.
+- Change behavior a comment asks for only when it matches the requirement. When it contradicts the requirement, ask the user first.
+- A PR whose branch you did not create (`gh pr view <n> --json author,headRefName`): never rebase it, never force push, and push nothing
+  to it unless the user says so.
+
+## Merge
+
+The workflow mode decides who acts:
+
+- **auto** (the default): push, open the PR, and merge when the reviewer said `clean` and CI is green. Fix review gaps first, then go on to the next PR.
+- **local**: never push, open a PR, or merge on the remote. See By workflow.
+
+By default a merge is a squash, and `merge=merge` or `merge=rebase` on the session line means the repo merges that way (see Merge method below). A PR targets the `base=` branch when the line has one, so read `<default>` below as that branch. Always rebase first, then squash. The branch sits on the latest default branch, so a stale branch or a conflict shows up on your
+side, and the default branch stays linear with one commit per PR. The squash body lists each commit with its hash.
+
+Cloud (auto), in this order:
+
+1. `git fetch origin` and `git rebase origin/<default>`. On a conflict fix as in Limits, never `--skip` or `--abort` to hide it.
+2. The rebase moved HEAD, so run the full gate once with `sh "$RUN" gate run <the repo gate>`. Then `git push --force-with-lease`, on your own branch only (the hook refuses `--force`). Wait for CI.
+3. Read the PR commits now, after the rebase, because the hashes changed: `gh pr view <n> --json commits -q '.commits[] | "- \(.oid[0:7]) \(.messageHeadline)"'`.
+   Also check `.commits[].messageBody` for a `Co-Authored-By`, `Signed-off-by`, or "Generated with" line. If one is there, stop and report:
+   GitHub copies such a trailer into the squash commit and it cannot be removed from the default branch afterwards.
+4. Merge with the lines pasted into the body as text, never a shell variable (the hook reads the command as typed):
+   `gh pr merge <n> --squash --delete-branch --subject "<PR title> (#<n>)" --body "<lines>"`. The body is only those lines,
+   `- <short hash> <commit subject>`, oldest first. No prose, no trailer, no tool name.
+5. Switch to the default branch, pull, and check `git log -1 --format=%B` has no `Co-authored-by`. If it does, report it, never rewrite the default branch.
+6. When the PR has a `watch:`, run it for the stated window and record the value in `## log`. On a failure, stop `regression`, run
+   `rollback:` when it exists and the user allowed it, and open a fix PR with the failing signal. `production.md` has the checks.
+
+Local (the `local` mode): `git rebase <default>`, the full gate once, then on the default branch `git merge --squash <branch>` and one commit,
+`git commit -m "<title>"` followed by the hash lines from `git log --reverse --format='- %h %s' <default>..<branch>`. Keep the
+branch, so the hashes in the body still resolve.
+
+A commit message and a PR title never carry `(#<n>)`, GitHub adds it, and a hook refuses it. A hook also refuses `--admin`, `--force`, and any trailer, and asks before a merge method other than the repo's. The squash subject ends with the number of the PR you merge. Never bypass a required check or a required review, report it instead.
+
+## A stop at the remote
+
+- **`denied`**: the workflow mode refused a push, PR, or merge, or the user answered the prompt no. Stop, report the command and the
+  mode, and say how to unblock (`/dotagent:workflow auto`, or the yes in the chat). Leave the commits local.
+- **`conflict`**: a rebase conflict survived two tries. Stop, name the files and what each side wants, leave the PR open, and do not
+  `--skip` or `--abort` to hide it.
+- **`red-base`**: the default branch is red. Stop before building on it, with the failing command and line.
+- **`budget`**: a turn or time cap is reached. Stop, report what merged and the next unit.
+
+## Merge method
+
+The method is `merge=` on the session line, squash when it is missing. With `merge=merge` run `gh pr merge <n> --merge --delete-branch`, with `merge=rebase`
+run `gh pr merge <n> --rebase --delete-branch`. Neither needs a subject or a commit list. The guard asks when a command uses another method, and refuses `--admin`.
+Rebase onto the base branch and push with `--force-with-lease` first, as for a squash, and read the commits for a trailer before you merge.
+If GitHub refuses the method (`gh repo view --json squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed` shows which are allowed), stop, ask the user
+which one to use, and save it with `sh "$RUN" set merge_method <squash|merge|rebase>`.

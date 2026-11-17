@@ -18,6 +18,14 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
+      - name: Syntax
+        run: |
+          python3 -m py_compile plugin/hooks/guard.py
+          sh -n plugin/hooks/run.sh
+          sh -n plugin/hooks/loop.sh
+          bash -n .githooks/pre-commit .githooks/commit-msg .githooks/pre-push
+      - name: Diagram
+        run: "python3 scripts/workflow-svg.py --check"
       - name: Guard tests
         run: "bash tests/hooks.test.sh"
       - name: Ship tests

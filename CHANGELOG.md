@@ -3,6 +3,72 @@
 Versions follow [semver](https://semver.org). The version lives in `plugin/.claude-plugin/plugin.json` and, equal to it, in `.codex-plugin/plugin.json`.
 Claude Code caches a plugin per version, so bump it on every change users should receive.
 
+## 0.7.0
+
+Upgrading: run `/plugin update dotagent@dotagent` and `/reload-plugins` in Claude Code. For Codex, update the marketplace. A saved
+`workflow=ask` or an older alias loads as `local`; set `auto` when you want a fully automated run. Run `/dotagent:setup` again only if you
+want the new PR template, the verification map, and the Command Code hook. No new dependency.
+
+The benchmark and `docs/BENCHMARK.md` were removed in this release. Older entries that link to them refer to a removed file.
+
+### One run, one loop, one reason to stop
+
+- `docs/TODO.md` now carries `goal:`, `finish:` (a checkable predicate), `budget:`, `prove:`, `release:`, `watch:`, and `rollback:`. A run is
+  done when the predicate passes, not when the TODO looks empty.
+- Every unit is one commit, one scoped `Verify:`, one tick, one `## log` row, and one `run.sh progress`. The lead builds it, the reviewer
+  checks it in a fresh context.
+- `run.sh start|progress|stop|state|log` keeps the run state in `.dotagent/runs.jsonl`. A session prints a capsule: `run`, `reason`,
+  `phase`, `left`, `head`, `progress`, `same`, `stalled`, `next`.
+- Two `same` rows are a pivot: change the idea and log it. Four are `stalled=yes` and a `no-progress` stop. A plateau pivots before it stops.
+- Every stop is one of a closed set: `done`, `no-progress`, `premise`, `needs-human`, `question`, `red-base`, `conflict`, `denied`, `budget`,
+  `error`, `regression`. A stop writes `## stopped` and one `next:` line. A stop recorded before a start stays visible.
+- `runs.jsonl` is versioned v1. Every event carries `v`, `n`, `run`, and `session` when available. A `decision` event records a pivot or a
+  revert, `gate` records its command and duration, `progress` records `kind`/`same`/`phase`, and `stop` records the state at the stop.
+- `run.sh decision <phase> <decision> <why> <evidence> <result>` records a decision; `run.sh log` prints the decision events as TSV, with
+  the `## log` table as the fallback. `docs/STATE.md` documents every event and the state machine.
+- A shell write to a `protected` path is refused too: redirects, `sed -i`, `cp`/`mv`/`rm`, and `git restore`/`checkout`/`apply`/`rm` that
+  name the path. The hook still sees only the tool call; CI and branch protection are the backstop.
+- The old `big_plan` answer is ignored. A run goes on until the finish predicate passes or a stop.
+
+### Two modes
+
+- `workflow` is now `auto` or `local`. `auto` finishes the task end to end, including push, PR, CI, and merge. `local` never pushes.
+- The middle `ask` mode is gone. It could not work in Codex or Command Code, and it made the auto loop stop in the middle. An old config
+  value loads as `local` so nothing pushes unexpectedly.
+- The guard now refuses a merge that uses a method other than `merge_method`; it no longer shows a permission prompt.
+
+### Verification
+
+- `verify.md` has the proof ladder, a gate/proof/CI table, and a field matrix for backend, frontend, CLI, library, mobile, desktop,
+  embedded, data/ML, database, infrastructure, concurrency, security, performance, refactor, docs, config/CI, dependencies, and data changes.
+- Runtime proof is required for a behavior change. The reviewer runs the `prove:` itself when it is cheap, or checks that the evidence
+  pointer resolves. A green gate is not a behavior verdict.
+- Formal verification is one property, one tool, a scope, a command, and a sync commit. Show it fail on a broken variant first.
+- `production.md` adds the four stages: pre-production, deploy, release, and post-release. A PR with `release:` or `watch:` is done only
+  after the watch passes. A failed watch is a `regression` stop with a rollback.
+- `verify.md` adds blast radius (name the one fact the change is safe because of, and prove it by running code) and a measured-number
+  checklist (limiter, tuning, errors, repeat runs, end-to-end, did the work run).
+
+### Fan out
+
+- `fanout.md` covers swarm, arena, interrogate, and panel. Swarm is read-only, one agent per independent slice, with `PASS`, `ISSUES`, or
+  `BLOCKED`. Arena isolates each attempt. Interrogate uses fresh adversarial reviewers and keeps only findings with a repro. A panel is one
+  round. The lead still owns the merge.
+- `plan.md` adds the design rules: data shape first, boundary validation, subtract before add, build the lever for repeated edits, test
+  behavior, idempotent migrations, and prototypes for a novel interaction. `loop.md` says to encode a repeated correction as a lint, test,
+  hook, or script.
+
+### Setup, docs, and agents
+
+- Setup is a short guide plus `SETUP-REFERENCE.md`. It asks one round: agent, commands, workflow, verification, protected paths, hooks.
+- Command Code is a first-class agent: `cmd skills add raihanpka/dotagent -s dotagent-ship`, and setup writes
+  `.commandcode/settings.json`, `.commandcode/agents/reviewer.md`, and `.dotagent/` for the guard.
+- The generated-files checklist lists the portable skill folder with its `references/`, both reviewers, both hook files, and `.dotagent/`.
+- The release gate is `docs/RELEASE-CHECKLIST.md`: versions, skills, state, verification, the full gate, and the live-session items.
+- The PR template uses the common engineering headings: Summary, Motivation, What changed, Test plan, Risk and rollback, Checklist.
+- Comments are why-only; the reviewer flags a comment that restates the next line. A new markdown file the task did not ask for is a gap.
+- The README is shorter, with the details collapsed, and the workflow diagram is a circular loop with equal nodes and the Excalidraw font.
+
 ## 0.6.1
 
 Upgrading: run `/plugin update dotagent@dotagent` and `/reload-plugins` in Claude Code. For Codex, update the marketplace. Nothing to save.
@@ -67,7 +133,8 @@ Upgrading: `/dotagent:scale` and the `large` run are gone, and so are the planne
 ### One loop for every task
 
 - `/dotagent:ship <task>` has one path. If the whole diff fits one sentence there is no plan and no TODO. Otherwise the lead writes `docs/TODO.md` read only, builds each subtask itself with one commit each, and a fresh `reviewer` checks the diff. The lead revises the plan when the work differs from it. A fix gets two tries from the lead, then the run stops.
-- Why: [Anthropic's guide to folding subagents into the main loop](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop), and the repo's own benchmark run 1 (every arm resolved 15/15, the workflow cost 1.6x to 1.8x and took 1.5x to 1.8x longer than plain Claude Code, `large` matched `medium`). The single loop was measured on two tasks (5 runs, all resolved): it is not faster or cheaper than plain Claude Code, see `docs/BENCHMARK.md`.
+- Why: [Anthropic's guide to folding subagents into the main loop](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop), and the repo's own benchmark run 1 (every arm resolved 15/15, the workflow cost 1.6x to 1.8x and took 1.5x to 1.8x longer than plain Claude Code, `large` matched `medium`). The single loop was measured on two tasks (5 runs, all resolved): it is not faster or cheaper than plain Claude Code, see the benchmark,
+removed in 0.7.0.
 - Every spawn (`reviewer`, `Explore`) gets an objective, an output shape, and boundaries.
 - Removed: `/dotagent:scale`, the size word before a task, `plugin/workflows/ship-large.js`, `planner`, `worker`, the Codex `planner.toml` and `worker.toml`, the `Workflow` permission, and the Scale question in setup.
 - `ship` is a small core plus `references/plan.md` and `references/merge.md`, read when that step comes. A one sentence task never loads the plan layout or the merge steps, and the core is about half the size it was.
@@ -181,7 +248,7 @@ Hotfix for `/dotagent:setup`: it must not overwrite what the repo already has.
 ### Benchmark and example
 
 - `examples/go-backend` is now `examples/taskboard-backend`: a small gin task board with real code and a green `make ci`, plus the files setup writes. It is the base app of the benchmark.
-- New `benchmark/`: 5 tasks with hidden graders, `run.sh` (one run, plain or `/dotagent:ship small|medium|large`), `report.py`, and `check-graders.sh`. `run-all.sh` runs the matrix. `docs/BENCHMARK.md` describes the method, the limits, and the first results: 60 runs, all resolved, dotagent costs about 1.6x to 1.8x plain Claude Code on these small tasks and never adds a trailer or a wrong commit subject, where plain added a trailer in 8 of 15.
+- New `benchmark/` (removed in 0.7.0): 5 tasks with hidden graders, `run.sh` (one run, plain or `/dotagent:ship small|medium|large`), `report.py`, and `check-graders.sh`. `run-all.sh` runs the matrix. The removed benchmark describes the method, the limits, and the first results: 60 runs, all resolved, dotagent costs about 1.6x to 1.8x plain Claude Code on these small tasks and never adds a trailer or a wrong commit subject, where plain added a trailer in 8 of 15.
 - Shorter `ship` and `planner` prompts: the naming rule is stated once per file, not four times.
 
 ## 0.2.0
@@ -244,7 +311,7 @@ Upgrading: the old `/plugin configure` options are ignored. Run `/dotagent:scale
 
 - Described as a minimalist agent swarm workflow, with `plugin.json` metadata (author, homepage, repository, keywords).
 - README rewritten in short points. The workflow diagram has thinner arrows with small heads that stop short of the boxes, bold key words, and only high level descriptions.
-- Added `docs/BENCHMARK.md`, the plan to measure the workflow, and rows in `docs/PRACTICES.md` for the TODO, plan before code, and names.
+- Added `docs/BENCHMARK.md` (removed in 0.7.0), the plan to measure the workflow, and rows in `docs/PRACTICES.md` for the TODO, plan before code, and names.
 
 ## 0.1.0
 
