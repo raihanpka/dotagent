@@ -7,6 +7,7 @@ You tick Reviewed once you have read it.
 
 | Setting | Value | Why |
 |---|---|---|
+| agent | {{claude, codex, commandcode, both, or other}} | {{the agent that runs dotagent here}} |
 | workflow | {{auto, ask, or local}} | {{reason}} |
 | em dash and emoji | {{block (default) or allow}} | {{reason}} |
 | companion skills | {{plan, build, style skills, or none}} | {{reason}} |
@@ -15,6 +16,7 @@ You tick Reviewed once you have read it.
 | commit types and scope | {{the default list, or the repo's own list, scope required or optional}} | {{reason}} |
 | base branch | {{the default branch, or the branch PRs target}} | {{reason}} |
 | git hooks on | {{yes (`git config core.hooksPath .githooks`) or no}} | {{reason}} |
+| verification | {{the proof command, or "docs/VERIFICATION.md written", or "none yet"}} | {{how a change is proved against the real artifact}} |
 
 ## Generated files
 
@@ -27,6 +29,7 @@ You tick Reviewed once you have read it.
 | `.github/workflows/ci-pr.yml` | `templates/.github/workflows/ci-pr.yml` | [ ] | [ ] |
 | `.githooks/pre-commit`, `commit-msg`, `pre-push` | `templates/.githooks/` | [ ] | [ ] |
 | `docs/README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md` | `templates/docs/` | [ ] | [ ] |
+| `docs/VERIFICATION.md` | `templates/docs/VERIFICATION.md` | [ ] | [ ] |
 | `.dotagent/config.json` | `templates/.dotagent/config.json`, set with `run.sh`, ignored by git | [ ] | [ ] |
 | `.gitignore` | adds `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, `docs/TODO.md` | [ ] | [ ] |
 

@@ -96,8 +96,8 @@ test('the ship skill and setup follow a repo flow that is not the default', () =
   for (const token of ['types=', 'scope=', 'base=', 'merge=']) assert.ok(skill.includes(token), `SKILL.md does not mention ${token}`)
   const setup = readFileSync(new URL('../plugin/SETUP.md', import.meta.url), 'utf8')
   for (const key of ['merge_method', 'commit_types', 'commit_scope', 'base_branch']) assert.ok(setup.includes(key), `SETUP.md does not save ${key}`)
-  assert.match(setup, /A flow the plugin does not support/)
-  assert.match(setup, /set workflow local/)
+  assert.match(setup, /host is not GitHub/)
+  assert.match(setup, /workflow local/)
 })
 
 test('the three modes are local, ask, and auto', () => {

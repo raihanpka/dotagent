@@ -1,303 +1,76 @@
 # Setup
 
-For the agent reading this. The user asked you to set up dotagent in their repo. Do it in order,
-and show each file before you write it. Never overwrite a file that exists: show a diff and ask.
-This holds for every row in step 4, also the rows marked "always", which means the file is offered,
-not forced. An existing CI workflow, git hook, template, or doc belongs to the user. Never push or
-merge anything. `sh hooks/run.sh` below is the plugin's `hooks/run.sh`, not a file in the repo: run it by the path the setup skill gives you.
+For the agent reading this. Set up dotagent in the user's repo once. Read this file, and read `SETUP-REFERENCE.md` only when a step says to.
+It holds the flow table, the CI split, the naming rules, and the git hooks.
 
-**Which agent** is the first answer of round 1 (step 3). It decides what steps 2 and 4 write, and the guard follows it:
+Show every file before you write it. Never overwrite a file that exists: show a diff and ask. Never push, open a PR, or merge.
+`sh hooks/run.sh` below is the plugin's `hooks/run.sh`, run by the path this skill gives you. Without the plugin, use `sh .dotagent/run.sh`.
 
-| `agents` | The agent that runs dotagent | Setup writes |
-|---|---|---|
-| `claude` | Claude Code | the plugin (step 2), `AGENTS.md`, `CLAUDE.md`, the docs, the config |
-| `codex` | OpenAI Codex | the Codex plugin (step 2), `AGENTS.md`, `.agents/skills/dotagent-ship/SKILL.md`, `.codex/agents/reviewer.toml`, the docs, the config |
-| `both` | Claude Code and Codex | everything for `claude` and `codex`, with one `AGENTS.md` and one `CLAUDE.md` |
-| `other` | Antigravity, Cursor, or any agent that reads `AGENTS.md` and `.agents/skills` | `AGENTS.md`, `.agents/skills/dotagent-ship/SKILL.md`, the docs, the config, and no hooks |
+Setup runs once. If `.dotagent/config.json` and `docs/DOTAGENT-SETUP.md` both exist, stop and say: already set up, change settings with
+`/dotagent:workflow` or edit the config, and delete both files to run setup again. A `setup=minimal` config means the user only went on
+with a TODO before: run the full setup now and save `setup full`.
 
-For `other` the plugin, its skills, and its guard are not installed, so the git hooks and the PR gate are the only checks: say so in the
-open items. Setup never writes `.claude/` for `codex` or `other`.
+## 0. Look first, cheaply
 
-Without the plugin's `run.sh` (`codex`, `other`) write `.dotagent/config.json` yourself with the same keys and values as step 2, and check
-each value against that list.
+Grep and read ranges, not whole files. Find the language, the default branch, the build, lint, test, and format commands, the docs, the
+CI, the PR template, the git hooks, and the commit habit (`git log --format=%s -n 30`). Match a doc by meaning, not by name: an
+`architecture/` folder or an `arsitektur.md` is the architecture doc. Ask only about what you could not find.
 
-Ask with AskUserQuestion. If it is not in your tool list or errors, load it with ToolSearch (`select:AskUserQuestion`) and try once
-more. If it is still missing, ask in plain text: a numbered list, the recommended option first, one line of reason, then wait. In a
-headless run take the recommended option and say so. Never guess an answer the setup depends on.
+Read the flow too: `git remote get-url origin`, `gh auth status`,
+`gh repo view --json squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed`,
+`gh pr list --state merged -L 30 --json baseRefName`, and the last 30 subjects. When the host is not GitHub, `gh` is missing, or work does
+not go through PRs, say so in two lines, save `workflow local`, and write an open item in `docs/DOTAGENT-SETUP.md`.
 
-Steps 0 to 3 only read and ask. Do not enter Claude Code plan mode, it would block the files you
-write later. Write nothing until the user has answered the rounds in step 3.
+## 1. Ask one round
 
-Setup runs once. If `.dotagent/config.json` and `docs/DOTAGENT-SETUP.md` both exist, stop and say:
-already set up, change settings with `/dotagent:workflow` or edit the file, and
-delete both files to run setup again. If the config says `setup` is `minimal`, the user only went on with a
-TODO before: run the full setup now and save `set setup full` at the end.
+Ask with AskUserQuestion, recommended option first. If it is missing, load it with ToolSearch and retry once; otherwise ask in plain text,
+numbered, and wait. Headless: take the recommended option and say so. Never guess an answer the setup depends on.
 
-When the workflow is `local`, setup stays small. It skips the `.github/` rows of step 4 (CI workflows, PR template, PR example),
-because nothing is pushed. It keeps the git hooks, they check every local commit, and writes `AGENTS.md`, the docs, and the config as usual.
+- **Agent.** `claude`, `codex`, `commandcode`, `both`, or `other`. Recommend the one this setup runs in. `commandcode` means Command Code.
+- **Commands.** Build, lint, test, one file, one module. Recommend what the repo already uses, so the agent and CI agree.
+- **Workflow.** `auto`, `ask`, or `local`. Recommend `auto` only when the PR gate is a required status check, otherwise `ask`. For
+  `codex` and `commandcode`, `ask` cannot show a prompt, so recommend `auto` or `local` and say why in one line.
+- **Verification.** Ask once: is there a script that drives the app or service and proves a feature works? If yes, record the command.
+  If no, offer `docs/VERIFICATION.md` with a feature map and a proof command. Ask once more, only when the repo has concurrency, retries,
+  a state machine, a parser, or money: does a property need a formal check? If yes, fill one row and tell the user the tool choice in
+  one line. Otherwise leave the section empty.
+- **Protected paths.** Recommend migrations, lockfiles, secrets, deploy config, and CODEOWNERS. Save them.
 
-## 0. Prerequisites
+Do not ask about the scope style, the merge method, or the base branch when step 0 found them. Recommend the repo's own habit. Save only
+what differs from the default: `commit_types`, `commit_scope optional`, `merge_method`, `base_branch`.
 
-Check each with `command -v` and report what is missing, with its install link from the table. Do not install anything without asking.
+## 2. Write
 
-| Tool | Why | Check |
-|---|---|---|
-| [Claude Code](https://code.claude.com/docs/en/setup), recent | plugins and hooks | `claude --version` |
-| [Git](https://git-scm.com/downloads) | branches and commits | `git --version` |
-| [GitHub CLI `gh`](https://cli.github.com/manual/installation), signed in with `gh auth login` | the agent opens PRs, watches CI, and merges | `gh auth status` |
-| [Python](https://www.python.org/downloads/) 3.8 or newer | runs `hooks/guard.py` through `hooks/run.sh`, which tries `python3`, `python`, then `py` | `python3 --version` or `python --version` |
-| The repo's own toolchain | build, lint, and test commands | ask in step 3 |
-| A GitHub remote with Actions, squash merging allowed | the PR and CI steps; the merge is a squash unless `merge_method` says otherwise | `git remote -v`, `gh repo view --json squashMergeAllowed` |
-| [Node](https://nodejs.org/en/download) and [jq](https://jqlang.org/download/) (optional) | only to run dotagent's own tests | `node --version`, `jq --version` |
-
-## 1. Look first, cheaply
-
-Grep and read ranges, not whole files. Find: language and toolchain, default branch, the build,
-lint, and test commands, an existing `AGENTS.md`, `CLAUDE.md`, CI file, PR template, git hooks,
-docs, generated paths, and whether the repo is one module or many. Ask only about what you could
-not find.
-
-Match by meaning, not by file name. People name things differently and in other languages, so
-`ARCHITECTURE.md`, `architectures.md`, `docs/architecture/`, `arsitektur.md`, and `design/` can all be the
-architecture doc, and one folder may hold the architecture, the conventions, and more. Open the
-index or the first lines of a candidate before you decide it is, or is not, what a role needs.
-Do this for docs, the PR template, CI, and hooks. A role that is covered already is not generated again.
-
-Also read how the repo names things, because an established repo has a habit and it wins: the subjects
-of the last 30 commits (`git log --format=%s -n 30`), merged PR titles
-(`gh pr list --state merged -L 30 --json title,headRefName`), and branch names (`git branch -r`).
-Note the scope words, the branch prefix, and whether PR titles carry a type. Also read the CI
-inventory: every file in `.github/workflows/`, its `on:` triggers, `gh workflow list --all` for
-disabled ones, and commented or `if: false` jobs.
-
-Also read the flow, because `ship` and the guard assume one and a repo may use another:
-
-- The host: `git remote get-url origin`. Only GitHub with `gh` signed in (`gh auth status`) supports the PR, CI, and merge steps.
-- The merge methods the repo allows: `gh repo view --json squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed`.
-- Whether work goes through PRs at all: `gh pr list --state merged -L 30 --json baseRefName`. No merged PRs, or commits straight on the
-  default branch, means a trunk flow without PRs.
-- The branch PRs target: the `baseRefName` of those PRs, which is not always the default branch.
-- The commit types and whether a scope is used, from the last 30 subjects.
-
-## 2. Install the plugin
-
-Claude Code (`claude`, `both`):
-
-```
-/plugin marketplace add raihanpka/dotagent
-/plugin install dotagent@dotagent
-```
-
-Codex (`codex`, `both`). The same repo is a Codex plugin: the skill, and the guard hook in `hooks/hooks.json`:
-
-```
-codex plugin marketplace add raihanpka/dotagent
-```
-
-Then install dotagent from `/plugins` in Codex and open `/hooks` there. Codex does not run a hook until you trust it, and setup cannot
-trust it for you: ask the user to do it, and to confirm the dotagent hooks are listed as trusted. Codex runs the skill as `$dotagent-ship`.
-Codex has no permission prompt that `ask` can use, so there `ask` refuses a push, PR, or merge, and says why.
-
-Other agents install no plugin: step 4 writes their skill.
-
-Settings live in one file, `.dotagent/config.json`, local to the machine and ignored by git. Setup writes it with
-`sh hooks/run.sh set <key> <value>`, the same command behind
-`/dotagent:workflow`. Unset means the value in brackets. The guard reads this file for Claude Code and Codex. Other agents keep their settings in `docs/DOTAGENT-SETUP.md`.
-
-- `agents` [unset]: `claude`, `codex`, `both`, or `other`, the answer to round 1. The session line shows it, so the ship skill knows which agent runs it.
-- `workflow` [auto]: `auto`, `ask`, or `local`, see round 1. Say what each does in a sentence.
-- `em_dash` [block] and `emoji` [block]: the agent writes neither, the default. Set `allow` only when the user asks. It stops the
-  agent from writing either into files, commits, and PR text.
-  No skill or template states this as a rule, the config is the only place.
-- `style_skills` [none]: comma separated skills to invoke at the start of a run, see step 3.
-- `merge_method` [squash]: `squash`, `merge`, or `rebase`, how a PR merges. Set it when the repo does not allow squash.
-- `commit_types` [feat, fix, hotfix, docs, style, refactor, test, chore, perf, revert, ci, build]: comma separated, for a repo with its own list.
-- `commit_scope` [required]: `optional` when the repo writes `feat: add x` without a scope.
-- `base_branch` [the default branch]: the branch PRs target when it is not the default one, such as `develop`.
-
-## 3. Grill the user, in rounds
-
-Interview the way the `grill-me` skill does ([aihero.dev/skills-grill-me](https://www.aihero.dev/skills-grill-me)),
-so the user ends with a shared understanding and no unstated assumption.
-
-- **Rounds, not a list.** Each round asks the whole *frontier*: every question whose prerequisites
-  are already settled, at most 4 per AskUserQuestion call. Never ask what depends on an answer you
-  do not have yet.
-- **Answer from the repo first.** Anything step 1 found is not asked. Show it as the recommended
-  option and let the user confirm or change it.
-- **Every question carries a recommended answer** with the reason in one line, marked
-  `(Recommended)` and listed first.
-- **Stop when the frontier is empty:** every branch is settled or recorded as an open item. A
-  question that talking cannot answer goes to open items, do not prototype.
-- **Count rounds, not questions.** More than 3 rounds means the scope is too wide, narrow it.
-
-### When the user is unsure
-
-Some users do not know the answer, for example what their architecture is called. That is fine, do
-not stall and do not quiz them. Tell them, in a sentence, that you will suggest, then suggest. What you
-suggest depends on the repo:
-
-- **An established repo** (real history, many files, a working structure): the code already has an
-  answer. Describe what you found, name it, and record it as it is today. Do not propose a new
-  architecture or a rewrite. A repo this size has an owner who can answer the other questions, so ask
-  them plainly and trust the answer, a big repo means they know it.
-- **A new or nearly empty repo:** there is nothing to read, so recommend. Pick the simplest
-  architecture and structure that fit the project, its size, its stack, and how many people will work
-  on it (usually a modular monolith with vertical slices for one team, split services only when the
-  need is proven). Give the best practice and the reason in two lines, and ask whether they agree. They
-  can change it, record what they choose.
-- **Any other question they cannot answer** (workflow, CI split, scopes): give the
-  recommended option from the repo and the best practice behind it, and go on. A guess goes to open items
-  in `docs/DOTAGENT-SETUP.md` when it is a guess and not something you checked.
-
-Say which of the two cases you are in before you recommend, so the user knows why.
-
-Round 1 (no prerequisites):
-- **Agent.** Ask which agent runs dotagent: `claude`, `codex`, `both`, or `other`. Recommend `claude` when this setup runs in Claude Code,
-  and `both` when the user names Codex too. Save it with `sh hooks/run.sh set agents <value>`, or write it into the config for `codex` and `other`.
-- **Commands.** Build, lint, test, and one test file. For a repo with many modules also the lint and test of one module, so a subtask checks only its module and the full gate runs once per commit before the PR. They must run the same locally and in CI,
-  or the agent and CI will disagree.
-- **Architecture style.** Modular monolith, microservices, event driven, or layered, then vertical
-  slices by feature or horizontal layers. Record the answer and the reason in `ARCHITECTURE.md`.
-  If the user is unsure, see When the user is unsure: describe what the code shows in an established
-  repo, recommend a simple architecture in a new one.
-- **Workflow.** `auto` (pushes, opens each PR, merges when the review is clean and CI is green, goes on to the next PR), `ask` (the same, but asks for a yes in the chat before any push, PR, or merge), or `local` (asks first, minimal setup, one local branch, never pushes). Recommend `auto` only when `ci-pr.yml` is a required status check, else `ask`. For `codex` and `both` the `ask` answer refuses every push, PR,
-  and merge, so recommend `auto` or `local` there and say why in one line.
-
-Round 2 (needs the architecture and the commands):
-- **Coupling.** Aim for low coupling and high cohesion: a module owns one thing, hides its
-  internals behind a small public interface, depends in one direction with no cycles, and code that
-  two modules share goes in a shared library. Cross-module work goes through the interface, or a
-  first PR that defines the contract. This is what lets a subagent edit one subtask without reading
-  the rest. Ask what the shared library is called and what may depend on what.
-- **Naming.** Follow what step 1 found: the repo's scope words, branch prefix, and PR title style, as
-  the recommended answer, and record them in `AGENTS.md`. Only a new repo gets a fresh list, usually the
-  module names. The hook defaults to `type(scope): summary` for a commit and `type: summary` or
-  `type(scope): summary` for a PR title. When the repo's habit differs only in the list of types or in
-  leaving the scope out, save it instead of forcing the default: `sh hooks/run.sh set commit_types <list>` and
-  `set commit_scope optional`, and put the same list in `types=` of `.githooks/commit-msg`. When the habit has no type at all
-  (free text), the hook cannot allow it: say so and ask whether to adopt `type(scope): summary`, do not silently change the habit. A name never carries a plan label: no
-  `milestone-1`, `task-2`, `slice 3`, and no "finishing task". Say what changed. Tell the user.
-- **Trailers.** Do not ask. A commit or PR carries no Co-Authored-By trailer and no "Generated with" line, the hook and `.githooks/commit-msg` refuse them.
-- **Protected paths.** Files no agent should edit even when the task seems to need it: migrations, CODEOWNERS, lockfiles, secrets, deploy config. Recommend what the repo has. Save them with `sh hooks/run.sh set protected "<glob>,<glob>"`.
-- **Generated files.** Path patterns and the command that regenerates them. They are never edited by
-  hand, the rule goes in `AGENTS.md`. Do not block reading them, debugging needs it.
-- **Default branch.** Find it (`git symbolic-ref refs/remotes/origin/HEAD`, or `gh repo view --json defaultBranchRef`).
-  A repo may merge PRs into another branch such as `dev`: ask which branch PRs target and use that
-  one as `{{default-branch}}` everywhere and save it with `sh hooks/run.sh set base_branch <branch>`. Never write `main` unless the repo says so.
-- **Merge method.** `squash` unless the repo does not allow it. Then ask which of the allowed methods to use, recommend the one the
-  recent merged PRs used, and save it with `sh hooks/run.sh set merge_method <method>`.
-- **A flow the plugin does not support.** A host that is not GitHub, no remote, `gh` missing or not signed in, or a trunk flow without PRs.
-  Do not ask and do not let `ship` run into the guard later: say so in two lines, save `sh hooks/run.sh set workflow local`, skip the `.github/`
-  rows of step 4 (CI workflows, PR template, PR example), and write an open item in `docs/DOTAGENT-SETUP.md`:
-  "PR, CI, and merge need GitHub and gh. This repo uses <what you found>, so the workflow is local: commits stay on one local branch and you
-  push and merge them yourself."
-- **CI.** Two workflows, each with one trigger, so a branch push never runs CI twice:
-  - `ci-pr.yml` runs on `pull_request` only. It is the gate. What a PR check usually holds, in order
-    of cost: format check, lint (and type check where the language has one), build, unit tests, a
-    dependency vulnerability scan, and a secret scan (for example gitleaks). Format, lint, build, and
-    test are the minimum. Add the scans when the stack has a tool, and record the ones left out as
-    open items. Keep it under about 10 minutes, with no services and no deploy. Slow, flaky, or
-    secret-dependent checks go to the default branch workflow. Tell the user to make it a required
-    status check in branch protection, with "require branches to be up to date".
-  - `ci-default.yml` runs on `push` to the default branch only. It holds what is too heavy for every
-    PR: services, migrations, boot and health probe, integration tests. Skip it when the repo has
-    nothing heavier than the gate.
-  - **Titles.** The workflow `name:` has a fixed prefix and suffix and one `{{ }}` slot you fill:
-    `Pull Request {{ }} Gate` and `Default Branch {{ }} Check`. Fill the slot with one plain word
-    for the stack or the product (`Go`, `Web`, `Billing`), never a joke or a slogan.
-  Existing CI is the user's. Never rewrite, rename, or delete a workflow. When one already runs on
-  `pull_request` with format, lint, build, and test, it is the gate: say so, recommend not adding
-  `ci-pr.yml`, and record its name in `AGENTS.md`. When a file of the same name exists, show a diff
-  and ask. Suggest a trigger change as a diff, never apply it unasked. Never add a `push` trigger
-  for feature branches. A plain commit on a branch must not start a run.
-  **Ask about activation.** When step 1 found a workflow that exists but does not run on pull
-  requests (no `pull_request` trigger, disabled in `gh workflow list --all`, or its jobs commented out),
-  ask with AskUserQuestion whether to turn it on for PRs. Recommend yes when it already runs format,
-  lint, and test. Show the exact diff (the `on:` block, or `gh workflow enable`), and apply it only after
-  the answer. Say which jobs would then become required checks.
-- **Format.** The command that fixes formatting and the one that only checks it. Both are used: the agent runs the fixer, the git hook and CI run the checker.
-- **Git hooks, part of setup.** Recommend all three, and recommend turning them on: `.githooks/pre-commit`
-  (format check and lint), `commit-msg`, and `pre-push` (format, lint, build, test). Unlike the agent hook, git
-  hooks check every commit and push by anyone: the agent, a person, a script, another tool. That is the
-  protection for everything outside the agent's own edits, so a forgotten format or lint is caught before the
-  commit and the push, and CI stays green. In a big repo make `pre-commit` check only the staged files when the tools allow, and keep the whole repo for `pre-push`. First check `git config core.hooksPath`, `.husky/`,
-  `lefthook.yml`, and `.pre-commit-config.yaml`. When one exists, the repo has its own hooks: do
-  not change `core.hooksPath` and do not write `.githooks`, add an open item instead. When
-  `.githooks` exists, show a diff per file. Turning them on runs `git config core.hooksPath .githooks`, a local
-  and reversible change, so ask once first, with the recommended option marked. Say that a repo that ships
-  `.githooks` but has them off gets no check at all, and that every later `/dotagent` run checks this again.
-
-Round 3 (needs the answers above):
-- **Style skills.** Optional, dotagent works without them. Ask which the user already has. They
-  only change how the agent writes replies. Install commands, only after the user agrees:
-  - `caveman` for short replies: `/plugin marketplace add JuliusBrussee/caveman`
-  - `ponytail:lite` for the simplest solution: `/plugin marketplace add DietrichGebert/ponytail`
-- **Em dash and emoji.** Do not ask. The agent writes neither by default. Set `allow` (`sh hooks/run.sh set em_dash allow`, and the same for `emoji`) only when the user asks for them.
-
-Between rounds, run the checks the answers make possible:
-- **Check the rule against the code.** For every module, grep all its files, tests included, for
-  imports of every other module's path. Write the exact command next to your claim in
-  `docs/DOTAGENT-SETUP.md` so a human can rerun it. Never write that a rule holds without checking.
-  List each existing violation as an open item and under "Current violations" in
-  `ARCHITECTURE.md`, as it is today, not as the user wishes it were.
-- **Boundary check.** A rule in markdown gets ignored, a lint rule fails CI. Suggest the checker
-  for the language: Dart `import_lint`, Go `internal/` plus `depguard`, TypeScript
-  `eslint-plugin-boundaries` or `dependency-cruiser`, Python `import-linter`, Java ArchUnit.
-
-After the rounds, save `sh hooks/run.sh set setup full` and write the workflow setting with
-`sh hooks/run.sh set workflow <v>` (and `set style_skills <list>` when chosen). Save the repo flow only where it differs from the default:
-`set merge_method`, `set commit_types`, `set commit_scope`, `set base_branch`.
-
-## 4. Generate, then show
-
-Check every target path first, `git ls-files` and the disk, and check the role by meaning too (step 1).
-If a file or a doc that fills the role exists, do not write ours: merge or show a diff and ask. Put new
-content in the existing doc's own language and structure. A PR template under another name or folder
-(`pull_request_template.md`, `docs/`, repo root) counts as existing.
-
-`plugin/templates/` mirrors the target repo path for path: the template for `.github/workflows/ci-pr.yml` is
-`templates/.github/workflows/ci-pr.yml`, and so on. Generate each file from the template at its own path.
+Read `SETUP-REFERENCE.md` before this step, then write each file at its own path, showing it first, and tick `Written` in
+`docs/DOTAGENT-SETUP.md` right after. Leave `Reviewed` for the user.
 
 | File | From | When |
 |---|---|---|
 | `AGENTS.md` | `templates/AGENTS.md` | always, under 60 lines, merged with existing rules |
-| `.agents/skills/dotagent-ship/SKILL.md` | `templates/.agents/skills/dotagent-ship/SKILL.md` | always, so Codex and other agents ship the same way |
-| `CLAUDE.md` | `templates/CLAUDE.md`, one line, `@AGENTS.md` | when `agents` is `claude` or `both`, and the repo has none |
-| `.codex/agents/reviewer.toml` | `templates/.codex/agents/reviewer.toml` | when `agents` is `codex` or `both`, the reviewer subagent for Codex |
-| `.github/PULL_REQUEST_TEMPLATE.md` | `templates/.github/PULL_REQUEST_TEMPLATE.md` | always, with the real commands |
-| `.github/PR_EXAMPLE.md` | `templates/.github/PR_EXAMPLE.md` | always, filled with a plausible finished example |
-| `.github/workflows/ci-pr.yml` | `templates/.github/workflows/ci-pr.yml` | always, the PR gate |
-| `.github/workflows/ci-default.yml` | `templates/.github/workflows/ci-default.yml` | only when the repo has heavier checks |
+| `CLAUDE.md` | `templates/CLAUDE.md` | `claude` or `both`, and the repo has none |
+| `.agents/skills/dotagent-ship/SKILL.md` | `templates/.agents/skills/dotagent-ship/SKILL.md` | always, so Codex, Command Code, and other agents ship the same way |
+| `.codex/agents/reviewer.toml` | `templates/.codex/agents/reviewer.toml` | `codex` or `both` |
+| `.codex/hooks.json` | `templates/.codex/hooks.json` | `codex` or `both` |
+| `.commandcode/settings.json` | `templates/.commandcode/settings.json` | `commandcode` |
+| `.dotagent/guard.py`, `.dotagent/run.sh` | `hooks/guard.py`, `hooks/run.sh` | `codex`, `commandcode`, or `other` |
+| `docs/README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md` | `templates/docs/` | only a role the repo does not cover yet |
+| `docs/VERIFICATION.md` | `templates/docs/VERIFICATION.md` | when the user said yes |
+| `.github/PULL_REQUEST_TEMPLATE.md`, `PR_EXAMPLE.md` | `templates/.github/` | when work goes through PRs |
+| `.github/workflows/ci-pr.yml`, `ci-default.yml` | `templates/.github/workflows/` | when work goes through PRs |
 | `.githooks/pre-commit`, `commit-msg`, `pre-push` | `templates/.githooks/` | when the user said yes |
-| `docs/README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md` | `templates/docs/` | only a role the repo does not cover yet, matched by meaning (see step 1), so an `architectures/` folder or an `arsitektur.md` counts as the architecture doc. For one that exists, show the new section (architecture style, coupling, current violations) as an addition and ask, never replace |
-| `docs/DOTAGENT-SETUP.md` | `templates/docs/DOTAGENT-SETUP.md` | always, so a human can track it |
-| `.dotagent/config.json` | `templates/.dotagent/config.json`, written with `run.sh set` | always |
-| `.gitignore` (repo root) | append `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, and `docs/TODO.md`, so dotagent's own files never show as untracked. Skip a line already present, and skip any path that has tracked files (`git ls-files <path>`), such as a team `.claude/settings.json`. Do it without asking, then tell the user which lines you added and which you skipped | append, never overwrite |
+| `docs/DOTAGENT-SETUP.md` | `templates/docs/DOTAGENT-SETUP.md` | always |
+| `.dotagent/config.json` | `templates/.dotagent/config.json`, written with `set` | always |
 
-`docs/TODO.md` is not generated here. The agent writes it for each task from `templates/docs/TODO.md`:
-one section per PR, each with subtasks that it ticks. It is ignored by git on purpose, a scratch report.
+Save the answers with `sh hooks/run.sh set agents|workflow|setup|hooks|protected|...`. Append `.dotagent`, `.claude`,
+`docs/DOTAGENT-SETUP.md`, and `docs/TODO.md` to `.gitignore`, skipping a line already there. Do it without asking, then tell the user.
 
-Write each file from what you found in the repo. Tick `Written` `[x]` in `docs/DOTAGENT-SETUP.md` for each file you wrote,
-right after writing it. Leave `Reviewed` `[ ]`, only the user ticks it. Never invent a command, a module, or a rule.
-When you cannot find something, leave the `{{...}}` out of the file and add a line to the open
-items in `docs/DOTAGENT-SETUP.md`.
+## 3. Prove
 
-## 5. Prove it
+Run build, lint, and test once. `sh hooks/run.sh hooks` must print `on`; run `.githooks/pre-commit` once. For `codex`, ask the user to open
+`/hooks` and trust the dotagent hooks once. For `commandcode`, ask the user to start a session and confirm the `[dotagent]` capsule appears.
+Offer one tiny task as a smoke test: a one sentence diff, no plan, one PR.
 
-Run build, lint, and test once. Check the git hooks are on with `sh hooks/run.sh hooks`, it must print `on`,
-then run `.githooks/pre-commit` once to see it pass. Run `bash tests/hooks.test.sh` from the dotagent checkout
-if it is available. Offer one tiny task, a one sentence diff, as a smoke test.
+## 4. Commit and report
 
-Per agent: for `claude` run `sh hooks/run.sh show` and check the saved settings print. For `codex` or `both` ask the user to open `/hooks`
-in Codex and confirm the dotagent hooks are listed as trusted. For `other` say that no guard runs, so only the git hooks and CI check the work.
-
-## 6. Commit and report
-
-Commit the generated files in atomic commits, one line each, scope required, for example
-`docs(dotagent): add the PR template and example`. Stage by explicit path, never `git add -A`, so
-the user's own uncommitted work stays out. Ignored files are not committed. Do not push. Then list what you wrote, what you
-skipped, and what the user must still decide. The user ticks each file in `docs/DOTAGENT-SETUP.md`
-as they review it.
-
-End with one line `next:` that names the first thing to try as a smoke test: `/dotagent:ship <a small task>` for `claude`, `$dotagent-ship <a small task>` for `codex`, or the path of the skill file for `other`.
+Commit in atomic commits, one line each, scope required, explicit paths, no trailer. Never push. List what you wrote, what you skipped, and
+what the user must still decide. End with one line `next:` that names the first thing to try.

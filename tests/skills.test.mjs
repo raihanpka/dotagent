@@ -69,9 +69,9 @@ test('the review command posts only what the user chooses and never merges or pu
   assert.ok(review.includes('sh "$RUN" status'), 'the unfinished-work mode does not check the state')
 })
 
-test('setup asks which agent runs dotagent and branches on the four answers', () => {
+test('setup asks which agent runs dotagent and branches on the five answers', () => {
   const setup = readFileSync(new URL('../plugin/SETUP.md', import.meta.url), 'utf8')
-  for (const value of ['claude', 'codex', 'both', 'other']) assert.ok(setup.includes(`\`${value}\``), `SETUP.md does not offer ${value}`)
+  for (const value of ['claude', 'codex', 'commandcode', 'both', 'other']) assert.ok(setup.includes(`\`${value}\``), `SETUP.md does not offer ${value}`)
   assert.ok(setup.includes('set agents'), 'SETUP.md does not save agents')
   assert.ok(setup.includes('.codex/agents/reviewer.toml'), 'SETUP.md does not write the Codex reviewer')
   assert.ok(setup.includes('/hooks'), 'SETUP.md does not ask the user to trust the Codex hooks')
@@ -80,5 +80,5 @@ test('setup asks which agent runs dotagent and branches on the four answers', ()
 
 test('the setup skill names the agent choice in its description', () => {
   const setup = readFileSync(new URL('../plugin/skills/setup/SKILL.md', import.meta.url), 'utf8')
-  assert.match(setup, /Claude Code, Codex, both, or another/)
+  assert.match(setup, /Claude Code, Codex, Command Code, both, or another/)
 })
