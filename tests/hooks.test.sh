@@ -487,5 +487,43 @@ case "$out" in "agents=codex") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo
 sh "$guard" set agents cursor >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL agents accepts an unknown value"; } || pass=$((pass + 1))
 cfg '{}'
 
+# a run has a start, progress, a stall signal, and one stop reason; a fresh session keeps it
+r="$tmp/run"
+mkdir -p "$r/docs" && git -C "$r" init -q && git -C "$r" config user.email t@t && git -C "$r" config user.name t
+printf 'a\n' > "$r/a.txt" && git -C "$r" add a.txt && git -C "$r" commit -qm "feat(a): add a"
+printf '# TODO: x\n\n## PR 1: feat(a): add a\n\n- [ ] 1.1 `feat(a): add a`. x.\n\ndone:\n' > "$r/docs/TODO.md"
+run() { CLAUDE_PROJECT_DIR=$r sh "$guard" "$@"; }
+out="$(run state)"
+case "$out" in *"run=none"*"left=1"*"stalled=no"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL state before a run: $out" ;; esac
+out="$(run start "ship the a change")"
+case "$out" in "start=ship the a change") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL start: $out" ;; esac
+out="$(run state)"
+case "$out" in *"run=active"*"reason=-"*"left=1"*"stalled=no"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL state after start: $out" ;; esac
+out="$(run progress 1.1)"
+case "$out" in "progress=moved") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL first progress: $out" ;; esac
+out="$(run progress 1.1)"
+case "$out" in "progress=same") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a repeat progress: $out" ;; esac
+out="$(run progress 1.1)"
+out="$(run state)"
+case "$out" in *"progress=3"*"stalled=yes"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL stall signal: $out" ;; esac
+run stop nope >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL stop accepts an unknown reason"; } || pass=$((pass + 1))
+out="$(run stop no-progress "two units moved nothing")"
+case "$out" in "stop=no-progress") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL stop: $out" ;; esac
+out="$(run state)"
+case "$out" in *"run=stopped"*"reason=no-progress"*"stalled=yes"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL stopped state: $out" ;; esac
+out="$(printf '{"hook_event_name":"SessionStart"}' | CLAUDE_PROJECT_DIR=$r sh "$guard")"
+case "$out" in *"stop=no-progress"*"stopped: no-progress"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL session keeps the stop: $out" ;; esac
+out="$(run state)"
+case "$out" in *"run=stopped"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a session dropped the run state: $out" ;; esac
+run start continue >/dev/null
+out="$(run state)"
+case "$out" in *"run=active"*"reason=-"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL continue clears the stop: $out" ;; esac
+printf '# TODO: x\n\n## PR 1: feat(a): add a\n\n- [x] 1.1 `feat(a): add a`. x.\n\ndone: https://x/1\n' > "$r/docs/TODO.md"
+out="$(run progress 1.1)"
+case "$out" in "progress=moved") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a tick is progress: $out" ;; esac
+out="$(run state)"
+case "$out" in *"left=0"*"next=\"none\""*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL state after the last PR: $out" ;; esac
+run progress 1.1 >/dev/null 2>&1 || true
+
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]

@@ -39,7 +39,9 @@ WRITE = re.compile(
 TODO = os.path.join("docs", "TODO.md")
 RUNS = os.path.join(".dotagent", "runs.jsonl")  # one JSON line per event: a subagent spawn, a gate pass, a plan phase
 PHASE_TTL = 3600  # a forgotten plan phase must never lock a repo for long
-PHASE_TTL = 3600  # a forgotten plan phase must never lock a repo for long
+# A run ends for one reason. `done` is the finish predicate; every other reason stops the loop and asks for a human or a new experiment.
+STOP_REASONS = ("done", "no-progress", "premise", "needs-human", "question", "red-base", "conflict", "denied", "budget", "error")
+STALL_LIMIT = 2  # two units in a row that move neither HEAD nor the unfinished count is a stall, not a loop
 
 
 # Allowed values per setting, the first one is the default. A missing or invalid value falls back to it.
@@ -121,6 +123,82 @@ def phase():
     if not found or found["phase"] == "done" or time.time() - found.get("t", 0) >= PHASE_TTL:
         return ""
     return found["phase"]
+
+
+def current_run():
+    # The events of the newest run: the last `start` and everything after it. Empty before the first start.
+    events = entries()
+    for i in range(len(events) - 1, -1, -1):
+        if "start" in events[i]:
+            return events[i:]
+    return []
+
+
+def run_summary():
+    # What a fresh context needs: active or stopped, the reason, the progress count, and whether the loop stalled.
+    tail = current_run()
+    if not tail:
+        return {"run": "none", "reason": "", "detail": "", "progress": 0, "stalled": False, "head": "", "left": len(unfinished())}
+    progress = [event for event in tail if "progress" in event]
+    stopped, detail = "", ""
+    for event in tail:
+        if "stop" in event:
+            stopped, detail = event["stop"], event.get("detail", "")
+        elif "progress" in event:
+            stopped, detail = "", ""
+    streak = 0  # the last N progress calls that moved neither HEAD nor the unfinished count
+    for event in reversed(progress):
+        if event.get("changed"):
+            break
+        streak += 1
+    return {
+        "run": "stopped" if stopped else "active",
+        "reason": stopped,
+        "detail": detail,
+        "progress": len(progress),
+        "stalled": streak >= STALL_LIMIT,
+        "head": progress[-1].get("head", "") if progress else "",
+        "left": len(unfinished()),
+    }
+
+
+def run_start(goal):
+    # Clear a stop and start a new run. A fresh context resumes from here, not from memory.
+    goal = goal.strip() or "run"
+    record(start=goal, head=clean_head())
+    print("start=" + goal)
+
+
+def run_progress(unit):
+    # One call per unit, after its commit and tick. A row that moves HEAD or the unfinished count is progress.
+    if not current_run():
+        sys.exit("no run yet: call `run.sh start <goal>` before `progress`")
+    prev = next((event for event in reversed(current_run()) if "progress" in event), None)
+    head = clean_head()
+    left = len(unfinished())
+    changed = not prev or prev.get("head") != head or prev.get("left") != left
+    record(progress=unit.strip(), head=head, left=left, changed=changed)
+    print("progress=" + ("moved" if changed else "same"))
+
+
+def run_stop(reason, detail):
+    # A stop is a feature: it names why the loop ended so a fresh context does not retry the same unit.
+    if reason not in STOP_REASONS:
+        sys.exit("stop reason must be one of: " + ", ".join(STOP_REASONS))
+    record(stop=reason, detail=detail.strip())
+    print("stop=" + reason)
+
+
+def state_line():
+    # One capsule line for the session start, the ship skill, and loop.sh.
+    found = run_summary()
+    titles = unfinished()
+    head = found["head"][:7] if found["head"] else "-"
+    return (
+        f"run={found['run']} reason={found['reason'] or '-'} phase={phase() or 'none'} "
+        f"left={found['left']} head={head} progress={found['progress']} "
+        f"stalled={'yes' if found['stalled'] else 'no'} next=\"{titles[0] if titles else 'none'}\""
+    )
 
 
 def load(base=None):
@@ -335,8 +413,19 @@ def receipt():
 
 
 def prune_runs():
-    # At session start keep only the newest gate pass. Spawns and plan phases belong to the session that wrote them.
-    kept = [event for event in entries() if "gate" in event][-1:]
+    # At session start keep the newest gate pass and the newest run, so a fresh context can resume from evidence.
+    # Spawns belong to the session that wrote them, so the receipt resets.
+    events = entries()
+    kept = [event for event in events if "gate" in event][-1:]
+    start = None
+    for i in range(len(events) - 1, -1, -1):
+        if "start" in events[i]:
+            start = i
+            break
+    if start is not None:
+        kept += [event for event in events[start:] if "gate" not in event]
+    else:
+        kept += [event for event in events if "stop" in event][-1:]
     path = os.path.join(project_dir(), RUNS)
     try:
         if not kept:
@@ -369,6 +458,18 @@ def cli(args):
     if args[:1] == ["status"]:
         print(len(unfinished()))
         return
+    if args[:1] == ["state"]:
+        print(state_line())
+        return
+    if args[:1] == ["start"] and len(args) > 1:
+        run_start(" ".join(args[1:]))
+        return
+    if args[:1] == ["progress"]:
+        run_progress(" ".join(args[1:]))
+        return
+    if args[:1] == ["stop"] and len(args) > 1:
+        run_stop(args[1], " ".join(args[2:]))
+        return
     if args[:1] == ["gate"] and args[1:] == ["check"]:
         print(gate_check())
         return
@@ -391,7 +492,10 @@ def cli(args):
         print("phase=" + args[1])
         return
     if len(args) != 3 or args[0] != "set":
-        sys.exit("usage: guard.py show | hooks | receipt | status | gate run <command>|check | set <key> <value> | phase plan|build|done")
+        sys.exit(
+            "usage: guard.py show | state | start <goal> | progress [unit] | stop <reason> [detail] | hooks | receipt | "
+            "status | gate run <command>|check | set <key> <value> | phase plan|build|done"
+        )
     key, value = args[1], args[2]
     if key == "workflow":
         value = MODE_ALIASES.get(value, value)
@@ -674,6 +778,23 @@ def main():
             + (f" protected={opt('PROTECTED')}" if opt("PROTECTED") else "")
             + "".join(f" {k}={opt(k)}" for k in ANSWERS if opt(k))
         )
+        left = unfinished()
+        found = run_summary()
+        print(
+            f"[dotagent] phase={phase() or 'none'} left={len(left)} stop={found['reason'] or 'none'} "
+            f"stalled={'yes' if found['stalled'] else 'no'} progress={found['progress']} "
+            f"next=\"{left[0] if left else 'none'}\""
+        )
+        if found["run"] == "stopped":
+            print(
+                f"[dotagent] stopped: {found['reason']} ({found['detail'] or 'no detail'}). Say continue to resume, "
+                "or start a new task. Nothing loops until then."
+            )
+        if found["stalled"]:
+            print(
+                "[dotagent] no progress: the last two units moved neither HEAD nor the unfinished count. Stop with a "
+                "reason (`sh \"$RUN\" stop no-progress`) or pick the smallest next experiment."
+            )
         if is_first_run():
             print(first_run())
         if git_hooks() == "off":
@@ -681,7 +802,6 @@ def main():
                 "[dotagent] git hooks are off: .githooks exists but git does not use it, so format, lint, and name checks "
                 "skip every commit and push. Tell the user, and with their yes, run `git config core.hooksPath .githooks`."
             )
-        left = unfinished()
         if left:
             print(
                 f"[dotagent] unfinished: {len(left)} PR(s) left in docs/TODO.md, first is {left[0]}. When the user says "
