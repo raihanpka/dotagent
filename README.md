@@ -14,9 +14,9 @@ stops with one reason you can act on. A green build is not a green feature.
 | Agent | Install | Run |
 |---|---|---|
 | **Claude Code** | `/plugin marketplace add raihanpka/dotagent`, then `/plugin install dotagent@dotagent` | `/dotagent:setup`, then `/dotagent:ship <task>` |
-| **Codex** | `codex plugin marketplace add raihanpka/dotagent`, install from `/plugins`, then trust its hooks in `/hooks` | `/dotagent:setup`, then `$dotagent-ship <task>` |
-| **Command Code** | `cmd skills add raihanpka/dotagent -s dotagent-ship` | `/dotagent-ship <task>` |
-| **Cursor, Antigravity, other** | `npx skills add raihanpka/dotagent --skill dotagent-ship -a codex -a antigravity-cli -y` | `/dotagent-ship <task>` |
+| **Codex** | `codex plugin marketplace add raihanpka/dotagent`, install from `/plugins`, then trust its hooks in `/hooks` | follow the setup prompt below, then `$dotagent-ship <task>` |
+| **Command Code** | `cmd skills add raihanpka/dotagent -s dotagent-ship` | follow the setup prompt below, then `/dotagent-ship <task>` |
+| **Cursor, Antigravity, other** | `npx skills add raihanpka/dotagent --skill dotagent-ship -a codex -a antigravity-cli -y` | follow the setup prompt below, then `/dotagent-ship <task>` |
 
 Run setup once per repo. It reads the repo, asks one short round, and writes `AGENTS.md`, the guard, the git hooks, the PR gate, and
 `docs/VERIFICATION.md`, showing each file before it writes it.
@@ -83,7 +83,7 @@ Every stop names one reason, writes it to `.dotagent/runs.jsonl`, writes a `## s
 | `budget` | The unit, turn, or time budget is spent |
 | `error` | A tool or CLI failed twice |
 
-For a long plan, `sh hooks/loop.sh` runs one fresh process per PR, stops on a recorded stop or a stall, and compares HEAD and the
+For a long plan, `sh plugin/hooks/loop.sh` runs one fresh process per PR, stops on a recorded stop or a stall, and compares HEAD and the
 unfinished count after each PR. `CLAUDE_FLAGS="--max-turns 40"` caps each process.
 </details>
 
@@ -127,7 +127,7 @@ One file, `.dotagent/config.json`, per machine and ignored by git.
 | `protected` | empty | globs no agent may edit |
 | `setup`, `hooks` | unset | answers saved once |
 
-`sh hooks/run.sh set <key> <value>` writes one. A wrong value or a broken file means `local`, so a typo never turns pushing on.
+`sh plugin/hooks/run.sh set <key> <value>` writes one. A wrong value or a broken file means `local`, so a typo never turns pushing on.
 </details>
 
 <details>
