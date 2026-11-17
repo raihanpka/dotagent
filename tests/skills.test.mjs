@@ -46,6 +46,12 @@ test('the body names no tool that only Claude Code has', () => {
   }
 })
 
+test('the portable skill starts a run and names the state commands', () => {
+  for (const command of ['start', 'progress', 'stop', 'state']) {
+    assert.ok(skill.includes(`.dotagent/run.sh ${command}`), `the portable skill does not name ${command}`)
+  }
+})
+
 test('the root skill is the same file as the template copy', () => {
   const root = readFileSync(new URL('../skills/dotagent-ship/SKILL.md', import.meta.url), 'utf8')
   assert.equal(root, skill)

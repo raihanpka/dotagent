@@ -7,13 +7,14 @@ description: "Ship a task that already has clear requirements as one verified lo
 
 Plain steps for any agent. Claude Code users get the richer `/dotagent:ship` instead.
 Rules that bind every step: commit messages say what changed, never a plan label, no trailer, no `(#N)`. Never push, open a PR, or merge
-without the user's yes, unless the user already set auto in `.dotagent/config.json` (Claude Code only).
+without the user's yes, unless the workflow is `auto` in `.dotagent/config.json`.
 
 ## 1. Start
 
 - Read `AGENTS.md` at the repo root for the commands and the modules.
 - If `.dotagent/run.sh` exists, run `sh .dotagent/run.sh state` first. Read the top of `docs/TODO.md`, `git log -1`, and the TODO's
   `## stopped` block. Never resume from memory.
+- No run yet: `sh .dotagent/run.sh start "<the goal in one line>"` before the first unit.
 - Decide reversible points yourself: pick the option you would defend, write it in `docs/TODO.md` under `## decisions` with the reason.
   Ask only when the answer lives with the user alone, the action cannot be undone, or the requirement contradicts itself or the repo.
 - If the request is wrong (it breaks a requirement, a repo rule, or a known failure), say in two lines what is wrong, build the best
