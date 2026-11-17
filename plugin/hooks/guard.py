@@ -59,15 +59,15 @@ ANSWERS = {
     "setup": ("full", "minimal", "skipped"),  # how much setup the user chose
     "hooks": ("on", "declined"),  # the answer about git hooks
     "big_plan": ("ok",),  # the user agreed to a plan of more than 6 PRs
-    "agents": ("claude", "codex", "both", "other"),  # the AI agent the user runs dotagent with, from the setup interview
+    "agents": ("claude", "codex", "commandcode", "both", "other"),  # the AI agent the user runs dotagent with, from the setup interview
 }
 CONFIG = os.path.join(".dotagent", "config.json")
 _settings = None
-CLIENT = "claude"  # "codex" when the Codex hook entry runs it with --client codex, see hooks/hooks.json at the repo root
+CLIENT = "claude"  # "codex" or "commandcode" when that hook entry runs it with --client, see hooks/hooks.json and the setup guide
 
 
 def project_dir():
-    return os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+    return os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get("COMMANDCODE_PROJECT_DIR") or os.getcwd()
 
 
 def config_path(base=None):
@@ -560,9 +560,9 @@ def commits_in(tokens):
 
 def ask(reason):
     # Lets the user decide: Claude Code shows its own permission prompt. In a headless run nobody can answer, so it is a no.
-    # Codex has no ask decision yet, so there the call is refused with the reason instead.
-    if CLIENT == "codex":
-        block(reason + " Codex cannot show a prompt: ask the user in the chat, they run the command or change the workflow.")
+    # Codex and Command Code have no ask decision, so there the call is refused with the reason instead.
+    if CLIENT in ("codex", "commandcode"):
+        block(reason + " " + CLIENT + " cannot show a prompt: ask the user in the chat, they run the command or change the workflow.")
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask",
                                               "permissionDecisionReason": "dotagent: " + reason}}))
     sys.exit(0)
@@ -747,7 +747,7 @@ def on_write(tool_input):
     # Refuses an em dash in text the agent writes, unless the user allowed it.
     if opt("EM_DASH") == "allow":
         return
-    text = tool_input.get("content") or tool_input.get("new_string") or ""
+    text = tool_input.get("content") or tool_input.get("new_string") or tool_input.get("new_value") or ""
     if EM_DASH in text:
         block("no em dash in files. Use a comma, period, or parentheses.")
 
@@ -756,8 +756,8 @@ def main():
     # Dispatches on the hook event and tool name. `--client codex` comes first when the Codex hook entry runs the guard.
     global CLIENT
     args = sys.argv[1:]
-    if args[:2] == ["--client", "codex"]:
-        CLIENT, args = "codex", args[2:]
+    if len(args) >= 2 and args[0] == "--client" and args[1] in ("codex", "commandcode"):
+        CLIENT, args = args[1], args[2:]
     if args:
         return cli(args)
     # Windows defaults stdin to the ANSI code page, which would garble an emoji before the check sees it.
@@ -768,7 +768,7 @@ def main():
         return
     if event.get("hook_event_name") == "SessionStart":
         prune_runs()
-        print(
+        lines = [
             f"[dotagent] workflow={opt('WORKFLOW')} "
             f"style={opt('STYLE_SKILLS')}"
             # A repo flow that is not the default shows up here, so the ship skill follows it.
@@ -777,39 +777,52 @@ def main():
                 if opt(key) != default)
             + (f" protected={opt('PROTECTED')}" if opt("PROTECTED") else "")
             + "".join(f" {k}={opt(k)}" for k in ANSWERS if opt(k))
-        )
+        ]
         left = unfinished()
         found = run_summary()
-        print(
+        lines.append(
             f"[dotagent] phase={phase() or 'none'} left={len(left)} stop={found['reason'] or 'none'} "
             f"stalled={'yes' if found['stalled'] else 'no'} progress={found['progress']} "
             f"next=\"{left[0] if left else 'none'}\""
         )
         if found["run"] == "stopped":
-            print(
+            lines.append(
                 f"[dotagent] stopped: {found['reason']} ({found['detail'] or 'no detail'}). Say continue to resume, "
                 "or start a new task. Nothing loops until then."
             )
         if found["stalled"]:
-            print(
+            lines.append(
                 "[dotagent] no progress: the last two units moved neither HEAD nor the unfinished count. Stop with a "
                 "reason (`sh \"$RUN\" stop no-progress`) or pick the smallest next experiment."
             )
         if is_first_run():
-            print(first_run())
+            lines.append(first_run())
         if git_hooks() == "off":
-            print(
+            lines.append(
                 "[dotagent] git hooks are off: .githooks exists but git does not use it, so format, lint, and name checks "
                 "skip every commit and push. Tell the user, and with their yes, run `git config core.hooksPath .githooks`."
             )
         if left:
-            print(
+            lines.append(
                 f"[dotagent] unfinished: {len(left)} PR(s) left in docs/TODO.md, first is {left[0]}. When the user says "
                 "continue, in any wording, invoke the dotagent ship skill with no new task and carry on."
             )
+        text = "\n".join(lines)
+        if CLIENT == "commandcode":
+            # Command Code reads a JSON payload on stdout, not plain lines.
+            print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": text}}))
+        else:
+            print(text)
         return
     tool = event.get("tool_name")
     tool_input = event.get("tool_input") or {}
+    if CLIENT == "commandcode":
+        # Command Code names its tools shell_command, write_file, edit_file, and read_file, and shows them as SHELL, WRITE, EDIT, READ.
+        if tool == "shell_command":
+            on_bash(tool_input.get("command", ""))
+        elif tool in ("write_file", "edit_file"):
+            on_write(tool_input)
+        return
     if tool == "Bash":
         on_bash(tool_input.get("command", ""))
     elif tool in ("Write", "Edit"):

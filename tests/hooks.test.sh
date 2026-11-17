@@ -469,6 +469,36 @@ cfg '{"workflow":"local"}'
 expect_codex "codex local never pushes" 2 "$(bash_json 'git push origin feat/a')"
 expect_codex "codex subagent spawn is never blocked" 0 '{"tool_name":"spawn_agent","tool_input":{}}'
 
+# Command Code: --client commandcode reads its tool names and returns the SessionStart context as JSON
+expect_cc() {
+  local name="$1" want="$2" json="$3" got
+  printf '%s' "$json" | sh "$guard" --client commandcode >/dev/null 2>&1
+  got=$?
+  if [ "$got" -eq "$want" ]; then pass=$((pass + 1)); else fail=$((fail + 1)); echo "FAIL $name: want $want got $got"; fi
+}
+cfg '{"workflow":"local"}'
+expect_cc "commandcode local never pushes" 2 '{"tool_name":"shell_command","tool_input":{"command":"git push origin feat/a"}}'
+cfg '{"workflow":"ask"}'
+expect_cc "commandcode ask refuses a push" 2 '{"tool_name":"shell_command","tool_input":{"command":"git push origin feat/a"}}'
+cfg '{"workflow":"auto"}'
+expect_cc "commandcode auto pushes" 0 '{"tool_name":"shell_command","tool_input":{"command":"git push origin feat/a"}}'
+cfg '{}'
+expect_cc "commandcode write em dash" 2 '{"tool_name":"write_file","tool_input":{"file_path":"a.md","content":"a — b"}}'
+expect_cc "commandcode edit new_value em dash" 2 '{"tool_name":"edit_file","tool_input":{"file_path":"a.md","old_value":"a","new_value":"a — b"}}'
+expect_cc "commandcode clean write" 0 '{"tool_name":"write_file","tool_input":{"file_path":"a.md","content":"a, b"}}'
+cfg '{"protected":"db/migrations/**"}'
+expect_cc "commandcode protected path" 2 '{"tool_name":"write_file","tool_input":{"file_path":"db/migrations/001.sql","content":"x"}}'
+cfg '{}'
+out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard" --client commandcode)"
+case "$out" in *'"hookEventName": "SessionStart"'*'"additionalContext"'*"workflow="*"phase="*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL commandcode session JSON: $out" ;; esac
+x="$tmp/ccproj"
+mkdir -p "$x" && git -C "$x" init -q
+out="$(printf '{"hook_event_name":"SessionStart"}' | env -u CLAUDE_PROJECT_DIR COMMANDCODE_PROJECT_DIR="$x" sh "$guard" --client commandcode)"
+case "$out" in *"first run"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL commandcode project dir: $out" ;; esac
+out="$(sh "$guard" set agents commandcode)"
+case "$out" in "agents=commandcode") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL set agents commandcode: $out" ;; esac
+cfg '{}'
+
 # a PR review, a review reply, or any gh api write follows the workflow mode, a read of PR comments does not
 cfg '{"workflow":"local"}'
 expect "local refuses a PR review" 2 "$(bash_json 'gh pr review 5 --comment --body "looks fine"')"

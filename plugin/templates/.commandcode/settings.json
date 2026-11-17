@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${COMMANDCODE_PROJECT_DIR}/.dotagent/run.sh\" --client commandcode"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "shell|write|edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${COMMANDCODE_PROJECT_DIR}/.dotagent/run.sh\" --client commandcode"
+          }
+        ]
+      }
+    ]
+  }
+}
