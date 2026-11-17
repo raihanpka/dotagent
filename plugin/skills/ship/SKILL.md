@@ -1,5 +1,5 @@
 ---
-description: "Run a task as one loop: a checkable finish predicate, one verified unit at a time, a proof against the real artifact, a fresh review, and a stop reason when it cannot move. continue resumes."
+description: "Run a task as one loop: a checkable finish, one verified unit at a time, a real-artifact proof, a fresh review, and a stop reason. continue resumes."
 argument-hint: "<task> | continue"
 ---
 # dotagent ship
@@ -16,6 +16,8 @@ state. The task can carry pasted requirements.
   - `${CLAUDE_SKILL_DIR}/references/verify.md` before a behavior change: the proof ladder, the feature map, formal verification.
   - `${CLAUDE_SKILL_DIR}/references/plan.md` before you plan: the read-only plan and the TODO layout.
   - `${CLAUDE_SKILL_DIR}/references/merge.md` before you push, open a PR, or merge.
+  - `${CLAUDE_SKILL_DIR}/references/fanout.md` before a wide verification, a competing design, or an adversarial pass.
+  - `${CLAUDE_SKILL_DIR}/references/production.md` before a PR with a `release:` or `watch:` line.
 
 Read the `[dotagent] ...` line from session start. It carries `workflow=`, `phase=`, `stop=`, `stalled=`, `next=`, and when the repo differs
 from the default also `merge=`, `types=`, `scope=`, `base=`, and `protected=`. Follow them, they come from `/dotagent:setup`.
@@ -23,8 +25,8 @@ from the default also `merge=`, `types=`, `scope=`, `base=`, and `protected=`. F
 
 A `[dotagent] first run` line means no config yet:
 
-1. Tell the user in two lines what the workflow does (`auto`: each PR merges by itself when the review is clean and CI is green, and the
-   run goes on until the finish predicate passes or a stop) and that `/dotagent:workflow` changes it.
+1. Tell the user in two lines what `auto` does (each PR merges when the review is clean and CI is green, until the finish predicate passes
+   or a stop) and that `/dotagent:workflow` changes it.
 2. Ask once (see Questions): set up first with `/dotagent:setup` (recommended), or go on with only a TODO. Going on writes no
    `AGENTS.md`, CI, or PR template.
 3. Save the answer: `sh "$RUN" set setup minimal` for going on. Then do the task.
@@ -56,8 +58,8 @@ spawn. Invoke each `style=` skill once before you start.
 Run `sh "$RUN" state` first. It prints `run=`, `reason=`, `phase=`, `left=`, `head=`, `progress=`, `stalled=`, and `next=`. Read the top of
 `docs/TODO.md`, `git log -1`, and the TODO's `## stopped` block. Never resume from memory.
 
-Check the git hooks: `sh "$RUN" hooks` prints `on`, `off`, or `none`. On `off`, say what is skipped and ask once to run
-`git config core.hooksPath .githooks` (Recommended) or go on. `loop.md` has the details.
+Check the git hooks: `sh "$RUN" hooks` prints `on`, `off`, or `none`. On `off`, say what is skipped and ask once to enable them; `loop.md`
+has the command.
 
 Then look at `docs/TODO.md`, and at `docs/LESSONS.md` when it exists. A PR is unfinished when it has an unticked subtask or an empty `done:` line.
 
@@ -75,15 +77,14 @@ The unit is the atom. One unit is one commit, one scoped `Verify:`, one tick, on
 2. Change only its files, then run its `Verify:`. A behavior change also runs its `prove:` or the closest real-artifact check.
 3. Commit one atomic change, tick the subtask, append one `## log` row with the commit and the evidence pointer.
 4. Run `sh "$RUN" progress <unit>`. It prints `moved` or `same`.
-5. If `same`, change the approach or stop. Two `same` rows in a row means `stop no-progress`.
+5. If `same`, pivot: log the new hypothesis and try a different approach. Four `same` rows in a row means `stop no-progress`.
 
-The loop continues by itself until the `finish:` predicate passes, the PR merges, or a stop reason fires. It does not wait between units.
+The loop runs until the `finish:` predicate passes, the PR merges, or a stop fires. It does not wait between units.
 
 ## Stop
 
 Read `loop.md` for the table and the procedure. Every stop runs `sh "$RUN" stop <reason> "<one line>"`, writes the `## stopped` block and a
-`## log` row, and ends with a `next:` line. Never stop silently, never retry the same unit, and never turn a stop into a question the user
-did not ask for.
+`## log` row, and ends with a `next:` line. Never stop silently, retry the same unit, or turn a stop into a question.
 
 ## The team
 
@@ -97,8 +98,8 @@ reads wide. Git, `gh`, and CI are plain commands. Do not hand a subtask to anoth
 - Names say what changed, never a plan label like `milestone-1`, `task-2`, or `wip`, and never `(#N)`. A hook refuses the wrong ones.
 - Otherwise read `plan.md` first, write the plan, then build each subtask yourself, in order: write a failing test first when it adds
   behavior, make the simplest change that passes, format, then run the subtask's `Verify:`.
-- Commit with its one line message, stage only its files, then tick it in `docs/TODO.md`. The plan is yours to revise: update the TODO
-  first and say in one line what changed. A file outside `files:` gets its path added with a reason.
+- Commit one line, stage only its files, tick it in the TODO. Revise the plan first and say what changed. A file outside `files:` needs its
+  path and a reason.
 - A bug report is a task: reproduce it from the log or the failing test, then fix the root cause, not the symptom. `verify.md` says how.
 - After a correction from the user, add one line to `docs/LESSONS.md` (the pattern, then the rule). Never stage it, like `docs/TODO.md`.
 - Never write a new markdown file, a summary doc, or a planning note the task did not ask for. `docs/TODO.md` is the only scratch.

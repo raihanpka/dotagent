@@ -23,7 +23,7 @@ test('frontmatter has a quoted description of one short sentence and an argument
 
 test('the core stays small and every reference is linked from it and exists', () => {
   assert.ok(Buffer.byteLength(skill) < 10000, `SKILL.md is ${Buffer.byteLength(skill)} bytes, move text to a reference`)
-  assert.deepEqual(references.sort(), ['loop.md', 'merge.md', 'plan.md', 'verify.md'])
+  assert.deepEqual(references.sort(), ['fanout.md', 'loop.md', 'merge.md', 'plan.md', 'production.md', 'verify.md'])
   for (const file of references) {
     assert.ok(skill.includes('${CLAUDE_SKILL_DIR}/references/' + file), `${file} is not linked from SKILL.md`)
   }
@@ -79,7 +79,8 @@ test('the loop reference names every stop reason and the no-progress rule', () =
   for (const reason of ['done', 'no-progress', 'premise', 'needs-human', 'question', 'red-base', 'conflict', 'denied', 'budget', 'error']) {
     assert.ok(loop.includes('`' + reason + '`'), `no stop reason ${reason}`)
   }
-  assert.match(loop, /two (units|same)/i)
+  assert.match(loop, /pivot/i)
+  assert.match(loop, /no-progress/i)
   assert.match(loop, /progress/i)
 })
 
@@ -87,6 +88,20 @@ test('the verify reference covers the real artifact, the feature map, and formal
   const verify = read('references/verify.md')
   for (const token of ['real artifact', 'feature map', 'TLA+', 'Lean', 'able to fail', 'counterexample']) {
     assert.ok(verify.toLowerCase().includes(token.toLowerCase()), `no ${token}`)
+  }
+})
+
+test('the fan-out reference covers swarm, arena, interrogate, and panel', () => {
+  const fanout = read('references/fanout.md')
+  for (const token of ['Swarm', 'Arena', 'Interrogate', 'Panel', 'PASS', 'ISSUES', 'BLOCKED', 'read-only']) {
+    assert.ok(fanout.includes(token), `no ${token}`)
+  }
+})
+
+test('the production reference covers the watch, rollback, and the post-release checks', () => {
+  const production = read('references/production.md')
+  for (const token of ['release:', 'watch:', 'rollback:', 'canary', 'monitoring', 'tracing', 'chaos', 'regression']) {
+    assert.ok(production.includes(token), `no ${token}`)
   }
 })
 

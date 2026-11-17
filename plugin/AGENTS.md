@@ -50,4 +50,5 @@ repo's own `AGENTS.md`, which wins on any conflict.
 
 ## Writing
 
-- Comments and commit messages in English. Keep the one intent comment style the repo uses.
+- Comments and commit messages in English. A comment explains why, never what the next line does. A comment that restates the code is a
+  liability, not documentation.

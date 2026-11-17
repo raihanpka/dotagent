@@ -22,8 +22,8 @@ while [ "$i" -lt "$max" ]; do
       exit 0
       ;;
     *"stalled=yes"*)
-      CLAUDE_PROJECT_DIR="$root" sh "$here/run.sh" stop no-progress "loop.sh saw two units move nothing"
-      echo "dotagent: no progress, stopped. $state"
+      CLAUDE_PROJECT_DIR="$root" sh "$here/run.sh" stop no-progress "loop.sh saw four same rows after a pivot"
+      echo "dotagent: no progress after a pivot, stopped. $state"
       exit 1
       ;;
   esac

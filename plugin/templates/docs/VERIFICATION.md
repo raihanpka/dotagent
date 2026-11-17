@@ -36,6 +36,16 @@ Add a row only when a property is worth checking on every change. Keep one prope
 - A pass covers the model or the bound, not the whole system. Say what is left out.
 - When the covered code changes, rerun the check and move `Sync` only after you confirm the model still describes the code.
 
+## Production
+
+Fill this only when the repo has a deploy, a flag, or a live metric. A PR with a `watch:` line is done only after the watch passes.
+
+| Check | How to run or watch | Threshold | Window | Rollback |
+|---|---|---|---|---|
+| {{canary or staging smoke}} | {{command, dashboard, or query}} | {{error rate or latency}} | {{minutes}} | {{flag, deploy, or revert}} |
+| {{monitoring or exception tracking}} | {{dashboard or alert}} | {{the signal that pages someone}} | {{minutes}} | {{rollback}} |
+| {{tracing or profiling}} | {{trace or profile command}} | {{p95 or allocation}} | {{the run}} | {{rollback}} |
+
 ## Not covered
 
 - {{a property or feature with no check, and why}}

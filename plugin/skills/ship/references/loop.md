@@ -22,7 +22,8 @@ One turn of the circle:
 3. **Verify.** Run the subtask `Verify:`. A behavior change also runs the PR `prove:` or the closest real-artifact check from `verify.md`.
 4. **Record.** Commit one atomic change, tick the subtask, append one `## log` row with the commit and the evidence pointer.
 5. **Progress.** `sh "$RUN" progress <unit>`. It prints `moved` or `same`.
-6. **Decide.** `moved` goes to the next unit. `same` gets one different approach. `same` twice in a row is `stop no-progress`.
+6. **Decide.** `moved` goes to the next unit. `same` twice in a row is a pivot: write the new hypothesis in `## log` and try a
+   different approach. Four `same` rows in a row is `stop no-progress`.
 
 The loop is the default. Nothing waits between units. The only pauses are a stop and the user.
 
@@ -34,14 +35,15 @@ A unit made progress when either of these changed since the previous `progress` 
 - the unfinished count dropped (a PR's last subtask ticked, or its `done:` line written).
 
 `progress` records the HEAD, the unfinished count, and whether either moved. `state` counts the consecutive `same` rows at the tail and
-prints `stalled=yes` at two. A stall is not a signal to try harder on the same idea. It is a signal to change the idea or stop.
+prints `same=N`. At two, pivot: change the idea, not the effort, and log the new hypothesis. At four, `stalled=yes`: stop `no-progress`.
+A plateau pivots before it stops.
 
 ## The stop table
 
 | Reason | Fires when | What the report says |
 |---|---|---|
 | `done` | The `finish:` predicate passes | What shipped, the evidence, the PR urls |
-| `no-progress` | Two units moved neither HEAD nor the unfinished count | The last unit, what was tried, the smallest next experiment |
+| `no-progress` | Four units in a row moved neither HEAD nor the unfinished count, after one pivot | The last unit, what was tried, the smallest next experiment |
 | `premise` | Two fixes that share one premise failed the same check | The premise in one sentence, the observation that would settle it |
 | `needs-human` | An irreversible action, a secret, or a user-only product call blocks the next unit | One question, recommended option first |
 | `question` | The requirement contradicts itself or the repo | The contradiction, the two options, the safer default |
@@ -50,6 +52,7 @@ prints `stalled=yes` at two. A stall is not a signal to try harder on the same i
 | `denied` | The workflow mode or a permission prompt refused a push, PR, or merge | The command, the mode, how to unblock |
 | `budget` | The unit, turn, or time budget is spent | Done, left, and the next unit |
 | `error` | A tool or CLI failed twice | The exact command and the log line |
+| `regression` | A post-merge `watch:` fails | The signal, the window, the rollback, and the next fix |
 
 Two or more failed fixes that share a premise are a `premise` stop, not another fix. Write the premise down and test it directly. Do not
 start the next fix before the premise is written and tested.
@@ -73,6 +76,8 @@ next: check whether the query is built in the store or the handler, then fix tha
 
 A later `continue` runs `sh "$RUN" start continue`, which clears the stop. The `## stopped` block stays until the next task replaces the TODO,
 so the next context can read why the last one stopped.
+
+For an audit trail, `sh "$RUN" log > decisions.tsv` prints the `## log` table as TSV. Commit that file only when the task asks for it.
 
 ## The auto loop
 

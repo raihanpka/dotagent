@@ -51,6 +51,9 @@ needs: none, or the PR that must merge first
 covers: R1, R2                         (only when the requirements are numbered)
 files: path/**, other/file.go          (every path the PR may edit, tests included, a hook refuses the rest)
 prove: the real-artifact check, not the gate
+release: optional, the deploy command or pipeline
+watch: optional, the health, canary, or metric check, its threshold, and the window
+rollback: optional, the command or flag that undoes the release
 - [ ] 1.1 `type(scope): summary`. What changes, in which files. Verify: format, then the scoped lint and test.
 - [ ] 1.2 `type(scope): summary`. What changes. Verify: the command and the proof.
 done:                                  (the PR url, filled when it is merged)
@@ -66,7 +69,9 @@ next: one concrete action
 - One subtask is one commit: one logical change that builds and passes on its own, 1 to 3 files in one module. New behavior and its
   tests share a subtask. A refactor is its own subtask, never mixed with a feature.
 - `finish:` is the run predicate. Do not mark `done` because the TODO is empty. Run the predicate.
-- `prove:` is required for a behavior change. `verify.md` has the ladder and the feature map.
+- `prove:` is required for a behavior change. `verify.md` has the ladder, the field matrix, and the feature map.
+- `release:`, `watch:`, and `rollback:` are for a repo that can deploy or observe production. When `watch:` is present, the PR is done only
+  after it passes. `production.md` owns the checks. Do not invent a deploy system.
 - With several requirements, every `R` is covered by exactly one PR. An `R` no PR covers goes to the user as a question.
 - Vertical first: one thin path through the stack that works end to end. For work across layers the first PR is the contract (types,
   interfaces). The riskiest piece goes early. Unfinished user facing work sits behind a flag, off by default.

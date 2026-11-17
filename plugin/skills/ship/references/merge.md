@@ -54,6 +54,8 @@ Cloud (auto), in this order:
    `gh pr merge <n> --squash --delete-branch --subject "<PR title> (#<n>)" --body "<lines>"`. The body is only those lines,
    `- <short hash> <commit subject>`, oldest first. No prose, no trailer, no tool name.
 5. Switch to the default branch, pull, and check `git log -1 --format=%B` has no `Co-authored-by`. If it does, report it, never rewrite the default branch.
+6. When the PR has a `watch:`, run it for the stated window and record the value in `## log`. On a failure, stop `regression`, run
+   `rollback:` when it exists and the user allowed it, and open a fix PR with the failing signal. `production.md` has the checks.
 
 Local (the `local` mode): `git rebase <default>`, the full gate once, then on the default branch `git merge --squash <branch>` and one commit,
 `git commit -m "<title>"` followed by the hash lines from `git log --reverse --format='- %h %s' <default>..<branch>`. Keep the

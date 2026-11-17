@@ -17,6 +17,41 @@ Use the strongest rung the change earns. A lower rung never proves a higher one.
 The trust order, from the reference talk: a good codebase, then static analysis, then verification, then prose, then human review.
 Prose is cheap to write and easy to drift. Put the rule in a check where you can.
 
+| Check | Proves | Does not prove |
+|---|---|---|
+| The gate | it compiles, the lint holds, the unit cases pass | the behavior a user gets, or that the work ran |
+| The `prove:` | the change does the thing on the real artifact | it holds on every machine, or under production traffic |
+| CI | the same checks run on a clean machine | the behavior beyond the cases the checks reach |
+
+A gate-only result is not a behavior verdict. A proof-only result is not a clean-machine guarantee. Use both, and add a formal or
+production check when the change earns it.
+
+## What proves it, by field
+
+| Field or change | Real proof | Formal or production check when |
+|---|---|---|
+| Backend API or service | a real request, the response, and the stored value read back | concurrent or retried writes, auth, money |
+| Frontend or web UI | walk the changed flow in the running app, screenshot or video, keyboard and screen-reader path | a state machine in the UI, a race in the client |
+| CLI or TUI | the real command, its stdout, stderr, and exit code | a parser or a state machine in the command |
+| Library or SDK | a small example that imports the public API and uses the result | an invariant over every input |
+| Mobile app | the app on a device or simulator, the changed screen, the log | offline, sync, or a lifecycle race |
+| Desktop app | launch, drive the changed flow, read the log and the stored state | IPC or a file-lock race |
+| Embedded or firmware | the device or a faithful simulator, timing, memory, the bus trace | a timing or concurrency invariant |
+| Data pipeline or ML | replay a saved input, compare the output and the metric, check the drift | a property over all records or a model invariant |
+| Database or migration | forward and backward migration, a fixture replay, the row read back | a lock, a backfill, or an idempotent retry |
+| Infrastructure or IaC | plan or dry run, apply in staging, the drift check | a failover or a partial-apply state |
+| Concurrency or distributed | a stress or fault-injection run, the trace | TLA+ for interleavings, a model checker |
+| Security or auth | a threat-model check, an authz matrix, a secret scan, a penetration test | a protocol or a permission invariant |
+| Performance | before and after on the same workload, the limiter, the run count | a bound or a complexity proof |
+| Refactor | characterization tests, the observable behavior unchanged | a property that must survive the reshape |
+| Docs | link check, render, run every example | nothing formal; verify the examples |
+| Config or CI | the pipeline dry run, the same commands locally | a rollout or a secret-handling path |
+| Dependency upgrade | lockfile diff, full gate, smoke test, the changelog | a security advisory or a breaking API |
+| Data change | before and after counts, a sample read, an idempotent rerun | a uniqueness or ordering invariant |
+
+When a field has no runtime surface, use the closest executable check. When there is none, say `inconclusive` and say what is missing.
+Never invent a proof for a domain the repo cannot run.
+
 ## The feature map
 
 A runtime proof needs to know what the app does and how a user reaches it. When the repo has no map, add one to the PR `prove:` or as a

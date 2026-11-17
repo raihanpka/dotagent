@@ -39,16 +39,33 @@ test('each Codex agent file has a name, a description, and developer instruction
   }
 })
 
-test('the body names no tool that only Claude Code has', () => {
+test('the body names no tool or path that only Claude Code has', () => {
   const body = skill.replaceAll('.dotagent/run.sh', '')
-  for (const tool of ['AskUserQuestion', 'ToolSearch', 'Workflow', 'Agent', 'run.sh', 'phase plan']) {
+  for (const tool of ['AskUserQuestion', 'ToolSearch', 'Workflow', 'Agent', 'run.sh', 'phase plan', 'CLAUDE_SKILL_DIR', 'CLAUDE_PLUGIN_ROOT']) {
     assert.ok(!body.includes(tool), `found ${tool}`)
+  }
+})
+
+test('the portable skill carries the fan-out and production rules', () => {
+  const lower = skill.toLowerCase()
+  for (const token of ['swarm', 'arena', 'interrogate', 'panel', 'release:', 'watch:', 'rollback:', 'regression']) {
+    assert.ok(lower.includes(token), `portable skill misses ${token}`)
   }
 })
 
 test('the portable skill starts a run and names the state commands', () => {
   for (const command of ['start', 'progress', 'stop', 'state']) {
     assert.ok(skill.includes(`.dotagent/run.sh ${command}`), `the portable skill does not name ${command}`)
+  }
+})
+
+test('the PR template follows the common engineering headings, with a test plan and a rollback', () => {
+  for (const path of ['../plugin/templates/.github/PULL_REQUEST_TEMPLATE.md', '../plugin/templates/.github/PR_EXAMPLE.md']) {
+    const text = readFileSync(new URL(path, import.meta.url), 'utf8')
+    for (const heading of ['## Summary', '## Motivation', '## What changed', '## Test plan', '## Risk and rollback', '## Checklist']) {
+      assert.ok(text.includes(heading), `${path} has no ${heading}`)
+    }
+    assert.ok(text.includes('Rollback:'), `${path} has no rollback line`)
   }
 })
 

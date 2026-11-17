@@ -62,8 +62,12 @@ Goal and finish -> Plan -> One unit -> Verify -> Prove -> Review -> Ship -> Prog
    stored value, take the screenshot, compare before and after.
 5. **Review.** A fresh `reviewer` checks the diff and the evidence. A behavior change proved only by the gate is a gap.
 6. **Ship.** PR, CI, rebase, squash merge. The gate runs once per commit and is recorded.
-7. **Progress.** `run.sh progress` records HEAD and the unfinished count. `moved` goes on. `same` gets one different try. Two `same` rows
-   are a stall, and a stall is a stop.
+7. **Progress.** `run.sh progress` records HEAD and the unfinished count. `moved` goes on. Two `same` rows are a pivot: change the idea.
+   Four `same` rows are a `no-progress` stop.
+
+For a wide verification, a competing design, or an adversarial pass, `fanout.md` covers swarm, arena, interrogate, and panel. For a release,
+`production.md` covers the canary, the watch window, the rollback, and the post-release checks. The state and logs are in
+[`docs/STATE.md`](docs/STATE.md).
 
 <details>
 <summary>the stop reasons</summary>
@@ -73,7 +77,7 @@ Every stop names one reason, writes it to `.dotagent/runs.jsonl`, writes a `## s
 | Reason | Fires when |
 |---|---|
 | `done` | The `finish:` predicate passes |
-| `no-progress` | Two units moved neither HEAD nor the unfinished count |
+| `no-progress` | Four units in a row moved neither HEAD nor the unfinished count, after one pivot |
 | `premise` | Two fixes that share one premise failed the same check |
 | `needs-human` | An irreversible action, a secret, or a user-only call blocks the next unit |
 | `question` | The requirement contradicts itself or the repo |
@@ -82,6 +86,7 @@ Every stop names one reason, writes it to `.dotagent/runs.jsonl`, writes a `## s
 | `denied` | The workflow mode or a permission prompt refused a push, PR, or merge |
 | `budget` | The unit, turn, or time budget is spent |
 | `error` | A tool or CLI failed twice |
+| `regression` | A post-merge `watch:` fails |
 
 For a long plan, `sh plugin/hooks/loop.sh` runs one fresh process per PR, stops on a recorded stop or a stall, and compares HEAD and the
 unfinished count after each PR. `CLAUDE_FLAGS="--max-turns 40"` caps each process.
@@ -155,6 +160,8 @@ dotagent/
 ├── examples/  scripts/  docs/  tests/
 └── CHANGELOG.md
 ```
+
+`docs/STATE.md` documents every `.dotagent` event. `sh plugin/hooks/run.sh log` prints the human log as TSV.
 
 `docs/PRACTICES.md` says where each rule comes from. After a change:
 

@@ -29,7 +29,8 @@ is not GitHub, there is no remote, `gh` is missing, or work does not go through 
 - **Commands:** the build, the lint, and one test command. Recommend what the repo already uses.
 - **Workflow:** `auto` or `local`. Recommend `auto` for a fully automated run that ends at the merge, otherwise `local`.
 - **Verification:** is there a script that drives the app and proves a feature? If not, offer `docs/VERIFICATION.md` with a feature map.
-  Ask once more, only for concurrency, retries, a state machine, a parser, or money: does a property need a formal check?
+  Ask once more, only for concurrency, retries, a state machine, a parser, or money: does a property need a formal check? When the repo
+  deploys, ask for the release, watch, and rollback commands and fill the Production section.
 - **Protected paths:** migrations, lockfiles, secrets, deploy config, CODEOWNERS. Recommend what the repo has.
 - **Git hooks:** turn them on with `git config core.hooksPath .githooks`. Recommend yes.
 

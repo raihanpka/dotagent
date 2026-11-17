@@ -5,7 +5,7 @@ description: "Ship a task that already has clear requirements as one verified lo
 
 # Ship a task
 
-Plain steps for any agent. Claude Code users get the richer `/dotagent:ship` instead.
+Plain steps for any agent. No Claude-only tool or path token. Claude Code users get the richer `/dotagent:ship` instead.
 Rules that bind every step: commit messages say what changed, never a plan label, no trailer, no `(#N)`. Never push, open a PR, or merge
 without the user's yes, unless the workflow is `auto` in `.dotagent/config.json`.
 
@@ -29,7 +29,8 @@ without the user's yes, unless the workflow is `auto` in `.dotagent/config.json`
 - Otherwise write the plan yourself, read only, as a checklist in `docs/TODO.md` (untracked, never commit it). Revise it when the work differs.
 - The header carries `goal:` (one line), `finish:` (a command or artifact that can pass or fail), and `budget:` when the user set one.
 - One section per PR. Each PR has `prove:` (the real-artifact check), `files:` (every path it may edit), and 3 to 8 subtasks. Each subtask
-  has a commit message and a `Verify:` command. The PR ends with `done:` for its url.
+  has a commit message and a `Verify:` command. The PR ends with `done:` for its url. When the repo can deploy or observe production, the
+  PR can also carry `release:`, `watch:`, and `rollback:`.
 - Keep an append-only `## log` table: when, unit, decision, evidence pointer, result. Add `## stopped` only when a run stops.
 - If a requirement cannot be checked, turn it into one that can. "Faster" becomes a number on the same workload.
 - Each subtask leaves the repo green. One subtask is one commit.
@@ -42,7 +43,7 @@ One unit is one commit, one `Verify:`, one tick, one log row, one progress row.
 2. Change only its files. Run its `Verify:`. A behavior change also runs its `prove:` or the closest real-artifact check.
 3. Commit one atomic change, tick the subtask, append the `## log` row with the commit and the evidence pointer.
 4. If `.dotagent/run.sh` exists, run `sh .dotagent/run.sh progress <unit>`. It prints `moved` or `same`.
-5. If `same`, change the approach or stop. Two `same` rows in a row is a stall: stop with `no-progress`.
+5. If `same`, pivot: log the new hypothesis and try a different approach. Four `same` rows in a row is a `no-progress` stop.
 
 The loop continues until `finish:` passes, the PR merges, or a stop reason fires. It does not wait between units.
 
@@ -66,6 +67,10 @@ path, not a test-only setter, and check the side effect as well as the screen. E
 A bug is reproduced first, from a failing test, a recorded command, or a log line that shows the wrong state. Fix the root cause, not the
 symptom, then rerun the repro. Never weaken or delete a test to make a fix pass.
 
+For a wide or risky change, fan out. Swarm one agent per independent slice, arena two or three isolated attempts, interrogate with fresh
+adversarial reviewers, or use a panel for a judgment call. Aggregate one report, keep only findings with a repro, and never let two writers
+share a tree. The lead still owns the merge and the final answer.
+
 ## 5. Stop
 
 A stop is a feature, not a failure. It runs `sh .dotagent/run.sh stop <reason> "<one line>"` when that file exists, writes the `## stopped`
@@ -74,7 +79,7 @@ block and a `## log` row, and ends with a `next:` line. Use one reason:
 | Reason | Fires when |
 |---|---|
 | `done` | The `finish:` predicate passes |
-| `no-progress` | Two units moved neither HEAD nor the unfinished count |
+| `no-progress` | Four units in a row moved neither HEAD nor the unfinished count, after one pivot |
 | `premise` | Two fixes that share one premise failed the same check |
 | `needs-human` | An irreversible action, a secret, or a user-only call blocks the next unit |
 | `question` | The requirement contradicts itself or the repo |
@@ -83,6 +88,7 @@ block and a `## log` row, and ends with a `next:` line. Use one reason:
 | `denied` | The workflow mode or a permission prompt refused a push, PR, or merge |
 | `budget` | The unit, turn, or time budget is spent |
 | `error` | A tool or CLI failed twice |
+| `regression` | A post-merge `watch:` fails |
 
 Never stop silently, never retry the same unit, and never relax `finish:` to make a stop look like done.
 
@@ -118,6 +124,8 @@ Never stop silently, never retry the same unit, and never relax `finish:` to mak
   4. `gh pr merge <n> --squash --delete-branch --subject "<PR title> (#<n>)" --body "<the lines>"`.
      The body is only the `- <hash> <subject>` lines from step 3, oldest first.
 - Never use `--admin`, `--merge`, or `--rebase` to merge.
+- When the PR has `release:`, `watch:`, or `rollback:`, run `watch:` for the window after the merge and record the value. On a failure, stop
+  `regression`, roll back when allowed, and open a fix PR. A release with no watch is `inconclusive`.
 
 ## 9. Review someone else's pull request
 
@@ -140,7 +148,7 @@ Never stop silently, never retry the same unit, and never relax `finish:` to mak
 - Per unit: search first, read matching ranges, at most about 6 files or 400 lines before delegating the wide read.
 - Keep the failing output short: the command, the failing line, the last 20 lines. Never paste a full CI log into the main context.
 - For a long plan, run one fresh process per PR. `sh .dotagent/run.sh state` and the TODO are the record, so a crash loses the context,
-  not the work.
+  not the work. The machine log is `.dotagent/runs.jsonl`; `sh .dotagent/run.sh log` prints the human log as TSV.
 
 ## 11. Stop and report
 

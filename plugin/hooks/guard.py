@@ -39,8 +39,8 @@ TODO = os.path.join("docs", "TODO.md")
 RUNS = os.path.join(".dotagent", "runs.jsonl")  # one JSON line per event: a subagent spawn, a gate pass, a plan phase
 PHASE_TTL = 3600  # a forgotten plan phase must never lock a repo for long
 # A run ends for one reason. `done` is the finish predicate; every other reason stops the loop and asks for a human or a new experiment.
-STOP_REASONS = ("done", "no-progress", "premise", "needs-human", "question", "red-base", "conflict", "denied", "budget", "error")
-STALL_LIMIT = 2  # two units in a row that move neither HEAD nor the unfinished count is a stall, not a loop
+STOP_REASONS = ("done", "no-progress", "premise", "needs-human", "question", "red-base", "conflict", "denied", "budget", "error", "regression")
+STALL_LIMIT = 4  # two same rows is a pivot, four is a stall. A plateau pivots before it stops.
 
 
 # Allowed values per setting, the first one is the default. A missing or invalid value falls back to it.
@@ -147,10 +147,11 @@ def run_summary():
                 "detail": last_stop.get("detail", ""),
                 "progress": 0,
                 "stalled": False,
+                "same": 0,
                 "head": "",
                 "left": len(unfinished()),
             }
-        return {"run": "none", "reason": "", "detail": "", "progress": 0, "stalled": False, "head": "", "left": len(unfinished())}
+        return {"run": "none", "reason": "", "detail": "", "progress": 0, "stalled": False, "same": 0, "head": "", "left": len(unfinished())}
     progress = [event for event in tail if "progress" in event]
     stopped, detail = "", ""
     for event in tail:
@@ -169,6 +170,7 @@ def run_summary():
         "detail": detail,
         "progress": len(progress),
         "stalled": streak >= STALL_LIMIT,
+        "same": streak,
         "head": progress[-1].get("head", "") if progress else "",
         "left": len(unfinished()),
     }
@@ -210,9 +212,36 @@ def state_line():
     head = found["head"][:7] if found["head"] else "-"
     return (
         f"run={found['run']} reason={found['reason'] or '-'} phase={phase() or 'none'} "
-        f"left={found['left']} head={head} progress={found['progress']} "
+        f"left={found['left']} head={head} progress={found['progress']} same={found['same']} "
         f"stalled={'yes' if found['stalled'] else 'no'} next=\"{titles[0] if titles else 'none'}\""
     )
+
+
+def decision_tsv():
+    # The human `## log` table as TSV, for a committed audit trail or a PR body.
+    header = ["when", "unit", "decision", "evidence", "result"]
+    try:
+        with open(os.path.join(project_dir(), TODO), encoding="utf-8") as handle:
+            lines = handle.read().splitlines()
+    except OSError:
+        lines = []
+    rows = []
+    in_log = False
+    for line in lines:
+        if line.startswith("## "):
+            in_log = line.strip() == "## log"
+            continue
+        if not in_log or not line.strip().startswith("|"):
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if cells and cells[0].lower() == "when":
+            continue
+        if all(set(cell) <= set("-: ") for cell in cells):
+            continue
+        rows.append(cells[:5] + [""] * max(0, 5 - len(cells)))
+    print("\t".join(header))
+    for cells in rows:
+        print("\t".join(cell.replace("\t", " ").replace("\n", " ") for cell in cells))
 
 
 def load(base=None):
@@ -475,6 +504,9 @@ def cli(args):
     if args[:1] == ["state"]:
         print(state_line())
         return
+    if args[:1] == ["log"]:
+        decision_tsv()
+        return
     if args[:1] == ["start"] and len(args) > 1:
         run_start(" ".join(args[1:]))
         return
@@ -507,7 +539,7 @@ def cli(args):
         return
     if len(args) != 3 or args[0] != "set":
         sys.exit(
-            "usage: guard.py show | state | start <goal> | progress [unit] | stop <reason> [detail] | hooks | receipt | "
+            "usage: guard.py show | state | log | start <goal> | progress [unit] | stop <reason> [detail] | hooks | receipt | "
             "status | gate run <command>|check | set <key> <value> | phase plan|build|done"
         )
     key, value = args[1], args[2]
@@ -785,7 +817,7 @@ def main():
         found = run_summary()
         lines.append(
             f"[dotagent] phase={phase() or 'none'} left={len(left)} stop={found['reason'] or 'none'} "
-            f"stalled={'yes' if found['stalled'] else 'no'} progress={found['progress']} "
+            f"stalled={'yes' if found['stalled'] else 'no'} progress={found['progress']} same={found['same']} "
             f"next=\"{left[0] if left else 'none'}\""
         )
         if found["run"] == "stopped":

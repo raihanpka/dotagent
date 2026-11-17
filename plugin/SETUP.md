@@ -33,7 +33,8 @@ numbered, and wait. Headless: take the recommended option and say so. Never gues
 - **Verification.** Ask once: is there a script that drives the app or service and proves a feature works? If yes, record the command.
   If no, offer `docs/VERIFICATION.md` with a feature map and a proof command. Ask once more, only when the repo has concurrency, retries,
   a state machine, a parser, or money: does a property need a formal check? If yes, fill one row and tell the user the tool choice in
-  one line. Otherwise leave the section empty.
+  one line. Otherwise leave the section empty. When the repo deploys, ask for the release, watch, and rollback commands and fill the
+  Production section.
 - **Protected paths.** Recommend migrations, lockfiles, secrets, deploy config, and CODEOWNERS. Save them.
 
 Do not ask about the scope style, the merge method, or the base branch when step 0 found them. Recommend the repo's own habit. Save only

@@ -518,7 +518,11 @@ out="$(run progress 1.1)"
 case "$out" in "progress=same") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a repeat progress: $out" ;; esac
 out="$(run progress 1.1)"
 out="$(run state)"
-case "$out" in *"progress=3"*"stalled=yes"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL stall signal: $out" ;; esac
+case "$out" in *"progress=3"*"same=2"*"stalled=no"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL pivot signal: $out" ;; esac
+out="$(run progress 1.1)"
+out="$(run progress 1.1)"
+out="$(run state)"
+case "$out" in *"progress=5"*"same=4"*"stalled=yes"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL stall signal: $out" ;; esac
 run stop nope >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL stop accepts an unknown reason"; } || pass=$((pass + 1))
 out="$(run stop no-progress "two units moved nothing")"
 case "$out" in "stop=no-progress") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL stop: $out" ;; esac
@@ -544,6 +548,13 @@ case "$out" in "progress=moved") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); ec
 out="$(run state)"
 case "$out" in *"left=0"*"next=\"none\""*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL state after the last PR: $out" ;; esac
 run progress 1.1 >/dev/null 2>&1 || true
+printf '# TODO: x\n\n## log\n\n| when | unit | decision | evidence | result |\n|---|---|---|---|---|\n| 2026-01-01T10:00Z | 1.1 | add the filter | commit 1a2b3c4 | done |\n' > "$r/docs/TODO.md"
+out="$(run log)"
+header="$(printf 'when\tunit\tdecision\tevidence\tresult')"
+row="$(printf '2026-01-01T10:00Z\t1.1\tadd the filter\tcommit 1a2b3c4\tdone')"
+case "$out" in *"$header"*"$row"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL log TSV: $out" ;; esac
+out="$(run stop regression "the watch failed")"
+case "$out" in "stop=regression") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL regression stop: $out" ;; esac
 
 # a stop recorded before a start is still visible: a fresh process can die before it begins
 s="$tmp/stopnostart"
