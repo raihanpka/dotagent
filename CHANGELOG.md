@@ -22,7 +22,12 @@ The benchmark and `docs/BENCHMARK.md` were removed in this release. Older entrie
 - Two `same` rows are a pivot: change the idea and log it. Four are `stalled=yes` and a `no-progress` stop. A plateau pivots before it stops.
 - Every stop is one of a closed set: `done`, `no-progress`, `premise`, `needs-human`, `question`, `red-base`, `conflict`, `denied`, `budget`,
   `error`, `regression`. A stop writes `## stopped` and one `next:` line. A stop recorded before a start stays visible.
-- `run.sh log` prints the `## log` table as TSV for a committed audit trail. `docs/STATE.md` documents every event and the state machine.
+- `runs.jsonl` is versioned v1. Every event carries `v`, `n`, `run`, and `session` when available. A `decision` event records a pivot or a
+  revert, `gate` records its command and duration, `progress` records `kind`/`same`/`phase`, and `stop` records the state at the stop.
+- `run.sh decision <phase> <decision> <why> <evidence> <result>` records a decision; `run.sh log` prints the decision events as TSV, with
+  the `## log` table as the fallback. `docs/STATE.md` documents every event and the state machine.
+- A shell write to a `protected` path is refused too: redirects, `sed -i`, `cp`/`mv`/`rm`, and `git restore`/`checkout`/`apply`/`rm` that
+  name the path. The hook still sees only the tool call; CI and branch protection are the backstop.
 
 ### Two modes
 

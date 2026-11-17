@@ -35,6 +35,12 @@ WRITE = re.compile(
     r"(?<![0-9])>(?!&)|\bsed\s+-[a-zA-Z]*i|\btee\b|\b(cp|mv|rm|touch|truncate|mkdir)\s"
     r"|\bgit\s+((apply|restore|reset|stash|add|rm|clean|am|cherry-pick|merge|rebase)\b|checkout\s+--)"
 )
+# A shell command that writes a named path: the redirect target or an argument of one of these writers.
+WRITER = re.compile(
+    r"\b(sed\s+-[a-zA-Z]*i|tee|cp|mv|rm|touch|truncate|mkdir|install|dd)\b"
+    r"|\bgit\s+(apply|restore|reset|stash|add|rm|clean|am|cherry-pick|merge|rebase)\b"
+    r"|\bgit\s+checkout\s+--"
+)
 TODO = os.path.join("docs", "TODO.md")
 RUNS = os.path.join(".dotagent", "runs.jsonl")  # one JSON line per event: a subagent spawn, a gate pass, a plan phase
 PHASE_TTL = 3600  # a forgotten plan phase must never lock a repo for long
@@ -63,6 +69,7 @@ ANSWERS = {
 CONFIG = os.path.join(".dotagent", "config.json")
 _settings = None
 CLIENT = "claude"  # "codex" or "commandcode" when that hook entry runs it with --client, see hooks/hooks.json and the setup guide
+SESSION = ""  # the agent session id, when the hook event or the environment carries one
 
 
 def project_dir():
@@ -105,12 +112,20 @@ def last(key):
 
 
 def record(**fields):
-    # Appends one event with its time. runs.jsonl is the only state file besides config.json.
+    # Appends one versioned event. A new run gets a fresh id; every later event inherits it.
     path = os.path.join(project_dir(), RUNS)
+    events = entries()
+    run = fields.pop("run", None) or next((event.get("run", "") for event in reversed(events) if "start" in event), "")
+    event = {"v": 1, "t": int(time.time()), "n": len(events) + 1}
+    if run:
+        event["run"] = run
+    if SESSION:
+        event["session"] = SESSION
+    event.update(fields)
     try:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "a", encoding="utf-8", newline="\n") as handle:
-            handle.write(json.dumps({"t": int(time.time()), **fields}) + "\n")
+            handle.write(json.dumps(event) + "\n")
     except OSError:
         return
     ensure_ignored()
@@ -179,7 +194,7 @@ def run_summary():
 def run_start(goal):
     # Clear a stop and start a new run. A fresh context resumes from here, not from memory.
     goal = goal.strip() or "run"
-    record(start=goal, head=clean_head())
+    record(run=os.urandom(4).hex(), start=goal, head=clean_head())
     print("start=" + goal)
 
 
@@ -193,7 +208,16 @@ def run_progress(unit):
     head = clean_head()
     left = len(unfinished())
     changed = not prev or prev.get("head") != head or prev.get("left") != left
-    record(progress=unit.strip(), head=head, left=left, changed=changed)
+    same = 0 if changed else prev.get("same", 0) + 1
+    record(
+        progress=unit.strip(),
+        head=head,
+        left=left,
+        changed=changed,
+        kind="moved" if changed else "same",
+        same=same,
+        phase=phase() or "",
+    )
     print("progress=" + ("moved" if changed else "same"))
 
 
@@ -201,8 +225,18 @@ def run_stop(reason, detail):
     # A stop is a feature: it names why the loop ended so a fresh context does not retry the same unit.
     if reason not in STOP_REASONS:
         sys.exit("stop reason must be one of: " + ", ".join(STOP_REASONS))
-    record(stop=reason, detail=detail.strip())
+    found = run_summary()
+    record(stop=reason, detail=detail.strip(), head=clean_head(), left=len(unfinished()), same=found["same"])
     print("stop=" + reason)
+
+
+def run_decision(args):
+    # Record a decision, a pivot, or a revert in the machine log. The human `## log` row stays in the TODO.
+    if len(args) < 5:
+        sys.exit("decision needs: <phase> <decision> <why> <evidence> <result>")
+    phase_name, decision, why, evidence, result = args[:5]
+    record(phase=phase_name, decision=decision, why=why, evidence=evidence, result=result, detail=" ".join(args[5:]))
+    print("decision=" + decision)
 
 
 def state_line():
@@ -218,8 +252,16 @@ def state_line():
 
 
 def decision_tsv():
-    # The human `## log` table as TSV, for a committed audit trail or a PR body.
+    # The decision log as TSV. Prefer the decision events; fall back to the human `## log` table.
     header = ["when", "unit", "decision", "evidence", "result"]
+    decisions = [event for event in entries() if "decision" in event]
+    if decisions:
+        print("\t".join(header))
+        for event in decisions:
+            when = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(event.get("t", 0)))
+            cells = [when, event.get("phase", ""), event.get("decision", ""), event.get("evidence", ""), event.get("result", "")]
+            print("\t".join(cell.replace("\t", " ").replace("\n", " ") for cell in cells))
+        return
     try:
         with open(os.path.join(project_dir(), TODO), encoding="utf-8") as handle:
             lines = handle.read().splitlines()
@@ -406,6 +448,37 @@ def matches(rel, patterns):
     return any(glob_re(p.strip()).match(rel) for p in patterns if p.strip())
 
 
+def protected_name(text):
+    # The protected pattern whose literal prefix appears in the text, or "".
+    for pattern in opt("PROTECTED").split(","):
+        pattern = pattern.strip()
+        if not pattern:
+            continue
+        prefix = re.split(r"[*?\[]", pattern)[0].rstrip("/")
+        if prefix and prefix in text:
+            return pattern
+    return ""
+
+
+def protected_write(command):
+    # A shell write that names a protected path: a redirect target or an argument of a writer command.
+    for match in re.finditer(r">>?\s*([^\s;|&]+)", command):
+        hit = protected_name(match.group(1).strip("'\""))
+        if hit:
+            return hit
+    if not WRITER.search(command):
+        return ""
+    try:
+        tokens = shlex.split(command, posix=True)
+    except ValueError:
+        tokens = command.split()
+    for token in tokens:
+        hit = protected_name(token)
+        if hit:
+            return hit
+    return ""
+
+
 def rel_path(path):
     # The path relative to the project, with forward slashes.
     try:
@@ -441,7 +514,7 @@ def first_run():
 
 def log_spawn(tool_input):
     # Records one subagent spawn so a run can show what really ran. Never blocks.
-    record(agent=tool_input.get("subagent_type") or "general")
+    record(agent=tool_input.get("subagent_type") or "general", model=tool_input.get("model") or "")
 
 
 def receipt():
@@ -507,6 +580,9 @@ def cli(args):
     if args[:1] == ["log"]:
         decision_tsv()
         return
+    if args[:1] == ["decision"]:
+        run_decision(args[1:])
+        return
     if args[:1] == ["start"] and len(args) > 1:
         run_start(" ".join(args[1:]))
         return
@@ -524,13 +600,14 @@ def cli(args):
         head = clean_head()
         if not head:
             sys.exit("gate run needs a git repo with no uncommitted change to tracked files, commit first")
+        started = time.time()
         try:
             code = subprocess.run(args[2:], cwd=project_dir()).returncode
         except OSError as err:
             sys.exit(f"gate run could not start {args[2]}: {err}")
         if code != 0 or clean_head() != head:
             sys.exit(code or 1)
-        record(gate=head)
+        record(gate=head, cmd=" ".join(args[2:]), exit=0, dur=round(time.time() - started, 2))
         print("gate passed at " + head[:7])
         return
     if len(args) == 2 and args[0] == "phase" and args[1] in ("plan", "build", "done"):
@@ -539,8 +616,9 @@ def cli(args):
         return
     if len(args) != 3 or args[0] != "set":
         sys.exit(
-            "usage: guard.py show | state | log | start <goal> | progress [unit] | stop <reason> [detail] | hooks | receipt | "
-            "status | gate run <command>|check | set <key> <value> | phase plan|build|done"
+            "usage: guard.py show | state | log | decision <phase> <decision> <why> <evidence> <result> | start <goal> | "
+            "progress [unit] | stop <reason> [detail] | hooks | receipt | status | gate run <command>|check | set <key> <value> | "
+            "phase plan|build|done"
         )
     key, value = args[1], args[2]
     if key == "workflow" and value == "ask":
@@ -724,6 +802,10 @@ def on_bash(command):
             block("planning is read-only. Only docs/TODO.md may change, and no shell command may write.")
     if re.search(r"\.dotagent[/\\]config\.json", command) and WRITE.search(command) and "run.sh" not in command:
         block("do not edit .dotagent/config.json from the shell. Ask the user to run /dotagent:workflow.")
+    if WRITE.search(command):
+        hit = protected_write(command)
+        if hit:
+            block(f"{hit} is a protected path (`protected` in .dotagent/config.json). Leave it and tell the user what needs to change.")
     for args in commits_in(tokens):
         no_skip(args, "commit")
         check_commit(args)
@@ -789,7 +871,7 @@ def on_write(tool_input):
 
 def main():
     # Dispatches on the hook event and tool name. `--client codex` comes first when the Codex hook entry runs the guard.
-    global CLIENT
+    global CLIENT, SESSION
     args = sys.argv[1:]
     if len(args) >= 2 and args[0] == "--client" and args[1] in ("codex", "commandcode"):
         CLIENT, args = args[1], args[2:]
@@ -801,6 +883,12 @@ def main():
         event = json.load(sys.stdin)
     except json.JSONDecodeError:
         return
+    SESSION = (
+        event.get("session_id")
+        or os.environ.get("CLAUDE_SESSION_ID")
+        or os.environ.get("COMMANDCODE_SESSION_ID")
+        or ""
+    )
     if event.get("hook_event_name") == "SessionStart":
         prune_runs()
         lines = [

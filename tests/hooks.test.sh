@@ -223,6 +223,15 @@ cfg '{"protected":"db/migrations/**,.github/CODEOWNERS"}'
 expect "protected path blocks" 2 '{"tool_name":"Edit","tool_input":{"file_path":"db/migrations/001_a.sql","new_string":"x"}}'
 expect "protected exact file blocks" 2 '{"tool_name":"Write","tool_input":{"file_path":".github/CODEOWNERS","content":"x"}}'
 expect "unprotected path ok" 0 '{"tool_name":"Write","tool_input":{"file_path":"src/a.go","content":"x"}}'
+expect "shell redirect to a protected path" 2 "$(bash_json 'echo x > db/migrations/001.sql')"
+expect "sed -i a protected path" 2 "$(bash_json 'sed -i s/a/b/ db/migrations/001.sql')"
+expect "rm a protected path" 2 "$(bash_json 'rm db/migrations/001.sql')"
+expect "git rm a protected path" 2 "$(bash_json 'git rm db/migrations/001.sql')"
+expect "git checkout a protected path" 2 "$(bash_json 'git checkout -- db/migrations/001.sql')"
+expect "cp to a protected path" 2 "$(bash_json 'cp /tmp/x db/migrations/002.sql')"
+expect "read a protected path" 0 "$(bash_json 'grep -rn foo db/migrations')"
+expect "read redirect to /dev/null" 0 "$(bash_json 'grep -rn foo db/migrations > /dev/null')"
+expect "write outside protected" 0 "$(bash_json 'echo x > src/a.js')"
 cfg '{}'
 printf '# TODO: x\n\n## PR 1: feat(a): add a\nfiles: internal/a/**, internal/app/app.go\n\n- [ ] 1.1 (S) `feat(a): add a`. x.\n\ndone:\n' > "$tmp/proj/docs/TODO.md"
 sh "$guard" phase build >/dev/null
@@ -510,12 +519,18 @@ out="$(run state)"
 case "$out" in *"run=none"*"left=1"*"stalled=no"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL state before a run: $out" ;; esac
 out="$(run start "ship the a change")"
 case "$out" in "start=ship the a change") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL start: $out" ;; esac
+line="$(tail -1 "$r/.dotagent/runs.jsonl")"
+case "$line" in *'"v": 1'*'"run":'*'"start": "ship the a change"'*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL versioned start event: $line" ;; esac
 out="$(run state)"
 case "$out" in *"run=active"*"reason=-"*"left=1"*"stalled=no"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL state after start: $out" ;; esac
 out="$(run progress 1.1)"
 case "$out" in "progress=moved") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL first progress: $out" ;; esac
+line="$(tail -1 "$r/.dotagent/runs.jsonl")"
+case "$line" in *'"kind": "moved"'*'"same": 0'*'"phase":'*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL versioned progress event: $line" ;; esac
 out="$(run progress 1.1)"
 case "$out" in "progress=same") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a repeat progress: $out" ;; esac
+line="$(tail -1 "$r/.dotagent/runs.jsonl")"
+case "$line" in *'"kind": "same"'*'"same": 1'*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL same progress event: $line" ;; esac
 out="$(run progress 1.1)"
 out="$(run state)"
 case "$out" in *"progress=3"*"same=2"*"stalled=no"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL pivot signal: $out" ;; esac
@@ -524,8 +539,10 @@ out="$(run progress 1.1)"
 out="$(run state)"
 case "$out" in *"progress=5"*"same=4"*"stalled=yes"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL stall signal: $out" ;; esac
 run stop nope >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL stop accepts an unknown reason"; } || pass=$((pass + 1))
-out="$(run stop no-progress "two units moved nothing")"
+out="$(run stop no-progress "four same rows after one pivot")"
 case "$out" in "stop=no-progress") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL stop: $out" ;; esac
+line="$(tail -1 "$r/.dotagent/runs.jsonl")"
+case "$line" in *'"stop": "no-progress"'*'"left":'*'"same":'*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL versioned stop event: $line" ;; esac
 out="$(run state)"
 case "$out" in *"run=stopped"*"reason=no-progress"*"stalled=yes"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL stopped state: $out" ;; esac
 run progress 1.1 >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL progress resumes a stopped run"; } || pass=$((pass + 1))
@@ -555,6 +572,14 @@ row="$(printf '2026-01-01T10:00Z\t1.1\tadd the filter\tcommit 1a2b3c4\tdone')"
 case "$out" in *"$header"*"$row"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL log TSV: $out" ;; esac
 out="$(run stop regression "the watch failed")"
 case "$out" in "stop=regression") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL regression stop: $out" ;; esac
+out="$(run decision 1.1 "add the filter" "the leak" "commit 1a2b3c4" done)"
+case "$out" in "decision=add the filter") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL decision: $out" ;; esac
+out="$(run log)"
+decision_row="$(printf '1.1\tadd the filter\tcommit 1a2b3c4\tdone')"
+case "$out" in *"when	unit	decision	evidence	result"*"$decision_row"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL log from events: $out" ;; esac
+printf '{"tool_name":"Agent","tool_input":{"subagent_type":"reviewer"},"session_id":"s1"}' | CLAUDE_PROJECT_DIR=$r sh "$guard" >/dev/null
+line="$(tail -1 "$r/.dotagent/runs.jsonl")"
+case "$line" in *'"session": "s1"'*'"agent": "reviewer"'*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL session on the spawn event: $line" ;; esac
 
 # a stop recorded before a start is still visible: a fresh process can die before it begins
 s="$tmp/stopnostart"

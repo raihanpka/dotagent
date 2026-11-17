@@ -61,34 +61,29 @@ The `config.json` shape, with the defaults a missing key takes:
 - `protected`: comma separated globs no agent may edit.
 - `setup`: `full`, `minimal`, or `skipped`. `hooks`: `on` or `declined`.
 
-`runs.jsonl` holds one event per line. The full event table is below; the shortest real file looks like this:
+`runs.jsonl` holds one event per line. Every event carries `v` (the schema version, currently `1`), `t` (Unix seconds), `n` (the file
+sequence), `run` (the run id), and `session` when the agent exposes one. The rest depends on the event.
 
 ```json
-{"t":1767225600,"start":"fix the board leak","head":"1a2b3c4"}
-{"t":1767225900,"progress":"2.1","head":"5d6e7f8","left":1,"changed":true}
-{"t":1767226200,"stop":"no-progress","detail":"four same rows after one pivot"}
+{"v":1,"t":1767225600,"n":1,"run":"1a2b3c4d","start":"fix the board leak","head":"1a2b3c4"}
+{"v":1,"t":1767225900,"n":2,"run":"1a2b3c4d","progress":"2.1","head":"5d6e7f8","left":1,"changed":true,"kind":"moved","same":0,"phase":"build"}
+{"v":1,"t":1767226200,"n":3,"run":"1a2b3c4d","stop":"no-progress","detail":"four same rows after one pivot","head":"5d6e7f8","left":1,"same":4}
 ```
 
 ## Events
 
-Every event has `t`, the Unix time in seconds. The rest of the shape depends on the event.
-
-| Event | Fields | Meaning |
+| Event | Fields beyond the common ones | Meaning |
 |---|---|---|
 | `start` | `start` (the goal), `head` (the commit, or empty) | A new run, or `continue` after a stop. The newest `start` begins the current run. |
-| `progress` | `progress` (the unit), `head`, `left`, `changed` | One unit was recorded. `changed` is true when HEAD moved or the unfinished count dropped. |
-| `stop` | `stop` (the reason), `detail` | The run ended for a named reason. |
-| `gate` | `gate` (the commit sha) | The full gate passed at that commit. Only the newest is kept at session start. |
+| `progress` | `progress` (the unit), `head`, `left`, `changed`, `kind` (`moved` or `same`), `same` (the consecutive same count), `phase` | One unit was recorded. `changed` is true when HEAD moved or the unfinished count dropped. |
+| `decision` | `phase`, `decision`, `why`, `evidence`, `result`, `detail` | A decision, pivot, or revert. `run.sh log` exports these as TSV. |
+| `stop` | `stop` (the reason), `detail`, `head`, `left`, `same` | The run ended for a named reason, with the state at the stop. |
+| `gate` | `gate` (the commit sha), `cmd`, `exit`, `dur` | The full gate passed at that commit. Only the newest is kept at session start. |
 | `phase` | `phase` (`plan`, `build`, `done`) | The read-only planning marker. It expires after an hour. |
-| `agent` | `agent` (the subagent name) | A subagent spawn, for the receipt. Spawns belong to one session. |
+| `agent` | `agent` (the subagent name), `model` | A subagent spawn, for the receipt. Spawns belong to one session. |
 
-Example lines:
-
-```json
-{"t":1767225600,"start":"fix the board leak","head":"1a2b3c4"}
-{"t":1767225900,"progress":"2.1","head":"5d6e7f8","left":1,"changed":true}
-{"t":1767226200,"stop":"no-progress","detail":"four same rows after one pivot"}
-```
+`n` is the line sequence in the file. It resets when the file is pruned at a new session. `run` is the stable id for one run across
+processes. `session` is the agent session id when the hook payload or the environment carries it.
 
 ## The state machine
 
@@ -131,7 +126,8 @@ unfinished count.
 | `run.sh progress <unit>` | Record one unit. Prints `moved` or `same`. Refuses while stopped. |
 | `run.sh stop <reason> <detail>` | End the run with one reason. |
 | `run.sh status` | The unfinished count. |
-| `run.sh log` | The `## log` table as TSV: `when`, `unit`, `decision`, `evidence`, `result`. |
+| `run.sh log` | The decision events as TSV: `when`, `unit`, `decision`, `evidence`, `result`. Falls back to the `## log` table. |
+| `run.sh decision <phase> <decision> <why> <evidence> <result>` | Record a decision, pivot, or revert in `runs.jsonl`. |
 | `run.sh gate run <command>` / `gate check` | Run the full gate and record the commit, or check the record. |
 | `run.sh phase plan\|build\|done` | The read-only planning marker. |
 | `run.sh receipt` | The subagents that ran in this session. |
