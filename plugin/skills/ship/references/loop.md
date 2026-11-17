@@ -31,7 +31,7 @@ The loop is the default. Nothing waits between units. The only pauses are the pe
 A unit made progress when either of these changed since the previous `progress` row:
 
 - HEAD moved (a new commit), or
-- the unfinished count dropped (a subtask was ticked, a PR merged).
+- the unfinished count dropped (a PR's last subtask ticked, or its `done:` line written).
 
 `progress` records the HEAD, the unfinished count, and whether either moved. `state` counts the consecutive `same` rows at the tail and
 prints `stalled=yes` at two. A stall is not a signal to try harder on the same idea. It is a signal to change the idea or stop.

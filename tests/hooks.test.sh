@@ -541,10 +541,17 @@ out="$(run stop no-progress "two units moved nothing")"
 case "$out" in "stop=no-progress") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL stop: $out" ;; esac
 out="$(run state)"
 case "$out" in *"run=stopped"*"reason=no-progress"*"stalled=yes"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL stopped state: $out" ;; esac
+run progress 1.1 >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL progress resumes a stopped run"; } || pass=$((pass + 1))
 out="$(printf '{"hook_event_name":"SessionStart"}' | CLAUDE_PROJECT_DIR=$r sh "$guard")"
 case "$out" in *"stop=no-progress"*"stopped: no-progress"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL session keeps the stop: $out" ;; esac
 out="$(run state)"
 case "$out" in *"run=stopped"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a session dropped the run state: $out" ;; esac
+printf '{"tool_name":"Agent","tool_input":{"subagent_type":"reviewer"}}' | CLAUDE_PROJECT_DIR=$r sh "$guard" >/dev/null
+out="$(run receipt)"
+case "$out" in "subagents: reviewer 1") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL receipt before a session: $out" ;; esac
+printf '{"hook_event_name":"SessionStart"}' | CLAUDE_PROJECT_DIR=$r sh "$guard" >/dev/null
+out="$(run receipt)"
+case "$out" in "subagents: none") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL receipt does not reset inside a run: $out" ;; esac
 run start continue >/dev/null
 out="$(run state)"
 case "$out" in *"run=active"*"reason=-"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL continue clears the stop: $out" ;; esac
@@ -554,6 +561,16 @@ case "$out" in "progress=moved") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); ec
 out="$(run state)"
 case "$out" in *"left=0"*"next=\"none\""*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL state after the last PR: $out" ;; esac
 run progress 1.1 >/dev/null 2>&1 || true
+
+# a stop recorded before a start is still visible: a fresh process can die before it begins
+s="$tmp/stopnostart"
+mkdir -p "$s" && git -C "$s" init -q
+out="$(CLAUDE_PROJECT_DIR=$s sh "$guard" stop needs-human "the process died before start")"
+case "$out" in "stop=needs-human") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL stop without a start: $out" ;; esac
+out="$(CLAUDE_PROJECT_DIR=$s sh "$guard" state)"
+case "$out" in *"run=stopped"*"reason=needs-human"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a lone stop is invisible: $out" ;; esac
+out="$(printf '{"hook_event_name":"SessionStart"}' | CLAUDE_PROJECT_DIR=$s sh "$guard")"
+case "$out" in *"stop=needs-human"*"stopped: needs-human"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a lone stop is not announced: $out" ;; esac
 
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]

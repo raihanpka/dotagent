@@ -138,6 +138,19 @@ def run_summary():
     # What a fresh context needs: active or stopped, the reason, the progress count, and whether the loop stalled.
     tail = current_run()
     if not tail:
+        # A stop can be recorded before a start (a fresh process died before it began). Keep it visible.
+        stays = [event for event in entries() if "stop" in event]
+        if stays:
+            last_stop = stays[-1]
+            return {
+                "run": "stopped",
+                "reason": last_stop["stop"],
+                "detail": last_stop.get("detail", ""),
+                "progress": 0,
+                "stalled": False,
+                "head": "",
+                "left": len(unfinished()),
+            }
         return {"run": "none", "reason": "", "detail": "", "progress": 0, "stalled": False, "head": "", "left": len(unfinished())}
     progress = [event for event in tail if "progress" in event]
     stopped, detail = "", ""
@@ -173,6 +186,8 @@ def run_progress(unit):
     # One call per unit, after its commit and tick. A row that moves HEAD or the unfinished count is progress.
     if not current_run():
         sys.exit("no run yet: call `run.sh start <goal>` before `progress`")
+    if run_summary()["run"] == "stopped":
+        sys.exit("the run is stopped: call `run.sh start continue` before `progress`")
     prev = next((event for event in reversed(current_run()) if "progress" in event), None)
     head = clean_head()
     left = len(unfinished())
@@ -423,7 +438,8 @@ def prune_runs():
             start = i
             break
     if start is not None:
-        kept += [event for event in events[start:] if "gate" not in event]
+        # The receipt is per session: keep the run state, drop earlier spawns.
+        kept += [event for event in events[start:] if "gate" not in event and "agent" not in event]
     else:
         kept += [event for event in events if "stop" in event][-1:]
     path = os.path.join(project_dir(), RUNS)
@@ -790,7 +806,7 @@ def main():
                 f"[dotagent] stopped: {found['reason']} ({found['detail'] or 'no detail'}). Say continue to resume, "
                 "or start a new task. Nothing loops until then."
             )
-        if found["stalled"]:
+        if found["stalled"] and found["run"] == "active":
             lines.append(
                 "[dotagent] no progress: the last two units moved neither HEAD nor the unfinished count. Stop with a "
                 "reason (`sh \"$RUN\" stop no-progress`) or pick the smallest next experiment."
