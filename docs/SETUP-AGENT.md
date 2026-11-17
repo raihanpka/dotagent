@@ -64,7 +64,8 @@ so the same file works there without a copy step.
 Then append to the repo's `.gitignore`, skipping any line already there: `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, `docs/TODO.md`.
 Make the hook files executable: `chmod +x .githooks/* .dotagent/run.sh`.
 
-Save the answers with `sh .dotagent/run.sh set agents|workflow|setup|hooks|protected|commit_types|commit_scope|merge_method|base_branch`.
+Save each answer with `sh .dotagent/run.sh set <key> <value>`: `agents`, `workflow`, `setup`, `hooks`, `protected`, `commit_types`,
+`commit_scope`, `merge_method`, and `base_branch`.
 
 ## 4. Turn on the git hooks
 

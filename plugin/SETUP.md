@@ -61,8 +61,10 @@ Read `SETUP-REFERENCE.md` before this step, then write each file at its own path
 | `docs/DOTAGENT-SETUP.md` | `templates/docs/DOTAGENT-SETUP.md` | always |
 | `.dotagent/config.json` | `templates/.dotagent/config.json`, written with `set` | always |
 
-Save the answers with `sh hooks/run.sh set agents|workflow|setup|hooks|protected|...`. Append `.dotagent`, `.claude`,
-`docs/DOTAGENT-SETUP.md`, and `docs/TODO.md` to `.gitignore`, skipping a line already there. Do it without asking, then tell the user.
+Save each answer with `sh hooks/run.sh set <key> <value>`: `set agents commandcode`, `set workflow ask`, `set setup full`, `set hooks on`,
+`set protected "<globs>"`, and the repo flow keys. Append
+`.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, and `docs/TODO.md` to `.gitignore`, skipping a line already there. Do it without asking,
+then tell the user.
 
 ## 3. Prove
 
