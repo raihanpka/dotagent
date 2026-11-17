@@ -1,58 +1,56 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1690 948" width="1690" height="948" font-family="sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1690 1014" width="1690" height="1014" font-family="Excalifont, Virgil, 'Segoe Print', 'Comic Sans MS', sans-serif">
 <defs><marker id="a" viewBox="0 0 10 10" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" refX="10" refY="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#343a40"/></marker><marker id="r" viewBox="0 0 10 10" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" refX="10" refY="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c92a2a"/></marker></defs>
-<rect width="1690" height="948" fill="#ffffff"/>
-<rect x="735" y="92" width="220" height="96" rx="14" fill="#e7f5ff" stroke="#1971c2" stroke-width="2.5"/>
-<text x="845" y="119" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Goal</text>
-<text x="845" y="142" text-anchor="middle" font-size="13" fill="#343a40">A checkable finish:</text>
-<text x="845" y="159" text-anchor="middle" font-size="13" fill="#343a40">a command or artifact</text>
-<rect x="968.345" y="188.655" width="220" height="96" rx="14" fill="#d0bfff" stroke="#6741d9" stroke-width="2.5"/>
-<text x="1078.35" y="216" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Plan</text>
-<text x="1078.35" y="239" text-anchor="middle" font-size="13" fill="#343a40">Read-only TODO:</text>
-<text x="1078.35" y="256" text-anchor="middle" font-size="13" fill="#343a40">goal, finish, prove</text>
-<rect x="1065" y="422" width="220" height="96" rx="14" fill="#ffec99" stroke="#e67700" stroke-width="2.5"/>
-<text x="1175" y="449" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">One unit</text>
-<text x="1175" y="472" text-anchor="middle" font-size="13" fill="#343a40">Smallest change,</text>
-<text x="1175" y="489" text-anchor="middle" font-size="13" fill="#343a40">only the plan's files</text>
-<rect x="968.345" y="655.345" width="220" height="96" rx="14" fill="#b2f2bb" stroke="#2b8a3e" stroke-width="2.5"/>
-<text x="1078.35" y="682" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Verify</text>
-<text x="1078.35" y="706" text-anchor="middle" font-size="13" fill="#343a40">Scoped check:</text>
-<text x="1078.35" y="723" text-anchor="middle" font-size="13" fill="#343a40">format, lint, test</text>
-<rect x="735" y="752" width="220" height="96" rx="14" fill="#99e9f2" stroke="#0b7285" stroke-width="2.5"/>
-<text x="845" y="779" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Prove</text>
-<text x="845" y="802" text-anchor="middle" font-size="13" fill="#343a40">Real artifact:</text>
-<text x="845" y="819" text-anchor="middle" font-size="13" fill="#343a40">run it, read it, show it</text>
-<rect x="501.655" y="655.345" width="220" height="96" rx="14" fill="#ffd8a8" stroke="#d9480f" stroke-width="2.5"/>
-<text x="611.655" y="682" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Review</text>
-<text x="611.655" y="706" text-anchor="middle" font-size="13" fill="#343a40">Fresh context:</text>
-<text x="611.655" y="723" text-anchor="middle" font-size="13" fill="#343a40">proof plus gaps</text>
-<rect x="405" y="422" width="220" height="96" rx="14" fill="#a5d8ff" stroke="#1864ab" stroke-width="2.5"/>
-<text x="515" y="449" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Ship</text>
-<text x="515" y="472" text-anchor="middle" font-size="13" fill="#343a40">PR, CI, merge</text>
-<text x="515" y="489" text-anchor="middle" font-size="13" fill="#343a40">by the workflow</text>
-<rect x="501.655" y="188.655" width="220" height="96" rx="14" fill="#e9ecef" stroke="#495057" stroke-width="2.5"/>
-<text x="611.655" y="216" text-anchor="middle" font-size="19" font-weight="700" fill="#212529">Progress</text>
-<text x="611.655" y="239" text-anchor="middle" font-size="13" fill="#343a40">Commit, tick, log,</text>
-<text x="611.655" y="256" text-anchor="middle" font-size="13" fill="#343a40">state = moved</text>
-<polyline points="955,186 968,191" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
-<polyline points="1098,285 1155,422" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
-<polyline points="1155,518 1098,655" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
-<polyline points="968,749 955,754" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
-<polyline points="735,754 722,749" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
-<polyline points="592,655 535,518" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
-<polyline points="535,422 592,285" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
-<polyline points="722,191 735,186" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
-<text x="845" y="311" text-anchor="middle" font-size="28" font-weight="700" fill="#212529">dotagent</text>
-<text x="845" y="338" text-anchor="middle" font-size="15" fill="#212529">one loop, verified every turn</text>
-<rect x="700" y="366" width="290" height="138" rx="14" fill="#ffe3e3" stroke="#c92a2a" stroke-width="2.5"/>
-<text x="845" y="397" text-anchor="middle" font-size="21" font-weight="700" fill="#212529">STOP</text>
-<text x="845" y="424" text-anchor="middle" font-size="13" fill="#343a40">no-progress, premise,</text>
-<text x="845" y="441" text-anchor="middle" font-size="13" fill="#343a40">needs-human, question,</text>
-<text x="845" y="458" text-anchor="middle" font-size="13" fill="#343a40">red-base, conflict,</text>
-<text x="845" y="475" text-anchor="middle" font-size="13" fill="#343a40">denied, budget, error</text>
-<text x="845" y="492" text-anchor="middle" font-size="13" fill="#c92a2a">report + next:</text>
-<polyline points="1037,655 905,504" fill="none" stroke="#c92a2a" stroke-width="2" marker-end="url(#r)"/>
-<text x="1000" y="633" text-anchor="middle" font-size="12" fill="#c92a2a">failed check</text>
-<polyline points="668,285 764,366" fill="none" stroke="#c92a2a" stroke-width="2" marker-end="url(#r)"/>
-<text x="610" y="343" text-anchor="middle" font-size="12" fill="#c92a2a">no progress</text>
-<text x="845" y="908" text-anchor="middle" font-size="16" fill="#212529"><tspan font-weight="700" fill="#212529">Hooks</tspan>: names, <tspan font-weight="700" fill="#212529">no trailer</tspan>, <tspan font-weight="700" fill="#212529">protected paths</tspan>, <tspan font-weight="700" fill="#212529">workflow mode</tspan>, <tspan font-weight="700" fill="#212529">read only</tspan> planning. Every unit logs its proof. No unsolicited docs.</text>
+<rect width="1690" height="1014" fill="#ffffff"/>
+<rect x="715" y="90" width="260" height="120" rx="14" fill="#e7f5ff" stroke="#1971c2" stroke-width="2.5"/>
+<text x="845" y="122" text-anchor="middle" font-size="22" font-weight="700" fill="#212529">Goal</text>
+<text x="845" y="152" text-anchor="middle" font-size="16" fill="#343a40">A checkable finish:</text>
+<text x="845" y="172" text-anchor="middle" font-size="16" fill="#343a40">a command or artifact</text>
+<rect x="962.487" y="192.513" width="260" height="120" rx="14" fill="#d0bfff" stroke="#6741d9" stroke-width="2.5"/>
+<text x="1092.49" y="225" text-anchor="middle" font-size="22" font-weight="700" fill="#212529">Plan</text>
+<text x="1092.49" y="254" text-anchor="middle" font-size="16" fill="#343a40">Read-only TODO:</text>
+<text x="1092.49" y="275" text-anchor="middle" font-size="16" fill="#343a40">goal, finish, prove</text>
+<rect x="1065" y="440" width="260" height="120" rx="14" fill="#ffec99" stroke="#e67700" stroke-width="2.5"/>
+<text x="1195" y="472" text-anchor="middle" font-size="22" font-weight="700" fill="#212529">One unit</text>
+<text x="1195" y="502" text-anchor="middle" font-size="16" fill="#343a40">Smallest change,</text>
+<text x="1195" y="522" text-anchor="middle" font-size="16" fill="#343a40">only the plan's files</text>
+<rect x="962.487" y="687.487" width="260" height="120" rx="14" fill="#b2f2bb" stroke="#2b8a3e" stroke-width="2.5"/>
+<text x="1092.49" y="720" text-anchor="middle" font-size="22" font-weight="700" fill="#212529">Verify</text>
+<text x="1092.49" y="749" text-anchor="middle" font-size="16" fill="#343a40">Scoped check:</text>
+<text x="1092.49" y="770" text-anchor="middle" font-size="16" fill="#343a40">format, lint, test</text>
+<rect x="715" y="790" width="260" height="120" rx="14" fill="#99e9f2" stroke="#0b7285" stroke-width="2.5"/>
+<text x="845" y="822" text-anchor="middle" font-size="22" font-weight="700" fill="#212529">Prove</text>
+<text x="845" y="852" text-anchor="middle" font-size="16" fill="#343a40">Real artifact:</text>
+<text x="845" y="872" text-anchor="middle" font-size="16" fill="#343a40">run it, read it, show it</text>
+<rect x="467.513" y="687.487" width="260" height="120" rx="14" fill="#ffd8a8" stroke="#d9480f" stroke-width="2.5"/>
+<text x="597.513" y="720" text-anchor="middle" font-size="22" font-weight="700" fill="#212529">Review</text>
+<text x="597.513" y="749" text-anchor="middle" font-size="16" fill="#343a40">Fresh context:</text>
+<text x="597.513" y="770" text-anchor="middle" font-size="16" fill="#343a40">proof plus gaps</text>
+<rect x="365" y="440" width="260" height="120" rx="14" fill="#a5d8ff" stroke="#1864ab" stroke-width="2.5"/>
+<text x="495" y="472" text-anchor="middle" font-size="22" font-weight="700" fill="#212529">Ship</text>
+<text x="495" y="502" text-anchor="middle" font-size="16" fill="#343a40">PR, CI, merge</text>
+<text x="495" y="522" text-anchor="middle" font-size="16" fill="#343a40">by the workflow</text>
+<rect x="467.513" y="192.513" width="260" height="120" rx="14" fill="#e9ecef" stroke="#495057" stroke-width="2.5"/>
+<text x="597.513" y="225" text-anchor="middle" font-size="22" font-weight="700" fill="#212529">Progress</text>
+<text x="597.513" y="254" text-anchor="middle" font-size="16" fill="#343a40">Commit, tick, log,</text>
+<text x="597.513" y="275" text-anchor="middle" font-size="16" fill="#343a40">state = moved</text>
+<polyline points="975,204 962,199" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
+<polyline points="1117,313 1170,440" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
+<polyline points="1170,560 1117,687" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
+<polyline points="962,801 975,796" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
+<polyline points="715,796 728,801" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
+<polyline points="573,687 520,560" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
+<polyline points="520,440 573,313" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
+<polyline points="728,199 715,204" fill="none" stroke="#343a40" stroke-width="2" marker-end="url(#a)"/>
+<text x="845" y="51" text-anchor="middle" font-size="34" font-weight="700" fill="#212529">dotagent</text>
+<text x="845" y="76" text-anchor="middle" font-size="18" fill="#212529">one loop, verified every turn</text>
+<rect x="685" y="412" width="320" height="176" rx="14" fill="#ffe3e3" stroke="#c92a2a" stroke-width="2.5"/>
+<text x="845" y="450" text-anchor="middle" font-size="25" font-weight="700" fill="#212529">STOP</text>
+<text x="845" y="484" text-anchor="middle" font-size="16" fill="#343a40">no-progress, premise,</text>
+<text x="845" y="504" text-anchor="middle" font-size="16" fill="#343a40">needs-human, question,</text>
+<text x="845" y="525" text-anchor="middle" font-size="16" fill="#343a40">red-base, conflict,</text>
+<text x="845" y="546" text-anchor="middle" font-size="16" fill="#343a40">denied, budget, error</text>
+<text x="845" y="576" text-anchor="middle" font-size="16" fill="#c92a2a">report + next:</text>
+<polyline points="1032,687 933,588" fill="none" stroke="#c92a2a" stroke-width="2" marker-end="url(#r)"/>
+<polyline points="658,313 757,412" fill="none" stroke="#c92a2a" stroke-width="2" marker-end="url(#r)"/>
+<text x="845" y="972" text-anchor="middle" font-size="18" fill="#212529"><tspan font-weight="700" fill="#212529">Hooks</tspan>: names, <tspan font-weight="700" fill="#212529">no trailer</tspan>, <tspan font-weight="700" fill="#212529">protected paths</tspan>, <tspan font-weight="700" fill="#212529">workflow mode</tspan>, <tspan font-weight="700" fill="#212529">read only</tspan> planning. Every unit logs its proof. No unsolicited docs.</text>
 </svg>
