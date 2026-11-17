@@ -3,6 +3,59 @@
 Versions follow [semver](https://semver.org). The version lives in `plugin/.claude-plugin/plugin.json` and, equal to it, in `.codex-plugin/plugin.json`.
 Claude Code caches a plugin per version, so bump it on every change users should receive.
 
+## 0.7.0
+
+Upgrading: run `/plugin update dotagent@dotagent` and `/reload-plugins` in Claude Code. For Codex, update the marketplace. A saved
+`workflow=ask` or an older alias loads as `local`; set `auto` when you want a fully automated run. Run `/dotagent:setup` again only if you
+want the new PR template, the verification map, and the Command Code hook. No new dependency.
+
+The benchmark and `docs/BENCHMARK.md` were removed in this release. Older entries that link to them refer to a removed file.
+
+### One run, one loop, one reason to stop
+
+- `docs/TODO.md` now carries `goal:`, `finish:` (a checkable predicate), `budget:`, `prove:`, `release:`, `watch:`, and `rollback:`. A run is
+  done when the predicate passes, not when the TODO looks empty.
+- Every unit is one commit, one scoped `Verify:`, one tick, one `## log` row, and one `run.sh progress`. The lead builds it, the reviewer
+  checks it in a fresh context.
+- `run.sh start|progress|stop|state|log` keeps the run state in `.dotagent/runs.jsonl`. A session prints a capsule: `run`, `reason`,
+  `phase`, `left`, `head`, `progress`, `same`, `stalled`, `next`.
+- Two `same` rows are a pivot: change the idea and log it. Four are `stalled=yes` and a `no-progress` stop. A plateau pivots before it stops.
+- Every stop is one of a closed set: `done`, `no-progress`, `premise`, `needs-human`, `question`, `red-base`, `conflict`, `denied`, `budget`,
+  `error`, `regression`. A stop writes `## stopped` and one `next:` line. A stop recorded before a start stays visible.
+- `run.sh log` prints the `## log` table as TSV for a committed audit trail. `docs/STATE.md` documents every event and the state machine.
+
+### Two modes
+
+- `workflow` is now `auto` or `local`. `auto` finishes the task end to end, including push, PR, CI, and merge. `local` never pushes.
+- The middle `ask` mode is gone. It could not work in Codex or Command Code, and it made the auto loop stop in the middle. An old config
+  value loads as `local` so nothing pushes unexpectedly.
+- The guard now refuses a merge that uses a method other than `merge_method`; it no longer shows a permission prompt.
+
+### Verification
+
+- `verify.md` has the proof ladder, a gate/proof/CI table, and a field matrix for backend, frontend, CLI, library, mobile, desktop,
+  embedded, data/ML, database, infrastructure, concurrency, security, performance, refactor, docs, config/CI, dependencies, and data changes.
+- Runtime proof is required for a behavior change. The reviewer runs the `prove:` itself when it is cheap, or checks that the evidence
+  pointer resolves. A green gate is not a behavior verdict.
+- Formal verification is one property, one tool, a scope, a command, and a sync commit. Show it fail on a broken variant first.
+- `production.md` adds the four stages: pre-production, deploy, release, and post-release. A PR with `release:` or `watch:` is done only
+  after the watch passes. A failed watch is a `regression` stop with a rollback.
+
+### Fan out
+
+- `fanout.md` covers swarm, arena, interrogate, and panel. Swarm is read-only, one agent per independent slice, with `PASS`, `ISSUES`, or
+  `BLOCKED`. Arena isolates each attempt. Interrogate uses fresh adversarial reviewers and keeps only findings with a repro. A panel is one
+  round. The lead still owns the merge.
+
+### Setup, docs, and agents
+
+- Setup is a short guide plus `SETUP-REFERENCE.md`. It asks one round: agent, commands, workflow, verification, protected paths, hooks.
+- Command Code is a first-class agent: `cmd skills add raihanpka/dotagent -s dotagent-ship`, and setup writes
+  `.commandcode/settings.json` plus `.dotagent/` for the guard.
+- The PR template uses the common engineering headings: Summary, Motivation, What changed, Test plan, Risk and rollback, Checklist.
+- Comments are why-only; the reviewer flags a comment that restates the next line. A new markdown file the task did not ask for is a gap.
+- The README is shorter, with the details collapsed, and the workflow diagram is a circular loop with equal nodes and the Excalidraw font.
+
 ## 0.6.1
 
 Upgrading: run `/plugin update dotagent@dotagent` and `/reload-plugins` in Claude Code. For Codex, update the marketplace. Nothing to save.
