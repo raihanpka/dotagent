@@ -8,7 +8,7 @@ You tick Reviewed once you have read it.
 | Setting | Value | Why |
 |---|---|---|
 | agent | {{claude, codex, commandcode, both, or other}} | {{the agent that runs dotagent here}} |
-| workflow | {{auto, ask, or local}} | {{reason}} |
+| workflow | {{auto or local}} | {{reason}} |
 | em dash and emoji | {{block (default) or allow}} | {{reason}} |
 | companion skills | {{plan, build, style skills, or none}} | {{reason}} |
 | commit scopes | {{list}} | {{reason}} |

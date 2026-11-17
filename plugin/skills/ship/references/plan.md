@@ -77,7 +77,7 @@ next: one concrete action
 
 ## The loop over the PRs
 
-Ship the PRs in order, one after another, one unit at a time (in `ask`, the permission prompt for each push, PR, and merge is the only pause):
+Ship the PRs in order, one after another, one unit at a time:
 
 1. Take the first unfinished PR whose `needs` is none or already merged (check with `gh pr view`).
 2. Ship it: branch, subtasks, verify, prove, review, open the PR, CI, merge, as in `merge.md`.

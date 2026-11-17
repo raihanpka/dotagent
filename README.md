@@ -42,7 +42,7 @@ with only a TODO.
 |---|---|
 | `/dotagent <task>` | The short form of `/dotagent:ship`. Alone it prints the run state and the next step. |
 | `/dotagent:ship <task>` | Run the task as one loop. `continue` resumes from the recorded state. |
-| `/dotagent:workflow local\|ask\|auto` | Save how far a run goes on its own. |
+| `/dotagent:workflow local\|auto` | Save how far a run goes on its own. |
 | `/dotagent:setup` | Set the repo up once: Claude Code, Codex, Command Code, both, or another. |
 | `/dotagent:review [<pr>]` | Review a PR, or with no argument the unfinished work of this repo. Posts only what you choose. |
 
@@ -105,10 +105,9 @@ with the tool, the covered code, the command, and the sync commit. A formal chec
 | Mode | What happens |
 |---|---|
 | `auto` *(default)* | Runs the whole TODO, opens each PR, watches CI, merges when the review is clean and CI is green, then starts the next PR. |
-| `ask` | The same, but asks for your yes before any push, PR, or merge. |
-| `local` | One local branch, never pushes. |
+| `local` | One local branch, never pushes, never opens a PR. |
 
-Codex and Command Code cannot show a permission prompt, so `ask` refuses every push, PR, and merge there. Use `auto` or `local`.
+There are two modes only. A run either finishes the task end to end or keeps every commit on the machine.
 
 <details>
 <summary>settings</summary>
@@ -117,7 +116,7 @@ One file, `.dotagent/config.json`, per machine and ignored by git.
 
 | Key | Default | Values |
 |---|---|---|
-| `workflow` | `auto` | `auto`, `ask`, `local` |
+| `workflow` | `auto` | `auto`, `local` |
 | `agents` | unset | `claude`, `codex`, `commandcode`, `both`, `other` |
 | `merge_method` | `squash` | `squash`, `merge`, `rebase` |
 | `commit_types`, `commit_scope` | the default list, `required` | a comma separated list, and `optional` |

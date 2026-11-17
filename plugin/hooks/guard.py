@@ -1,8 +1,7 @@
 """Guards for the dotagent: commit style, PR title, no plan labels in names, the workflow mode, read-only planning.
 
-Reads one hook event as JSON on stdin. Exit 2 with a reason on stderr blocks the tool call, a rule that needs a
-human yes returns `ask` so Claude Code shows its own prompt, and everything else passes. Only the rules that
-can never be right (a trailer, a force push, a protected path) block outright. Settings live in one file,
+Reads one hook event as JSON on stdin. Exit 2 with a reason on stderr blocks the tool call, and everything else
+passes. The only workflow modes are `auto` (fully automated) and `local` (never pushes). Settings live in one file,
 .dotagent/config.json in the project. Edit it by hand or run `sh run.sh set <key> <value>` (the /dotagent:workflow command does).
 """
 import json
@@ -45,10 +44,10 @@ STALL_LIMIT = 2  # two units in a row that move neither HEAD nor the unfinished 
 
 
 # Allowed values per setting, the first one is the default. A missing or invalid value falls back to it.
-# The workflow modes were autopilot, checkpoint, and adapt before 0.4.0. The old names still work and are saved under the new one.
-MODE_ALIASES = {"autopilot": "auto", "checkpoint": "ask", "adapt": "local"}
+# Two modes: auto and local. An old config value from an earlier release loads as the nearest of the two.
+MODE_ALIASES = {"autopilot": "auto", "checkpoint": "local", "adapt": "local", "ask": "local"}
 CHOICES = {
-    "workflow": ("auto", "ask", "local"),
+    "workflow": ("auto", "local"),
     "merge_method": ("squash", "merge", "rebase"),  # how a PR merges, squash unless the repo only allows another
     "commit_scope": ("required", "optional"),  # whether `type(scope): summary` needs its scope
     "em_dash": ("block", "allow"),
@@ -252,16 +251,15 @@ def load(base=None):
 
 
 def workflow_mode(raw, broken):
-    # auto pushes and merges by itself, ask stops for your yes before anything leaves the machine, local never pushes.
-    # A wrong value or a broken file means local, the mode that sends nothing, so a typo never turns pushing on.
-    # The old `merge` key is read once: on-green and full were auto, off stopped before the merge (ask).
+    # auto pushes, opens, and merges by itself; local never pushes. A wrong value or a broken file means local.
+    # The old `merge` key is read once: on-green and full were auto, off stopped before the merge (now local).
     if broken:
         return "local"
     if "workflow" in raw:
         mode = MODE_ALIASES.get(raw["workflow"], raw["workflow"])
         return mode if mode in CHOICES["workflow"] else "local"
     if "merge" in raw:
-        return {"on-green": "auto", "full": "auto", "off": "ask"}.get(raw["merge"], "local")
+        return {"on-green": "auto", "full": "auto", "off": "local"}.get(raw["merge"], "local")
     return "auto"
 
 
@@ -513,6 +511,8 @@ def cli(args):
             "status | gate run <command>|check | set <key> <value> | phase plan|build|done"
         )
     key, value = args[1], args[2]
+    if key == "workflow" and value == "ask":
+        sys.exit("ask was removed: use auto (fully automated) or local (never pushes)")
     if key == "workflow":
         value = MODE_ALIASES.get(value, value)
     if key == "scale":
@@ -574,23 +574,10 @@ def commits_in(tokens):
     return found
 
 
-def ask(reason):
-    # Lets the user decide: Claude Code shows its own permission prompt. In a headless run nobody can answer, so it is a no.
-    # Codex and Command Code have no ask decision, so there the call is refused with the reason instead.
-    if CLIENT in ("codex", "commandcode"):
-        block(reason + " " + CLIENT + " cannot show a prompt: ask the user in the chat, they run the command or change the workflow.")
-    print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask",
-                                              "permissionDecisionReason": "dotagent: " + reason}}))
-    sys.exit(0)
-
-
 def gate(kind):
-    # Push, pull request, and merge follow the workflow mode. In ask the permission prompt is the user's yes.
-    mode = opt("WORKFLOW")
-    if mode == "local":
+    # Push, pull request, and merge follow the workflow mode. Auto allows them, local never does.
+    if opt("WORKFLOW") == "local":
         block(f"workflow is local: nothing leaves this machine, so no {kind}. Keep the commits local and tell the user.")
-    if mode == "ask":
-        ask(f"workflow is ask: this {kind} needs your yes. Confirm it in the chat first, then answer this prompt yes.")
 
 
 def no_label(text, where):
@@ -685,7 +672,7 @@ def check_pr_merge(tokens):
     flags = {"squash": {"-s", "--squash"}, "merge": {"-m", "--merge"}, "rebase": {"-r", "--rebase"}}
     others = set().union(*(f for m, f in flags.items() if m != method))
     if others & set(tokens) or not flags[method] & set(tokens):
-        ask(f"this repo merges with {method} (`merge_method`), but this command uses another method. Use --{method}, or ask the user first.")
+        block(f"this repo merges with {method} (`merge_method`). Use --{method}, or ask the user to change merge_method.")
     for text in flag_values(tokens, "-t", "--subject") + flag_values(tokens, "-b", "--body"):
         if TRAILER.search(text):
             block("no generated-by line or Co-Authored-By in the merge text, GitHub would copy it into the default branch.")

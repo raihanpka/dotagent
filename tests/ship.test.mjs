@@ -100,9 +100,10 @@ test('the ship skill and setup follow a repo flow that is not the default', () =
   assert.match(setup, /workflow local/)
 })
 
-test('the three modes are local, ask, and auto', () => {
+test('the two modes are local and auto', () => {
   const merge = read('references/merge.md')
-  for (const mode of ['local', 'ask', 'auto']) assert.ok(merge.includes(`**${mode}**`), `merge.md does not explain ${mode}`)
+  for (const mode of ['local', 'auto']) assert.ok(merge.includes(`**${mode}**`), `merge.md does not explain ${mode}`)
+  assert.ok(!merge.includes('**ask**'), 'merge.md still explains the removed ask mode')
 })
 
 test('a merge is a squash after a rebase, with a safe push', () => {

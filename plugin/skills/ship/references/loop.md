@@ -24,7 +24,7 @@ One turn of the circle:
 5. **Progress.** `sh "$RUN" progress <unit>`. It prints `moved` or `same`.
 6. **Decide.** `moved` goes to the next unit. `same` gets one different approach. `same` twice in a row is `stop no-progress`.
 
-The loop is the default. Nothing waits between units. The only pauses are the permission prompt in `ask`, a stop, and the user.
+The loop is the default. Nothing waits between units. The only pauses are a stop and the user.
 
 ## Progress and stalls
 

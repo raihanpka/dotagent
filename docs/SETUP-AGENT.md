@@ -27,8 +27,7 @@ is not GitHub, there is no remote, `gh` is missing, or work does not go through 
 
 - **Agent:** `codex`, `commandcode`, `both`, or `other` (Cursor, Antigravity, another). Claude Code uses the plugin and `/dotagent:setup`.
 - **Commands:** the build, the lint, and one test command. Recommend what the repo already uses.
-- **Workflow:** `auto`, `ask`, or `local`. Recommend `auto` only when the PR gate is a required check, otherwise `ask`. Codex and Command
-  Code cannot show a prompt, so with them recommend `auto` or `local`.
+- **Workflow:** `auto` or `local`. Recommend `auto` for a fully automated run that ends at the merge, otherwise `local`.
 - **Verification:** is there a script that drives the app and proves a feature? If not, offer `docs/VERIFICATION.md` with a feature map.
   Ask once more, only for concurrency, retries, a state machine, a parser, or money: does a property need a formal check?
 - **Protected paths:** migrations, lockfiles, secrets, deploy config, CODEOWNERS. Recommend what the repo has.

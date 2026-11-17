@@ -4,7 +4,7 @@ Read this before you push, open a PR, or merge, whatever the size of the task. `
 
 ## By workflow
 
-- **auto** and **ask**: the steps in Merge, one branch and one PR per plan item.
+- **auto**: the steps in Merge, one branch and one PR per plan item.
 - **local**: ask first for what is missing (one round, see Questions), then plan. Work on one branch for the whole TODO
   (`feat/<slug>`), one local commit per subtask, no push, no PR, no CI. Run the reviewer once at the end. Then ask whether to rebase
   and squash onto the default branch locally (recommended) or to leave the branch for the user, and do what they pick.
@@ -38,14 +38,12 @@ delete a check to get green. Two failed fixes are a stop, not a third fix: `stop
 The workflow mode decides who acts:
 
 - **auto** (the default): push, open the PR, and merge when the reviewer said `clean` and CI is green. Fix review gaps first, then go on to the next PR.
-- **ask**: build and commit locally as in auto, but before any push, PR, or merge ask the user in the chat and wait for a
-  yes ("yes", "approve", "ya"). After the yes in the chat, run the command. The hook then shows a permission prompt for it, and the user answers yes there. No other command is needed.
 - **local**: never push, open a PR, or merge on the remote. See By workflow.
 
 By default a merge is a squash, and `merge=merge` or `merge=rebase` on the session line means the repo merges that way (see Merge method below). A PR targets the `base=` branch when the line has one, so read `<default>` below as that branch. Always rebase first, then squash. The branch sits on the latest default branch, so a stale branch or a conflict shows up on your
 side, and the default branch stays linear with one commit per PR. The squash body lists each commit with its hash.
 
-Cloud (auto, ask), in this order:
+Cloud (auto), in this order:
 
 1. `git fetch origin` and `git rebase origin/<default>`. On a conflict fix as in Limits, never `--skip` or `--abort` to hide it.
 2. The rebase moved HEAD, so run the full gate once with `sh "$RUN" gate run <the repo gate>`. Then `git push --force-with-lease`, on your own branch only (the hook refuses `--force`). Wait for CI.

@@ -28,8 +28,8 @@ numbered, and wait. Headless: take the recommended option and say so. Never gues
 
 - **Agent.** `claude`, `codex`, `commandcode`, `both`, or `other`. Recommend the one this setup runs in. `commandcode` means Command Code.
 - **Commands.** Build, lint, test, one file, one module. Recommend what the repo already uses, so the agent and CI agree.
-- **Workflow.** `auto`, `ask`, or `local`. Recommend `auto` only when the PR gate is a required status check, otherwise `ask`. For
-  `codex` and `commandcode`, `ask` cannot show a prompt, so recommend `auto` or `local` and say why in one line.
+- **Workflow.** `auto` or `local`. Recommend `auto` for a fully automated run that ends at the merge, otherwise `local`. There is no
+  middle mode: the loop either finishes the task or keeps every commit on the machine.
 - **Verification.** Ask once: is there a script that drives the app or service and proves a feature works? If yes, record the command.
   If no, offer `docs/VERIFICATION.md` with a feature map and a proof command. Ask once more, only when the repo has concurrency, retries,
   a state machine, a parser, or money: does a property need a formal check? If yes, fill one row and tell the user the tool choice in
@@ -61,7 +61,7 @@ Read `SETUP-REFERENCE.md` before this step, then write each file at its own path
 | `docs/DOTAGENT-SETUP.md` | `templates/docs/DOTAGENT-SETUP.md` | always |
 | `.dotagent/config.json` | `templates/.dotagent/config.json`, written with `set` | always |
 
-Save each answer with `sh hooks/run.sh set <key> <value>`: `set agents commandcode`, `set workflow ask`, `set setup full`, `set hooks on`,
+Save each answer with `sh hooks/run.sh set <key> <value>`: `set agents commandcode`, `set workflow auto`, `set setup full`, `set hooks on`,
 `set protected "<globs>"`, and the repo flow keys. Append
 `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, and `docs/TODO.md` to `.gitignore`, skipping a line already there. Do it without asking,
 then tell the user.

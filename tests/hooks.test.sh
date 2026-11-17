@@ -26,18 +26,6 @@ expect() {
   fi
 }
 
-# expect_ask <name> <json>: the guard returns an ask (Claude Code shows its own prompt), it does not block
-expect_ask() {
-  local name="$1" json="$2" out got
-  out="$(printf '%s' "$json" | sh "$guard" 2>/dev/null)"
-  got=$?
-  case "$out" in
-    *'"permissionDecision": "ask"'*) [ "$got" -eq 0 ] && pass=$((pass + 1)) && return ;;
-  esac
-  fail=$((fail + 1))
-  echo "FAIL $name: want an ask, got exit $got: $out"
-}
-
 bash_json() { jq -nc --arg c "$1" '{tool_name:"Bash",tool_input:{command:$c}}'; }
 
 # commit style
@@ -114,8 +102,8 @@ expect "autopilot merge ok" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fi
 cfg '{"workflow":"autopilot"}'
 expect "autopilot merge ok again" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
 expect "merge wrong number is not checked" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#6)" --body "- 1a2b3c4 fix(a): x"')"
-expect_ask "merge commit asks when the repo merges by squash" "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
-expect_ask "rebase asks when the repo merges by squash" "$(bash_json 'gh pr merge 5 --rebase')"
+expect "merge commit is refused when the repo merges by squash" 2 "$(bash_json 'gh pr merge 5 --merge --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"')"
+expect "rebase is refused when the repo merges by squash" 2 "$(bash_json 'gh pr merge 5 --rebase')"
 expect "squash needs no subject" 0 "$(bash_json 'gh pr merge 5 --squash --body "- 1a2b3c4 fix(a): x"')"
 expect "squash needs no body" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)"')"
 expect "squash empty body passes" 0 "$(bash_json 'gh pr merge 5 --squash --subject "fix: a (#5)" --body ""')"
@@ -291,7 +279,7 @@ out="$(printf '{"hook_event_name":"SessionStart"}' | sh "$guard")"
 case "$out" in *"first run"*|*"scale"*) fail=$((fail + 1)); echo "FAIL an old scale key: $out" ;; *"workflow=auto"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old scale session line: $out" ;; esac
 cfg '{}'
 
-# workflow modes: autopilot, checkpoint, adapt
+# workflow modes: auto and local. The old names autopilot, checkpoint, adapt, and ask map to one of the two.
 SQ='--squash --subject "fix: a (#5)" --body "- 1a2b3c4 fix(a): x"'
 cfg '{"workflow":"autopilot"}'
 expect "autopilot pushes" 0 "$(bash_json 'git push origin feat/a')"
@@ -303,13 +291,10 @@ expect "adapt never merges on the remote" 2 "$(bash_json "gh pr merge 5 $SQ")"
 expect "adapt keeps local commits" 0 "$(bash_json 'git commit -m "feat(a): add a"')"
 expect "adapt allows a local squash" 0 "$(bash_json 'git merge --squash feat/a')"
 cfg '{"workflow":"checkpoint"}'
-ask_out() { printf '%s' "$1" | sh "$guard" 2>/dev/null; }
-out="$(ask_out "$(bash_json 'git push origin feat/a')")"
-case "$out" in *'"permissionDecision": "ask"'*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL checkpoint push does not ask: $out" ;; esac
-expect "checkpoint asks, it does not block" 0 "$(bash_json 'git push origin feat/a')"
-expect "checkpoint commits locally" 0 "$(bash_json 'git commit -m "feat(a): add a"')"
-expect_ask "checkpoint merge asks, the prompt is the yes" "$(bash_json "gh pr merge 5 $SQ")"
-# the modes are local, ask, and auto. The old names adapt, checkpoint, and autopilot stay as aliases and are saved under the new name
+expect "checkpoint maps to local and never pushes" 2 "$(bash_json 'git push origin feat/a')"
+expect "checkpoint keeps local commits" 0 "$(bash_json 'git commit -m "feat(a): add a"')"
+cfg '{"workflow":"ask"}'
+expect "ask maps to local and never pushes" 2 "$(bash_json 'git push origin feat/a')"
 cfg '{"workflow":"local"}'
 expect "local never pushes" 2 "$(bash_json 'git push origin feat/a')"
 expect "local never merges on the remote" 2 "$(bash_json "gh pr merge 5 $SQ")"
@@ -317,17 +302,15 @@ expect "local keeps local commits" 0 "$(bash_json 'git commit -m "feat(a): add a
 cfg '{"workflow":"auto"}'
 expect "auto pushes" 0 "$(bash_json 'git push origin feat/a')"
 expect "auto merges" 0 "$(bash_json "gh pr merge 5 $SQ")"
-cfg '{"workflow":"ask"}'
-out="$(ask_out "$(bash_json 'git push origin feat/a')")"
-case "$out" in *'"permissionDecision": "ask"'*"workflow is ask"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL ask does not ask: $out" ;; esac
-for pair in "autopilot auto" "checkpoint ask" "adapt local" "auto auto" "ask ask" "local local"; do
+for pair in "autopilot auto" "checkpoint local" "adapt local" "auto auto" "local local"; do
   set -- $pair
   [ "$(sh "$guard" set workflow "$1")" = "workflow=$2" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set workflow $1 is not saved as $2"; }
 done
+sh "$guard" set workflow ask >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL set workflow accepts ask"; } || pass=$((pass + 1))
 cfg '{"workflow":"adapt"}'
 case "$(sh "$guard" show)" in *"workflow=local"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old adapt in the file: $(sh "$guard" show)" ;; esac
 cfg '{"workflow":"checkpoint"}'
-case "$(sh "$guard" show)" in *"workflow=ask"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old checkpoint in the file: $(sh "$guard" show)" ;; esac
+case "$(sh "$guard" show)" in *"workflow=local"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old checkpoint in the file: $(sh "$guard" show)" ;; esac
 cfg '{"workflow":"autopilot"}'
 case "$(sh "$guard" show)" in *"workflow=auto"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old autopilot in the file: $(sh "$guard" show)" ;; esac
 # the old merge key is read once
@@ -336,7 +319,7 @@ case "$(sh "$guard" show)" in *"workflow=auto"*) pass=$((pass + 1)) ;; *) fail=$
 cfg '{"merge":"full"}'
 case "$(sh "$guard" show)" in *"workflow=auto"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old full: $(sh "$guard" show)" ;; esac
 cfg '{"merge":"off"}'
-case "$(sh "$guard" show)" in *"workflow=ask"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old off: $(sh "$guard" show)" ;; esac
+case "$(sh "$guard" show)" in *"workflow=local"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old off: $(sh "$guard" show)" ;; esac
 cfg '{"merge":"sometimes"}'
 case "$(sh "$guard" show)" in *"workflow=local"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL old typo: $(sh "$guard" show)" ;; esac
 cfg 'not json'
@@ -393,16 +376,16 @@ expect "an optional scope may be given" 0 "$(bash_json 'git commit -m "feat(a): 
 expect "an optional scope still needs a type" 2 "$(bash_json 'git commit -m "added a"')"
 cfg '{"merge_method":"merge"}'
 expect "merge method merge accepts --merge" 0 "$(bash_json 'gh pr merge 5 --merge --delete-branch')"
-expect_ask "merge method merge refuses --squash" "$(bash_json "gh pr merge 5 $SQ")"
-expect_ask "merge method merge refuses --rebase" "$(bash_json 'gh pr merge 5 --rebase')"
+expect "merge method merge refuses --squash" 2 "$(bash_json "gh pr merge 5 $SQ")"
+expect "merge method merge refuses --rebase" 2 "$(bash_json 'gh pr merge 5 --rebase')"
 expect "merge method merge refuses --admin" 2 "$(bash_json 'gh pr merge 5 --merge --admin')"
 expect "merge method merge refuses a trailer" 2 "$(bash_json 'gh pr merge 5 --merge --body "Co-Authored-By: a <a@b>"')"
 cfg '{"merge_method":"rebase"}'
 expect "merge method rebase accepts --rebase" 0 "$(bash_json 'gh pr merge 5 --rebase --delete-branch')"
-expect_ask "merge method rebase refuses --merge" "$(bash_json 'gh pr merge 5 --merge')"
-expect_ask "merge method rebase refuses a bare merge" "$(bash_json 'gh pr merge 5')"
+expect "merge method rebase refuses --merge" 2 "$(bash_json 'gh pr merge 5 --merge')"
+expect "merge method rebase refuses a bare merge" 2 "$(bash_json 'gh pr merge 5')"
 cfg '{"workflow":"auto"}'
-expect_ask "the default merge is still a squash" "$(bash_json 'gh pr merge 5 --merge')"
+expect "the default merge is still a squash" 2 "$(bash_json 'gh pr merge 5 --merge')"
 for pair in "merge_method rebase" "merge_method merge" "commit_scope optional" "commit_types feat,fix" "base_branch develop" "base_branch release/1.x"; do
   set -- $pair
   [ "$(sh "$guard" set "$1" "$2")" = "$1=$2" ] && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set $1 $2"; }
@@ -462,7 +445,7 @@ cfg '{}'
 expect_codex "codex patch to a source file passes" 0 "$(patch_json "$(printf '*** Begin Patch\n*** Add File: src/a.go\n+x\n*** End Patch')")"
 expect_codex "codex patch with an em dash is refused" 2 "$(patch_json "$(printf '*** Begin Patch\n*** Add File: src/a.md\n+a \xe2\x80\x94 b\n*** End Patch')")"
 cfg '{"workflow":"ask"}'
-expect_codex "codex ask refuses a push" 2 "$(bash_json 'git push origin feat/a')"
+expect_codex "codex ask maps to local and refuses a push" 2 "$(bash_json 'git push origin feat/a')"
 cfg '{"workflow":"auto"}'
 expect_codex "codex auto pushes" 0 "$(bash_json 'git push origin feat/a')"
 cfg '{"workflow":"local"}'
@@ -479,7 +462,7 @@ expect_cc() {
 cfg '{"workflow":"local"}'
 expect_cc "commandcode local never pushes" 2 '{"tool_name":"shell_command","tool_input":{"command":"git push origin feat/a"}}'
 cfg '{"workflow":"ask"}'
-expect_cc "commandcode ask refuses a push" 2 '{"tool_name":"shell_command","tool_input":{"command":"git push origin feat/a"}}'
+expect_cc "commandcode ask maps to local and refuses a push" 2 '{"tool_name":"shell_command","tool_input":{"command":"git push origin feat/a"}}'
 cfg '{"workflow":"auto"}'
 expect_cc "commandcode auto pushes" 0 '{"tool_name":"shell_command","tool_input":{"command":"git push origin feat/a"}}'
 cfg '{}'
@@ -505,7 +488,7 @@ expect "local refuses a PR review" 2 "$(bash_json 'gh pr review 5 --comment --bo
 expect "local refuses a review reply" 2 "$(bash_json 'gh api -X POST repos/o/r/pulls/5/comments/9/replies -f body=ok')"
 expect "local allows reading PR comments" 0 "$(bash_json 'gh api repos/o/r/pulls/5/comments')"
 cfg '{"workflow":"ask"}'
-expect_ask "ask asks before a PR review" "$(bash_json 'gh pr review 5 --approve')"
+expect "ask maps to local and refuses a PR review" 2 "$(bash_json 'gh pr review 5 --approve')"
 cfg '{"workflow":"auto"}'
 expect "auto posts a PR review" 0 "$(bash_json 'gh pr review 5 --comment --body "ok"')"
 cfg '{}'

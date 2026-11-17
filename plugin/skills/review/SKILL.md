@@ -41,7 +41,8 @@ It never commits, pushes, merges, or switches your branch.
    when you ask, CI already runs it on the PR.
 4. Show the findings in the chat. Then ask with AskUserQuestion, the recommended option first: post as a comment (Recommended), request
    changes, approve, or post nothing. Approve only when the user chooses it.
-5. Post what the user chose. The guard follows the workflow mode: `local` refuses it, `ask` shows a permission prompt, `auto` posts.
+5. Post what the user chose. The guard follows the workflow mode: `local` refuses it, `auto` allows it. The skill still asks you
+   before posting.
    - Summary only: `gh pr review <pr> --comment --body-file <file>`, or `--request-changes` or `--approve` in place of `--comment`.
    - Comments on lines: write a JSON file outside the repo with `event` (`COMMENT`, `REQUEST_CHANGES`, or `APPROVE`), `body`, and `comments`
      (each with `path`, `line`, `side`, `body`), then `gh api -X POST repos/{owner}/{repo}/pulls/<pr>/reviews --input <file>`.
