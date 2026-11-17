@@ -18,9 +18,11 @@ A Claude Code plugin: skills, agents, a guard hook, and templates for a small ag
 ## Modules
 
 - `plugin/hooks/`: the guard (`guard.py`) and its shell entry (`run.sh`). Public interface: `run.sh`. May depend on: nothing in the repo.
-- `plugin/skills/`: the commands `setup`, `ship`, `workflow`, `dotagent`. Public interface: each `SKILL.md`. May depend on: `hooks/run.sh`, `agents/`, `templates/`.
+- `plugin/skills/`: the commands `setup`, `ship`, `workflow`, `review`, `dotagent`. Public interface: each `SKILL.md`. May depend on: `hooks/run.sh`, `agents/`, `templates/`.
 - `plugin/agents/`: `reviewer`, the one subagent. May depend on: nothing in the repo.
-- `plugin/templates/`: files copied into a user's repo, mirroring its paths. May depend on: nothing.
+- `plugin/templates/`: files copied into a user's repo, mirroring its paths, including `.codex/` and `.commandcode/`. May depend on: nothing.
+- `skills/dotagent-ship/`: the portable skill, byte identical to the template copy. May depend on: nothing.
+- `hooks/`: the Codex hook entry at the repo root. May depend on: `plugin/hooks/run.sh`.
 - `tests/`: the guard tests and the skill tests. May depend on: `plugin/`.
 - `examples/`, `scripts/`: the example app, the release notes script and the diagram svg script. May read `plugin/`, never written back by it.
 
@@ -28,7 +30,7 @@ A Claude Code plugin: skills, agents, a guard hook, and templates for a small ag
 
 - Every change goes through a PR into `main`. No direct push.
 - Merging a change to `plugin/.claude-plugin/plugin.json` or `CHANGELOG.md` tags a release (`.github/workflows/release.yml`). Bump the version only with the user's yes.
-- Commits are one line, `type(scope): summary`, no trailer. Scopes: plugin, skills, ship, workflow, hooks, guard, setup, templates, readme, changelog, repo, ci.
+- Commits are one line, `type(scope): summary`, no trailer. Scopes: plugin, skills, ship, workflow, review, hooks, guard, setup, templates, readme, changelog, repo, ci.
 - Names say what changed. Never a plan label such as `milestone-1`, `task-2`, or `wip`, and never `(#N)`.
 - Planning notes stay local: keep them untracked and listed in `.git/info/exclude`, never in `.gitignore`, and never pushed.
 - Never edit protected paths (`protected` in `.dotagent/config.json`: `release.yml`, `LICENSE`, `plugin/.claude-plugin/plugin.json`). The guard refuses it.

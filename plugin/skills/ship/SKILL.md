@@ -1,6 +1,6 @@
 ---
 description: "Run a task as one loop: a checkable finish predicate, one verified unit at a time, a proof against the real artifact, a fresh review, and a stop reason when it cannot move. continue resumes."
-argument-hint: "<task> | continue | status"
+argument-hint: "<task> | continue"
 ---
 # dotagent ship
 
