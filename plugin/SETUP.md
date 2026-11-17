@@ -53,6 +53,7 @@ Read `SETUP-REFERENCE.md` before this step, then write each file at its own path
 | `.codex/agents/reviewer.toml` | `templates/.codex/agents/reviewer.toml` | `codex` or `both` |
 | `.codex/hooks.json` | `templates/.codex/hooks.json` | `codex` or `both` |
 | `.commandcode/settings.json` | `templates/.commandcode/settings.json` | `commandcode` |
+| `.commandcode/agents/reviewer.md` | `templates/.commandcode/agents/reviewer.md` | `commandcode` |
 | `.dotagent/guard.py`, `.dotagent/run.sh` | `hooks/guard.py`, `hooks/run.sh` | `codex`, `commandcode`, or `other` |
 | `docs/README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md` | `templates/docs/` | only a role the repo does not cover yet |
 | `docs/VERIFICATION.md` | `templates/docs/VERIFICATION.md` | when the user said yes |

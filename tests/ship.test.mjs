@@ -25,7 +25,7 @@ test('the core stays small and every reference is linked from it and exists', ()
   assert.ok(Buffer.byteLength(skill) < 10000, `SKILL.md is ${Buffer.byteLength(skill)} bytes, move text to a reference`)
   assert.deepEqual(references.sort(), ['fanout.md', 'loop.md', 'merge.md', 'plan.md', 'production.md', 'verify.md'])
   for (const file of references) {
-    assert.ok(skill.includes('${CLAUDE_SKILL_DIR}/references/' + file), `${file} is not linked from SKILL.md`)
+    assert.ok(skill.includes('$SKILL/references/' + file), `${file} is not linked from SKILL.md`)
   }
 })
 

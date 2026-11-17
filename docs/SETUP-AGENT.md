@@ -48,6 +48,7 @@ the open items in `docs/DOTAGENT-SETUP.md`. Never invent a command or a rule.
 | `.codex/agents/reviewer.toml` | `plugin/templates/.codex/agents/reviewer.toml` (Codex only) |
 | `.codex/hooks.json` | `plugin/templates/.codex/hooks.json` (Codex only) |
 | `.commandcode/settings.json` | `plugin/templates/.commandcode/settings.json` (Command Code only) |
+| `.commandcode/agents/reviewer.md` | `plugin/templates/.commandcode/agents/reviewer.md` (Command Code only) |
 | `.dotagent/guard.py` | `plugin/hooks/guard.py` |
 | `.dotagent/run.sh` | `plugin/hooks/run.sh` |
 | `docs/README.md`, `CONVENTIONS.md`, `ARCHITECTURE.md` | `plugin/templates/docs/` |

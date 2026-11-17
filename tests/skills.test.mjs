@@ -39,6 +39,15 @@ test('each Codex agent file has a name, a description, and developer instruction
   }
 })
 
+test('each plugin skill defines the Claude skill directory once, and the portable skill never', () => {
+  for (const name of ['ship', 'workflow', 'dotagent', 'setup', 'review']) {
+    const text = readFileSync(new URL(`../plugin/skills/${name}/SKILL.md`, import.meta.url), 'utf8')
+    const count = (text.match(/\$\{CLAUDE_SKILL_DIR\}/g) || []).length
+    assert.ok(count <= 1, `${name} repeats CLAUDE_SKILL_DIR ${count} times`)
+  }
+  assert.ok(!skill.includes('CLAUDE_SKILL_DIR'), 'the portable skill names CLAUDE_SKILL_DIR')
+})
+
 test('the body names no tool or path that only Claude Code has', () => {
   const body = skill.replaceAll('.dotagent/run.sh', '')
   for (const tool of ['AskUserQuestion', 'ToolSearch', 'Workflow', 'Agent', 'run.sh', 'phase plan', 'CLAUDE_SKILL_DIR', 'CLAUDE_PLUGIN_ROOT']) {
@@ -56,6 +65,16 @@ test('the portable skill carries the fan-out and production rules', () => {
 test('the portable skill starts a run and names the state commands', () => {
   for (const command of ['start', 'progress', 'stop', 'state']) {
     assert.ok(skill.includes(`.dotagent/run.sh ${command}`), `the portable skill does not name ${command}`)
+  }
+})
+
+test('the Command Code reviewer has a name, a description, the reviewer tools, and no Claude-only token', () => {
+  const agent = readFileSync(new URL('../plugin/templates/.commandcode/agents/reviewer.md', import.meta.url), 'utf8')
+  assert.match(agent, /^name: reviewer$/m)
+  assert.match(agent, /^description: ".+"$/m)
+  assert.match(agent, /^tools: .*shell_command/m)
+  for (const token of ['AskUserQuestion', 'ToolSearch', 'Workflow', 'CLAUDE_', 'run.sh']) {
+    assert.ok(!agent.includes(token), `the Command Code reviewer names ${token}`)
   }
 })
 

@@ -11,17 +11,19 @@ state. The task can carry pasted requirements.
 - A run is a loop, not a line: **goal -> plan -> one unit -> verify -> prove -> review -> ship -> next unit -> finish**. A failed check
   goes back to the unit. Two tries, then stop.
 - A stop is a feature: every stop names one reason, writes it down, and ends with a `next:` line. Never retry the same unit silently.
+`SKILL` is `${CLAUDE_SKILL_DIR}`. `RUN` is `$SKILL/../../hooks/run.sh`. If an agent does not expand the token, use the portable skill.
+
 - Read a reference only when you reach that step, so a small task never loads the rest:
-  - `${CLAUDE_SKILL_DIR}/references/loop.md` before the first unit: the loop, the stop table, the context budget, how to decide.
-  - `${CLAUDE_SKILL_DIR}/references/verify.md` before a behavior change: the proof ladder, the feature map, formal verification.
-  - `${CLAUDE_SKILL_DIR}/references/plan.md` before you plan: the read-only plan and the TODO layout.
-  - `${CLAUDE_SKILL_DIR}/references/merge.md` before you push, open a PR, or merge.
-  - `${CLAUDE_SKILL_DIR}/references/fanout.md` before a wide verification, a competing design, or an adversarial pass.
-  - `${CLAUDE_SKILL_DIR}/references/production.md` before a PR with a `release:` or `watch:` line.
+  - `$SKILL/references/loop.md` before the first unit: the loop, the stop table, the context budget, how to decide.
+  - `$SKILL/references/verify.md` before a behavior change: the proof ladder, the feature map, formal verification.
+  - `$SKILL/references/plan.md` before you plan: the read-only plan and the TODO layout.
+  - `$SKILL/references/merge.md` before you push, open a PR, or merge.
+  - `$SKILL/references/fanout.md` before a wide verification, a competing design, or an adversarial pass.
+  - `$SKILL/references/production.md` before a PR with a `release:` or `watch:` line.
 
 Read the `[dotagent] ...` line from session start. It carries `workflow=`, `phase=`, `stop=`, `stalled=`, `next=`, and when the repo differs
 from the default also `merge=`, `types=`, `scope=`, `base=`, and `protected=`. Follow them, they come from `/dotagent:setup`.
-`RUN` is `${CLAUDE_SKILL_DIR}/../../hooks/run.sh`. If the line says `unfinished`, `docs/TODO.md` holds work that is not done yet.
+If the line says `unfinished`, `docs/TODO.md` holds work that is not done yet.
 
 A `[dotagent] first run` line means no config yet:
 
@@ -131,7 +133,7 @@ the url on `done:`), an open PR (go on at CI), commits but no PR (review, then o
 - End every run and every stop with `sh "$RUN" receipt` in the report: the subagents that really ran (`subagents: reviewer 1`).
 - Before `gh pr create`, `sh "$RUN" gate check` must say `ok`, and the gate runs once per commit, not once per agent.
 - A hook refuses a path in `protected`: do not work around it. A hook refuses an edit outside the PR's `files:`: add the path with a
-  reason, then retry. For a long plan, `sh "${CLAUDE_SKILL_DIR}/../../hooks/loop.sh"` runs one fresh process per PR.
+  reason, then retry. For a long plan, `sh "$SKILL/../../hooks/loop.sh"` runs one fresh process per PR.
 
 For `/goal`: `the finish predicate in docs/TODO.md passes, or the run stopped with a reason and reported it`. End every run, and every
 stop, with one line `next:` that names what the user can do now (`continue`, `/dotagent:workflow`, `/dotagent:setup`, or a new task).

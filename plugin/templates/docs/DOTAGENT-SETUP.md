@@ -30,6 +30,7 @@ You tick Reviewed once you have read it.
 | `.githooks/pre-commit`, `commit-msg`, `pre-push` | `templates/.githooks/` | [ ] | [ ] |
 | `docs/README.md`, `ARCHITECTURE.md`, `CONVENTIONS.md` | `templates/docs/` | [ ] | [ ] |
 | `docs/VERIFICATION.md` | `templates/docs/VERIFICATION.md` | [ ] | [ ] |
+| `.commandcode/agents/reviewer.md` | `templates/.commandcode/agents/reviewer.md` | [ ] | [ ] |
 | `.dotagent/config.json` | `templates/.dotagent/config.json`, set with `run.sh`, ignored by git | [ ] | [ ] |
 | `.gitignore` | adds `.dotagent`, `.claude`, `docs/DOTAGENT-SETUP.md`, `docs/TODO.md` | [ ] | [ ] |
 

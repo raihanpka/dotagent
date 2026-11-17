@@ -9,7 +9,7 @@ the CI split, and the git hooks.
 |---|---|---|
 | `claude` | Claude Code | the plugin, `AGENTS.md`, `CLAUDE.md`, the docs, the config |
 | `codex` | OpenAI Codex | `AGENTS.md`, the portable skill, `.codex/agents/reviewer.toml`, `.codex/hooks.json`, `.dotagent/`, the docs, the config |
-| `commandcode` | Command Code | `AGENTS.md`, the portable skill, `.commandcode/settings.json`, `.dotagent/`, the docs, the config |
+| `commandcode` | Command Code | `AGENTS.md`, the portable skill, `.commandcode/settings.json`, `.commandcode/agents/reviewer.md`, `.dotagent/`, the docs, the config |
 | `both` | Claude Code and Codex | everything for `claude` and `codex`, with one `AGENTS.md` and one `CLAUDE.md` |
 | `other` | Cursor, Antigravity, or any agent that reads `AGENTS.md` and `.agents/skills` | `AGENTS.md`, the portable skill, `.dotagent/`, the docs, the config |
 
