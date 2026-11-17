@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
-# Runs the gates CI runs, so a failure shows up here with its file and line, not as a red PR.
+# Runs the checks CI runs, so a failure shows up here with its file and line, not as a red PR.
 set -e
 cd "$(git rev-parse --show-toplevel)" || exit 1
+echo "==> syntax"
+python3 -m py_compile plugin/hooks/guard.py
+sh -n plugin/hooks/run.sh
+sh -n plugin/hooks/loop.sh
+bash -n .githooks/pre-commit .githooks/commit-msg .githooks/pre-push
+echo "==> diagram"
+python3 scripts/workflow-svg.py --check
 echo "==> guard tests"
 bash tests/hooks.test.sh
 echo "==> ship tests"
