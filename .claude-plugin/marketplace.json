@@ -8,8 +8,8 @@
     {
       "name": "dotagent",
       "source": "./plugin",
-      "description": "A minimalist single-loop agent workflow: plan when needed, atomic commits, fresh review, PR, CI, and a rebase and squash merge in three modes (local, ask, auto), with hook guardrails."
+      "description": "A verified agent loop: a checkable finish, a real-artifact proof, fresh review, fan-out, and a production watch, in auto or local mode, with hook guardrails."
     }
   ],
-  "description": "A minimalist single-loop agent workflow for Claude Code."
+  "description": "A verified agent loop for Claude Code: proof first, then the pull request."
 }
