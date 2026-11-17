@@ -80,6 +80,16 @@ next: one concrete action
 - Touch only what the task needs. Put unrelated problems under `noticed`, do not plan them.
 - Two subtasks that change the same file are ordered, never parallel.
 
+## Design rules
+
+- Name the data shape first. Prefer a state machine or a typed model over another boolean that must stay in sync.
+- Validate at the boundary. Trust internal types and keep business logic pure.
+- Remove dead code and the old API in the same wave. Do not add a compatibility layer.
+- Take the smallest diff. If the same edit repeats, build a small script or codemod and prove it on the first unit.
+- Assert observable behavior, not internals. A test that passes when the behavior breaks proves nothing.
+- A migration converges on the target state. A retry or a partial run is recognizable and idempotent.
+- For a novel interaction, build two or three throwaway prototypes before committing.
+
 ## The loop over the PRs
 
 Ship the PRs in order, one after another, one unit at a time:

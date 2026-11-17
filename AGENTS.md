@@ -29,7 +29,7 @@ A Claude Code plugin: skills, agents, a guard hook, and templates for a small ag
 
 ## Rules
 
-- Every change goes through a PR into `main`. No direct push.
+- Every change goes through a PR into `main`. No direct push. The release gate is `docs/RELEASE-CHECKLIST.md`.
 - Merging a change to `plugin/.claude-plugin/plugin.json` or `CHANGELOG.md` tags a release (`.github/workflows/release.yml`). Bump the version only with the user's yes.
 - Commits are one line, `type(scope): summary`, no trailer. Scopes: plugin, skills, ship, workflow, review, hooks, guard, setup, templates, readme, changelog, repo, ci.
 - Names say what changed. Never a plan label such as `milestone-1`, `task-2`, or `wip`, and never `(#N)`.

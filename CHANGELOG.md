@@ -28,6 +28,7 @@ The benchmark and `docs/BENCHMARK.md` were removed in this release. Older entrie
   the `## log` table as the fallback. `docs/STATE.md` documents every event and the state machine.
 - A shell write to a `protected` path is refused too: redirects, `sed -i`, `cp`/`mv`/`rm`, and `git restore`/`checkout`/`apply`/`rm` that
   name the path. The hook still sees only the tool call; CI and branch protection are the backstop.
+- The old `big_plan` answer is ignored. A run goes on until the finish predicate passes or a stop.
 
 ### Two modes
 
@@ -45,18 +46,25 @@ The benchmark and `docs/BENCHMARK.md` were removed in this release. Older entrie
 - Formal verification is one property, one tool, a scope, a command, and a sync commit. Show it fail on a broken variant first.
 - `production.md` adds the four stages: pre-production, deploy, release, and post-release. A PR with `release:` or `watch:` is done only
   after the watch passes. A failed watch is a `regression` stop with a rollback.
+- `verify.md` adds blast radius (name the one fact the change is safe because of, and prove it by running code) and a measured-number
+  checklist (limiter, tuning, errors, repeat runs, end-to-end, did the work run).
 
 ### Fan out
 
 - `fanout.md` covers swarm, arena, interrogate, and panel. Swarm is read-only, one agent per independent slice, with `PASS`, `ISSUES`, or
   `BLOCKED`. Arena isolates each attempt. Interrogate uses fresh adversarial reviewers and keeps only findings with a repro. A panel is one
   round. The lead still owns the merge.
+- `plan.md` adds the design rules: data shape first, boundary validation, subtract before add, build the lever for repeated edits, test
+  behavior, idempotent migrations, and prototypes for a novel interaction. `loop.md` says to encode a repeated correction as a lint, test,
+  hook, or script.
 
 ### Setup, docs, and agents
 
 - Setup is a short guide plus `SETUP-REFERENCE.md`. It asks one round: agent, commands, workflow, verification, protected paths, hooks.
 - Command Code is a first-class agent: `cmd skills add raihanpka/dotagent -s dotagent-ship`, and setup writes
-  `.commandcode/settings.json` plus `.dotagent/` for the guard.
+  `.commandcode/settings.json`, `.commandcode/agents/reviewer.md`, and `.dotagent/` for the guard.
+- The generated-files checklist lists the portable skill folder with its `references/`, both reviewers, both hook files, and `.dotagent/`.
+- The release gate is `docs/RELEASE-CHECKLIST.md`: versions, skills, state, verification, the full gate, and the live-session items.
 - The PR template uses the common engineering headings: Summary, Motivation, What changed, Test plan, Risk and rollback, Checklist.
 - Comments are why-only; the reviewer flags a comment that restates the next line. A new markdown file the task did not ask for is a gap.
 - The README is shorter, with the details collapsed, and the workflow diagram is a circular loop with equal nodes and the Excalidraw font.

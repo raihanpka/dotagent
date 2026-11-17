@@ -33,7 +33,7 @@ The loop is the default. Nothing waits between units. The only pauses are a stop
 - Two `same` rows are a pivot: write the new hypothesis in `## log` and change the approach. Four are `stalled=yes` and `stop no-progress`.
 - The TODO is a queue. Take the first unfinished PR whose `needs:` is merged. After a merge, write the url on `done:`, switch to the base,
   pull, and take the next PR. A stop is not the end of the queue: `continue` resumes at the next unit.
-- The harness's loop command or a fresh process per PR runs until no PR is left or a stop fires.
+- In `auto`, the harness's loop command runs one fresh process per PR; in `local`, one process for the whole TODO and never pushes.
 
 ## Progress and stalls
 
@@ -89,11 +89,11 @@ For an audit trail, `sh "$RUN" log > decisions.tsv` prints the `## log` table as
 
 ## The unattended loop
 
-If the harness has a loop command or a headless mode, run one fresh process per PR. Otherwise run this skill again in a fresh session. The
-lead never carries the whole plan.
+If the harness has a loop command or a headless mode, run one fresh process per PR in `auto`, and one process for the whole TODO in
+`local`. Otherwise run this skill again in a fresh session. The lead never carries the whole plan.
 
-- Before each process read `state`. `run=stopped` exits with the reason. `stalled=yes` records `stop no-progress` and exits.
-- After each process compare HEAD and the unfinished count. If neither moved, record `stop no-progress` and exit.
+- Before each process it reads `state`. `run=stopped` exits with the reason. `stalled=yes` records `stop no-progress` and exits.
+- After each process it compares HEAD and the unfinished count. If neither moved, it records `stop no-progress` and exits.
 - Use the harness's turn or budget cap when it has one; name the flag you checked.
 - Every exit prints a `next:` line.
 
@@ -113,7 +113,7 @@ action, or a requirement that contradicts itself or the repo. Name it `needs-hum
 Context overflow degrades reasoning, creates compression artifacts, and stops progress. Guard it on purpose:
 
 - Resume from the capsule, not the transcript: `state`, the top 20 lines of the TODO, `git log -1`.
-- One unit per context. After a PR, start a fresh process with the harness's loop command or a new session.
+- One unit per context. In `auto`, start a fresh process after a PR. In `local`, the run is one process for the whole TODO.
 - Per unit: Grep first, read matching ranges, at most about 6 files or 400 lines before handing wide reading to `Explore`.
 - `Explore` returns `path:line` and a summary, never raw files.
 - Keep the failing output short: the command, the failing line, the last 20 lines. Never paste a full CI log into the main context.
@@ -122,6 +122,10 @@ Context overflow degrades reasoning, creates compression artifacts, and stops pr
   the reply, not the steps.
 
 If the conversation is compacted, the hook reprints the capsule. Read it before any new work.
+
+## Correct the repo
+
+When the same correction comes back twice, encode it as a lint, test, hook, or script. Another line of prose will not stop the next agent.
 
 ## What a stop is not
 

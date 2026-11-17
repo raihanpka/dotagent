@@ -54,6 +54,7 @@ rollback: the command, the flag, or "revert the squash commit"
 ## Safety
 
 - A production action is irreversible until proven otherwise. Ask before a deploy that can delete data, send messages, or force a rollout.
+- A retry or a partial run must converge on the same state. Make the release, the backfill, and the rollback idempotent.
 - Prefer staging, a dry run, or a canary. A dry run that still touches the network is not a dry run; observe what it skips.
 - Record the rollback before the release, not after the failure. If there is no rollback, say so and stop `needs-human`.
 - The evidence is a pointer: a dashboard URL, a query, a log line, a metric with its window, or a run id. Never paste a full production log.

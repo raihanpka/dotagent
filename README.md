@@ -95,8 +95,8 @@ Every stop names one reason, writes it to `.dotagent/runs.jsonl`, writes a `## s
 | `error` | A tool or CLI failed twice |
 | `regression` | A post-merge `watch:` fails |
 
-For a long plan, `sh plugin/hooks/loop.sh` runs one fresh process per PR, stops on a recorded stop or a stall, and compares HEAD and the
-unfinished count after each PR. `CLAUDE_FLAGS="--max-turns 40"` caps each process.
+For a long plan, `sh plugin/hooks/loop.sh` runs one fresh process per PR in `auto`, and one process for the whole TODO in `local`. It stops
+on a recorded stop or a stall and compares HEAD and the unfinished count after each PR. `CLAUDE_FLAGS="--max-turns 40"` caps each process.
 </details>
 
 ## verification
@@ -171,7 +171,8 @@ dotagent/
 └── CHANGELOG.md
 ```
 
-`docs/STATE.md` documents every `.dotagent` event. `sh plugin/hooks/run.sh log` prints the human log as TSV.
+`docs/STATE.md` documents every `.dotagent` event. `sh plugin/hooks/run.sh log` prints the human log as TSV. The release gate is in
+[`docs/RELEASE-CHECKLIST.md`](docs/RELEASE-CHECKLIST.md).
 
 `docs/PRACTICES.md` says where each rule comes from. After a change:
 

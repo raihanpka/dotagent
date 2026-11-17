@@ -52,6 +52,33 @@ production check when the change earns it.
 When a field has no runtime surface, use the closest executable check. When there is none, say `inconclusive` and say what is missing.
 Never invent a proof for a domain the repo cannot run.
 
+## Blast radius
+
+A small diff can break something far away. Before you trust it, find the one fact the change is safe because of and prove it by running
+code, not by writing a paragraph.
+
+1. Name the fact. "This call only drops already-dead cache entries and does nothing else" is a fact. "It should be fine" is not.
+2. Get it as far down this list as is cheap: you said so, a `file:line`, the bad case cannot happen, a script or test calls the real code,
+   or the running app reproduces it. Step 4 is usually a small script that imports the same library the app ships.
+3. Look where grep stops: the library source and its pinned version, the wire format, a database column, another language reading the same
+   bytes, a feature flag, code three hops downstream.
+4. Keep the risks you confirmed, list the ones you cleared, and paste the proof for the one that matters.
+
+If you cannot prove the fact, say `unproven` and stop `question`.
+
+## A measured number
+
+Before you report a speedup or a regression, answer these from a run, not from the code:
+
+- What limits the number? Name the profile or counter, and why not double.
+- Was every side tuned the way production runs it?
+- Did the arithmetic break a physical limit?
+- Did it error, skip work, or read a cache? Confirm the work ran inside the timed region.
+- Does it reproduce over alternating runs? Report the median and range, and call a gap under the spread no difference.
+- Does it matter end to end, on the path a user waits on?
+
+The verdict is faster, slower, no measurable difference, or inconclusive. One run is a ballpark, not a verdict.
+
 ## The feature map
 
 A runtime proof needs to know what the app does and how a user reaches it. When the repo has no map, add one to the PR `prove:` or as a

@@ -7,7 +7,8 @@ Read this before you push, open a PR, or merge, whatever the size of the task. `
 - **auto**: the steps in Merge, one branch and one PR per plan item.
 - **local**: ask first for what is missing (one round, see Questions), then plan. Work on one branch for the whole TODO
   (`feat/<slug>`), one local commit per subtask, no push, no PR, no CI. Run the reviewer once at the end. Then ask whether to rebase
-  and squash onto the default branch locally (recommended) or to leave the branch for the user, and do what they pick.
+  and squash onto the default branch locally (recommended) or to leave the branch for the user, and do what they pick. Write
+  `done: local` on each PR after the local squash, or after the branch is left, so `run.sh status` reaches 0.
 
 ## Open the PR
 
