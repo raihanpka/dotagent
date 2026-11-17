@@ -5,7 +5,7 @@
 A small Go task board API (gin, in-memory stores) with 6 modules: `auth`, `boards`, `tasks`, `labels`, `profile`, `webhooks`. It does two jobs:
 
 - It shows what `/dotagent:setup` generates for a repo: `AGENTS.md`, the PR template and example, CI split into a PR gate and a main check, git hooks, and `docs/`.
-- It is the base app of the benchmark, see [`docs/BENCHMARK.md`](../docs/BENCHMARK.md). It has one seeded bug on purpose: `GET /api/v1/boards` lists every user's boards.
+- It has one seeded bug on purpose, as a demo task: `GET /api/v1/boards` lists every user's boards.
 
 ```
 taskboard-backend/

@@ -7,7 +7,7 @@ You tick Reviewed once you have read it.
 
 | Setting | Value | Why |
 |---|---|---|
-| workflow | ask | The benchmark copy has no remote, so nothing may be pushed without a yes. |
+| workflow | ask | This copy has no remote, so nothing may be pushed without a yes. |
 | em dash and emoji | block | The default, the agent writes neither. |
 | companion skills | none | `style_skills` is none. |
 | git hooks on | yes, `git config core.hooksPath .githooks` | They check every commit and push, by anyone, before CI does. |
@@ -38,7 +38,7 @@ You tick Reviewed once you have read it.
 
 - [ ] The repo has no GitHub remote, so the PR and CI steps cannot run yet. Add one, push `main`, and make `Pull Request Go Gate` a required status check.
 - [ ] No coupling checker exists. Add `depguard` to a `.golangci.yaml` if the repo grows.
-- [ ] Stores are in memory. Pick a database before this is more than a benchmark app.
+- [ ] Stores are in memory. Pick a database before this is more than a demo app.
 
 ## Undo
 

@@ -208,11 +208,11 @@ dotagent/
 ├── scripts/release-notes.sh          # release notes: the CHANGELOG section plus the commits since the last tag
 ├── scripts/workflow-svg.py           # draws docs/workflow.svg from docs/workflow.excalidraw (run it after editing the diagram)
 ├── .github/workflows/release.yml     # tags and releases a version when it is bumped on main
-├── docs/                             # PRACTICES.md, BENCHMARK.md, workflow diagram (svg, excalidraw)
+├── docs/                             # PRACTICES.md, the loop diagram (svg, excalidraw)
 └── tests/                            # hook tests, skill tests
 ```
 
-`docs/PRACTICES.md` says where each rule comes from, `docs/BENCHMARK.md` is the plan to measure it. After a
+`docs/PRACTICES.md` says where each rule comes from. After a
 change run `bash tests/hooks.test.sh` and `node --test tests/ship.test.mjs tests/skills.test.mjs`.
 
 To release: bump `version` in `plugin/.claude-plugin/plugin.json`, add a `## <version>` section to `CHANGELOG.md`, and push to `main`. The release workflow runs the tests, tags `v<version>`, and publishes the release with that section and the commits since the last tag.

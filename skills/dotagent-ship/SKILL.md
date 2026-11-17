@@ -92,4 +92,4 @@ user already set auto in `.dotagent/config.json` (Claude Code only).
 
 Stop and report, do not loop, when: a fix failed twice, a question is still open, CI is red
 after one fix, or a PR cannot merge. Say what is done, what is left, and what the user must decide.
-Never commit `docs/TODO.md`, a planning note, or a benchmark result.
+Never commit `docs/TODO.md`, a planning note, or a summary doc the task did not ask for.

@@ -1,6 +1,6 @@
 # taskboard-backend
 
-Go backend for a small team task board, a modular monolith served over REST under `/api/v1` (gin, in-memory stores). It is the dotagent benchmark app, see `../../docs/BENCHMARK.md`. Generic working rules come from the dotagent, the facts below are this repo's.
+Go backend for a small team task board, a modular monolith served over REST under `/api/v1` (gin, in-memory stores). It is the dotagent example app. Generic working rules come from the dotagent, the facts below are this repo's.
 
 ## Commands
 

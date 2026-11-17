@@ -13,7 +13,7 @@ A Claude Code plugin: skills, agents, a guard hook, and templates for a small ag
 ## Architecture
 
 - Style: a plugin package of files, no service. Structure: by role, one folder per kind of file.
-- Coupling: `plugin/` never reads `tests/`, `benchmark/`, `examples/`, or `scripts/`. Dependencies point from the tests to the plugin, never back. Enforced by grep for now, no boundary check yet.
+- Coupling: `plugin/` never reads `tests/`, `examples/`, or `scripts/`. Dependencies point from the tests to the plugin, never back. Enforced by grep for now, no boundary check yet.
 
 ## Modules
 
@@ -22,14 +22,13 @@ A Claude Code plugin: skills, agents, a guard hook, and templates for a small ag
 - `plugin/agents/`: `reviewer`, the one subagent. May depend on: nothing in the repo.
 - `plugin/templates/`: files copied into a user's repo, mirroring its paths. May depend on: nothing.
 - `tests/`: the guard tests and the skill tests. May depend on: `plugin/`.
-- `benchmark/`, `examples/`, `scripts/`: measurement, the example app, the release notes script and the diagram svg script. May read `plugin/`, never written back by it.
+- `examples/`, `scripts/`: the example app, the release notes script and the diagram svg script. May read `plugin/`, never written back by it.
 
 ## Rules
 
 - Every change goes through a PR into `main`. No direct push.
 - Merging a change to `plugin/.claude-plugin/plugin.json` or `CHANGELOG.md` tags a release (`.github/workflows/release.yml`). Bump the version only with the user's yes.
-- Commits are one line, `type(scope): summary`, no trailer. Scopes: plugin, skills, ship, workflow, hooks, guard, setup, templates, readme, changelog, repo, benchmark, ci.
+- Commits are one line, `type(scope): summary`, no trailer. Scopes: plugin, skills, ship, workflow, hooks, guard, setup, templates, readme, changelog, repo, ci.
 - Names say what changed. Never a plan label such as `milestone-1`, `task-2`, or `wip`, and never `(#N)`.
 - Planning notes stay local: keep them untracked and listed in `.git/info/exclude`, never in `.gitignore`, and never pushed.
 - Never edit protected paths (`protected` in `.dotagent/config.json`: `release.yml`, `LICENSE`, `plugin/.claude-plugin/plugin.json`). The guard refuses it.
-- The benchmark spends real quota. Run it only when the user asks.
