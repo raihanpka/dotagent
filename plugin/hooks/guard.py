@@ -63,7 +63,6 @@ CHOICES = {
 ANSWERS = {
     "setup": ("full", "minimal", "skipped"),  # how much setup the user chose
     "hooks": ("on", "declined"),  # the answer about git hooks
-    "big_plan": ("ok",),  # the user agreed to a plan of more than 6 PRs
     "agents": ("claude", "codex", "commandcode", "both", "other"),  # the AI agent the user runs dotagent with, from the setup interview
 }
 CONFIG = os.path.join(".dotagent", "config.json")

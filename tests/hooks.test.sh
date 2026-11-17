@@ -246,11 +246,11 @@ sh "$guard" phase build >/dev/null
 expect "no files line means no scope" 0 '{"tool_name":"Edit","tool_input":{"file_path":"internal/b/z.go","new_string":"x"}}'
 sh "$guard" phase done >/dev/null
 printf '{"hook_event_name":"SessionStart"}' | sh "$guard" >/dev/null
-expect "agent spawn is never blocked" 0 '{"tool_name":"Agent","tool_input":{"subagent_type":"dotagent:worker"}}'
-expect "second spawn" 0 '{"tool_name":"Agent","tool_input":{"subagent_type":"dotagent:worker"}}'
+expect "agent spawn is never blocked" 0 '{"tool_name":"Agent","tool_input":{"subagent_type":"dotagent:explore"}}'
+expect "second spawn" 0 '{"tool_name":"Agent","tool_input":{"subagent_type":"dotagent:explore"}}'
 expect "reviewer spawn" 0 '{"tool_name":"Agent","tool_input":{"subagent_type":"dotagent:reviewer"}}'
 out="$(sh "$guard" receipt)"
-case "$out" in "subagents: worker 2, reviewer 1") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL receipt: $out" ;; esac
+case "$out" in "subagents: explore 2, reviewer 1") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL receipt: $out" ;; esac
 out="$(sh "$guard" status)"
 case "$out" in 1) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL status: $out" ;; esac
 printf '{"hook_event_name":"SessionStart"}' | sh "$guard" >/dev/null
@@ -269,8 +269,8 @@ cfg '{}'
 # saved answers, the git exclude entry, and the first run line
 sh "$guard" set setup minimal >/dev/null && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set setup"; }
 sh "$guard" set setup maybe >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL setup accepts a bad value"; } || pass=$((pass + 1))
-sh "$guard" set hooks declined >/dev/null && sh "$guard" set big_plan ok >/dev/null && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set hooks or big_plan"; }
-case "$(sh "$guard" show)" in *"setup=minimal"*"hooks=declined"*"big_plan=ok"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL show answers: $(sh "$guard" show)" ;; esac
+sh "$guard" set hooks declined >/dev/null && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL set hooks"; }
+case "$(sh "$guard" show)" in *"setup=minimal"*"hooks=declined"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL show answers: $(sh "$guard" show)";; esac
 cfg '{}'
 x="$tmp/exproj"
 mkdir -p "$x" && git -C "$x" init -q
