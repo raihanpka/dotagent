@@ -13,8 +13,9 @@ const reviewer = readFileSync(new URL('../plugin/agents/reviewer.md', import.met
 const front = skill.match(/^---\n([\s\S]*?)\n---/)
 const headings = (text) => [...text.matchAll(/^## (.+)$/gm)].map((m) => m[1])
 
-test('frontmatter has a quoted description of one short sentence and an argument hint', () => {
+test('frontmatter has the name of the folder, a quoted description, and an argument hint', () => {
   assert.ok(front, 'frontmatter present')
+  assert.match(front[1], /^name: ship$/m)
   const description = front[1].match(/^description: "(.+)"$/m)?.[1]
   assert.ok(description, 'quoted description')
   assert.ok(description.length < 220, `description is ${description.length} characters`)

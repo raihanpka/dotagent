@@ -1,4 +1,5 @@
 ---
+name: workflow
 description: "Pick how far a run goes on its own. local: stops at local commits, never pushes. auto: goes all the way to the merge. No argument shows the saved settings."
 argument-hint: "[local|auto]"
 disable-model-invocation: true

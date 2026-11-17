@@ -1,4 +1,5 @@
 ---
+name: setup
 description: "Set dotagent up in this repo by interview, once: the AI agent you use (Claude Code, Codex, Command Code, both, or another), commands, architecture, workflow, verification, CI, git hooks, and protected paths. Writes the files and the saved settings, shows each file first, and never overwrites. Stays small when the workflow is local."
 disable-model-invocation: true
 ---

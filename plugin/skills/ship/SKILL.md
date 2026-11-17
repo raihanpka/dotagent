@@ -1,5 +1,6 @@
 ---
-description: "Run a task as one loop: a checkable finish, one verified unit at a time, a real-artifact proof, fresh review, fan-out, a production watch, and a stop reason. continue resumes."
+name: ship
+description: "Run a task as one loop: a checkable finish, one verified unit at a time, real-artifact proof, fresh review, fan-out, production watch, and stop reason. continue resumes."
 argument-hint: "<task> | continue"
 ---
 # dotagent ship

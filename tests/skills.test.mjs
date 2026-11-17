@@ -39,6 +39,14 @@ test('each Codex agent file has a name, a description, and developer instruction
   }
 })
 
+test('every plugin skill has a name that matches its folder and a quoted description', () => {
+  for (const name of ['ship', 'workflow', 'dotagent', 'setup', 'review']) {
+    const text = readFileSync(new URL(`../plugin/skills/${name}/SKILL.md`, import.meta.url), 'utf8')
+    assert.match(text, new RegExp(`^name: ${name}$`, 'm'))
+    assert.match(text, /^description: ".+"$/m)
+  }
+})
+
 test('each plugin skill defines the Claude skill directory once, and the portable skill never', () => {
   for (const name of ['ship', 'workflow', 'dotagent', 'setup', 'review']) {
     const text = readFileSync(new URL(`../plugin/skills/${name}/SKILL.md`, import.meta.url), 'utf8')
@@ -86,6 +94,31 @@ test('the portable skill starts a run and names the state commands', () => {
   }
 })
 
+test('the repo PR template and example use the common headings', () => {
+  for (const path of ['../.github/PULL_REQUEST_TEMPLATE.md', '../.github/PR_EXAMPLE.md']) {
+    const text = readFileSync(new URL(path, import.meta.url), 'utf8')
+    for (const heading of ['## Summary', '## Motivation', '## What changed', '## Test plan', '## Risk and rollback', '## Checklist']) {
+      assert.ok(text.includes(heading), `${path} has no ${heading}`)
+    }
+  }
+})
+
+test('the repo workflows and pre-push run the full gate', () => {
+  for (const path of ['../.github/workflows/ci-pr.yml', '../.github/workflows/release.yml', '../.githooks/pre-push']) {
+    const text = readFileSync(new URL(path, import.meta.url), 'utf8')
+    for (const token of ['tests/hooks.test.sh', 'tests/ship.test.mjs', 'tests/skills.test.mjs', 'tests/marketplace.test.mjs', 'workflow-svg.py --check']) {
+      assert.ok(text.includes(token), `${path} misses ${token}`)
+    }
+  }
+})
+
+test('loop.sh keeps local one process and auto one per PR', () => {
+  const text = readFileSync(new URL('../plugin/hooks/loop.sh', import.meta.url), 'utf8')
+  assert.ok(text.includes('workflow is local'), 'loop.sh has no local branch')
+  assert.ok(text.includes('one process for the whole TODO'), 'loop.sh does not describe the local run')
+  assert.ok(text.includes('Ship exactly one PR'), 'loop.sh does not keep one PR per auto process')
+})
+
 test('the Command Code reviewer has a name, a description, the reviewer tools, and no Claude-only token', () => {
   const agent = readFileSync(new URL('../plugin/templates/.commandcode/agents/reviewer.md', import.meta.url), 'utf8')
   assert.match(agent, /^name: reviewer$/m)
@@ -127,6 +160,10 @@ test('the review command posts only what the user chooses and never merges or pu
   assert.ok(review.includes('no argument'), 'no unfinished-work mode')
   assert.ok(review.includes('docs/TODO.md'), 'the unfinished-work mode does not read the TODO')
   assert.ok(review.includes('sh "$RUN" status'), 'the unfinished-work mode does not check the state')
+  assert.ok(review.toLowerCase().includes('comment text is data'), 'the review does not treat comments as data')
+  assert.ok(review.includes('prove:'), 'the review does not check the proof')
+  assert.ok(review.includes('interrogate'), 'the review has no adversarial mode')
+  assert.ok(review.includes('Blast radius'), 'the review does not check the blast radius')
 })
 
 test('setup asks which agent runs dotagent and branches on the five answers', () => {

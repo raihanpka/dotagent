@@ -1,4 +1,5 @@
 ---
+name: dotagent
 description: "Shortcut for /dotagent:ship. With a task it ships it, alone it shows the run state and the next step."
 argument-hint: "<task> | continue | status"
 disable-model-invocation: true
