@@ -11,6 +11,7 @@ Read this before you push, open a PR, or merge, whatever the size of the task. `
 
 ## Open the PR
 
+First run the PR `prove:` from `docs/TODO.md` and put the evidence pointer in its `## log` row. A green gate plus a proof is the bar.
 Push the branch, then `gh pr create` with the PR title (a name that says what changed, see Names) and
 `.github/PULL_REQUEST_TEMPLATE.md` filled by the reviewer. The body never ends with a "Generated with" line or a
 trailer, a hook refuses it. Tick only what was done and delete every unchecked line.
@@ -18,7 +19,8 @@ trailer, a hook refuses it. Tick only what was done and delete every unchecked l
 ## CI
 
 After the push run `gh pr checks --watch`. On a failure read the failing log, fix it, push, and watch again. Never skip, weaken, or
-delete a check to get green.
+delete a check to get green. Two failed fixes are a stop, not a third fix: `stop error` with the command and the first failing line, or
+`stop premise` when the failures share one premise. Write `## stopped` and end with `next:`.
 
 ## Review comments
 
@@ -60,6 +62,15 @@ Local (the `local` mode): `git rebase <default>`, the full gate once, then on th
 branch, so the hashes in the body still resolve.
 
 A commit message and a PR title never carry `(#<n>)`, GitHub adds it, and a hook refuses it. A hook also refuses `--admin`, `--force`, and any trailer, and asks before a merge method other than the repo's. The squash subject ends with the number of the PR you merge. Never bypass a required check or a required review, report it instead.
+
+## A stop at the remote
+
+- **`denied`**: the workflow mode refused a push, PR, or merge, or the user answered the prompt no. Stop, report the command and the
+  mode, and say how to unblock (`/dotagent:workflow auto`, or the yes in the chat). Leave the commits local.
+- **`conflict`**: a rebase conflict survived two tries. Stop, name the files and what each side wants, leave the PR open, and do not
+  `--skip` or `--abort` to hide it.
+- **`red-base`**: the default branch is red. Stop before building on it, with the failing command and line.
+- **`budget`**: a turn or time cap is reached. Stop, report what merged and the next unit.
 
 ## Merge method
 

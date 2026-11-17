@@ -23,7 +23,7 @@ test('frontmatter has a quoted description of one short sentence and an argument
 
 test('the core stays small and every reference is linked from it and exists', () => {
   assert.ok(Buffer.byteLength(skill) < 10000, `SKILL.md is ${Buffer.byteLength(skill)} bytes, move text to a reference`)
-  assert.deepEqual(references.sort(), ['merge.md', 'plan.md'])
+  assert.deepEqual(references.sort(), ['loop.md', 'merge.md', 'plan.md', 'verify.md'])
   for (const file of references) {
     assert.ok(skill.includes('${CLAUDE_SKILL_DIR}/references/' + file), `${file} is not linked from SKILL.md`)
   }
@@ -67,9 +67,27 @@ test('every spawn gets an objective, an output, and boundaries', () => {
   for (const label of ['Objective', 'Output', 'Boundaries']) assert.ok(brief.includes(label), `no ${label}`)
 })
 
-test('the TODO layout keeps the fields the guard reads', () => {
+test('the TODO layout keeps the fields the guard reads and the run contract', () => {
   const plan = read('references/plan.md')
-  for (const field of ['## PR 1:', 'files:', 'done:', '- [ ]', 'branch:', 'needs:']) assert.ok(plan.includes(field), `no ${field}`)
+  for (const field of ['## PR 1:', 'files:', 'done:', '- [ ]', 'branch:', 'needs:', 'goal:', 'finish:', 'prove:', '## log', '## stopped']) {
+    assert.ok(plan.includes(field), `no ${field}`)
+  }
+})
+
+test('the loop reference names every stop reason and the no-progress rule', () => {
+  const loop = read('references/loop.md')
+  for (const reason of ['done', 'no-progress', 'premise', 'needs-human', 'question', 'red-base', 'conflict', 'denied', 'budget', 'error']) {
+    assert.ok(loop.includes('`' + reason + '`'), `no stop reason ${reason}`)
+  }
+  assert.match(loop, /two (units|same)/i)
+  assert.match(loop, /progress/i)
+})
+
+test('the verify reference covers the real artifact, the feature map, and formal verification', () => {
+  const verify = read('references/verify.md')
+  for (const token of ['real artifact', 'feature map', 'TLA+', 'Lean', 'able to fail', 'counterexample']) {
+    assert.ok(verify.toLowerCase().includes(token.toLowerCase()), `no ${token}`)
+  }
 })
 
 test('the ship skill and setup follow a repo flow that is not the default', () => {
