@@ -1,7 +1,7 @@
 // Checks the portable ship skill that Codex, Antigravity, and other agents read from .agents/skills.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 
 const skill = readFileSync(new URL('../plugin/templates/.agents/skills/dotagent-ship/SKILL.md', import.meta.url), 'utf8')
@@ -55,6 +55,23 @@ test('the body names no tool or path that only Claude Code has', () => {
   }
 })
 
+test('the portable skill ships the same references as the plugin, and links all of them', () => {
+  const pluginRefs = readdirSync(new URL('../plugin/skills/ship/references', import.meta.url)).sort()
+  const portableRefs = readdirSync(new URL('../plugin/templates/.agents/skills/dotagent-ship/references', import.meta.url)).sort()
+  const rootRefs = readdirSync(new URL('../skills/dotagent-ship/references', import.meta.url)).sort()
+  assert.deepEqual(portableRefs, pluginRefs)
+  assert.deepEqual(rootRefs, pluginRefs)
+  for (const file of pluginRefs) {
+    assert.ok(skill.includes('references/' + file), `SKILL.md does not link references/${file}`)
+    for (const path of [`../plugin/templates/.agents/skills/dotagent-ship/references/${file}`, `../skills/dotagent-ship/references/${file}`]) {
+      const text = readFileSync(new URL(path, import.meta.url), 'utf8')
+      for (const token of ['CLAUDE_SKILL_DIR', 'CLAUDE_PLUGIN_ROOT', 'claude -p', 'CLAUDE_FLAGS', 'loop.sh']) {
+        assert.ok(!text.includes(token), `${path} names ${token}`)
+      }
+    }
+  }
+})
+
 test('the portable skill carries the fan-out and production rules', () => {
   const lower = skill.toLowerCase()
   for (const token of ['swarm', 'arena', 'interrogate', 'panel', 'release:', 'watch:', 'rollback:', 'regression']) {
@@ -64,7 +81,8 @@ test('the portable skill carries the fan-out and production rules', () => {
 
 test('the portable skill starts a run and names the state commands', () => {
   for (const command of ['start', 'progress', 'stop', 'state']) {
-    assert.ok(skill.includes(`.dotagent/run.sh ${command}`), `the portable skill does not name ${command}`)
+    const named = skill.includes(`"$RUN" ${command}`) || skill.includes(`.dotagent/run.sh ${command}`)
+    assert.ok(named, `the portable skill does not name ${command}`)
   }
 })
 

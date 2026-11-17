@@ -49,7 +49,7 @@ Read `SETUP-REFERENCE.md` before this step, then write each file at its own path
 |---|---|---|
 | `AGENTS.md` | `templates/AGENTS.md` | always, under 60 lines, merged with existing rules |
 | `CLAUDE.md` | `templates/CLAUDE.md` | `claude` or `both`, and the repo has none |
-| `.agents/skills/dotagent-ship/SKILL.md` | `templates/.agents/skills/dotagent-ship/SKILL.md` | always, so Codex, Command Code, and other agents ship the same way |
+| `.agents/skills/dotagent-ship/` | `templates/.agents/skills/dotagent-ship/` | always, with its `references/`, so Codex, Command Code, and other agents ship the same way |
 | `.codex/agents/reviewer.toml` | `templates/.codex/agents/reviewer.toml` | `codex` or `both` |
 | `.codex/hooks.json` | `templates/.codex/hooks.json` | `codex` or `both` |
 | `.commandcode/settings.json` | `templates/.commandcode/settings.json` | `commandcode` |

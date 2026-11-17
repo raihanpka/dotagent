@@ -44,7 +44,7 @@ the open items in `docs/DOTAGENT-SETUP.md`. Never invent a command or a rule.
 | Write to | Fetch from |
 |---|---|
 | `AGENTS.md` | `plugin/templates/AGENTS.md` |
-| `.agents/skills/dotagent-ship/SKILL.md` | `plugin/templates/.agents/skills/dotagent-ship/SKILL.md` |
+| `.agents/skills/dotagent-ship/` | `plugin/templates/.agents/skills/dotagent-ship/` (copy `references/` too) |
 | `.codex/agents/reviewer.toml` | `plugin/templates/.codex/agents/reviewer.toml` (Codex only) |
 | `.codex/hooks.json` | `plugin/templates/.codex/hooks.json` (Codex only) |
 | `.commandcode/settings.json` | `plugin/templates/.commandcode/settings.json` (Command Code only) |

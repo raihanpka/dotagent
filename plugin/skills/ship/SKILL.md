@@ -1,5 +1,5 @@
 ---
-description: "Run a task as one loop: a checkable finish, one verified unit at a time, a real-artifact proof, a fresh review, and a stop reason. continue resumes."
+description: "Run a task as one loop: a checkable finish, one verified unit at a time, a real-artifact proof, fresh review, fan-out, a production watch, and a stop reason. continue resumes."
 argument-hint: "<task> | continue"
 ---
 # dotagent ship
@@ -9,7 +9,7 @@ state. The task can carry pasted requirements.
 
 - One path for every task. If the whole diff fits one sentence there is no plan: change, verify, commit, open the PR.
 - A run is a loop, not a line: **goal -> plan -> one unit -> verify -> prove -> review -> ship -> next unit -> finish**. A failed check
-  goes back to the unit. Two tries, then stop.
+  goes back to the unit. Two tries on one hypothesis, then a pivot.
 - A stop is a feature: every stop names one reason, writes it down, and ends with a `next:` line. Never retry the same unit silently.
 `SKILL` is `${CLAUDE_SKILL_DIR}`. `RUN` is `$SKILL/../../hooks/run.sh`. If an agent does not expand the token, use the portable skill.
 
