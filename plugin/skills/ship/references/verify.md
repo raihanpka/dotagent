@@ -165,3 +165,17 @@ without evidence is a warning sign, not a result.
 - A skipped, deleted, or loosened test.
 - A number with no baseline, no run count, and no named limiter.
 - A formal pass on a model that no longer matches the code.
+
+## Habits from the verification skills
+
+- **Break the behavior.** Before you trust a new test, break the behavior it names. If the test still passes, it proves nothing.
+- **Test what callers observe.** Assert return values, errors, stored state, and effects on outside systems. A test pinned to a private helper or a call order breaks on a refactor and proves nothing new.
+- **Fail first, then pass.** For a bug, record the failing run before the fix and the passing run after it. When a failing test is impractical, use the closest executable check and say why.
+- **Prefer no test over a bad test.** Never change a test to match a wrong implementation, and never weaken an assertion unless the requirement changed.
+- **Drive the real path.** A UI change is walked in the running app, with a screenshot or video. An API change gets a real request and a read back of the stored value.
+- **Run a verification script once end to end before you hand it off.** A script that never ran is a draft, not a proof.
+- **Clean up only what the run started.** Never kill by process name, and never delete the evidence.
+- **No implicit state machines.** A state spread over booleans, optional fields, or string tags in several files is a state machine
+  nobody wrote down. Before a change that adds one, make it explicit: one enum or table of states, the legal transitions in one place,
+  and a test for each illegal transition. When a state can be derived from the data, delete the flag instead of adding a second source of truth.
+  Grep for the flags the change touches (`bool`, `is_`, `has_`, `status`, `state`, `*_done`) and check they agree.
