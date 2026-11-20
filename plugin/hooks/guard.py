@@ -45,7 +45,8 @@ TODO = os.path.join("docs", "TODO.md")
 RUNS = os.path.join(".dotagent", "runs.jsonl")  # one JSON line per event: a subagent spawn, a gate pass, a plan phase
 PHASE_TTL = 3600  # a forgotten plan phase must never lock a repo for long
 # A run ends for one reason. `done` is the finish predicate; every other reason stops the loop and asks for a human or a new experiment.
-STOP_REASONS = ("done", "no-progress", "premise", "needs-human", "question", "red-base", "conflict", "denied", "budget", "error", "regression", "user")
+STOP_REASONS = ("done", "no-progress", "premise", "needs-human", "question", "red-base", "conflict", "denied", "budget", "error", "regression", "user", "paused")
+STOP_NUDGE_CAP = 60  # nudges per run, a bound on the stop hook, not a limit on the work
 STALL_LIMIT = 4  # two same rows is a pivot, four is a stall. A plateau pivots before it stops.
 
 
@@ -231,30 +232,58 @@ def run_stop(reason, detail):
 
 
 def stop_hook(event):
-    # Claude Code and Codex call this when the agent is about to end its turn. While a run is active and not stopped, the turn
-    # does not end: the hook blocks and names the next step. A block that moved neither HEAD nor the unfinished count, twice
-    # in a row, records `no-progress` and lets the turn end, so a loop cannot spin. To pause, the user says stop and the agent
-    # runs `run.sh stop user`. To ask the user a real question, the agent first records `stop needs-human`.
+    # Claude Code and Codex call this when the agent is about to end its turn. A run that is active and not stopped gets one
+    # nudge per state: the turn is blocked once with the next step. The same state again (HEAD and the unfinished count did not
+    # move) lets the turn end and records `paused`, which is not a failure: the state is on disk and `continue` resumes it.
+    # A cap on nudges per run bounds it. `keep_going off` turns the whole hook off.
     if opt("KEEP_GOING") == "off":
         return
     found = run_summary()
     if found["run"] != "active":
         return
     head, left = clean_head(), len(unfinished())
-    last_block = next((e for e in reversed(current_run()) if "blocked" in e), None)
-    if event.get("stop_hook_active") and last_block and last_block.get("head") == head and last_block.get("left") == left:
-        record(stop="no-progress", detail="the stop hook blocked twice with no change to HEAD or the unfinished count",
+    events = current_run()
+    last_block = next((e for e in reversed(events) if "blocked" in e), None)
+    nudges = sum(1 for e in events if "blocked" in e)
+    same_state = last_block is not None and last_block.get("head") == head and last_block.get("left") == left
+    if (event.get("stop_hook_active") and same_state) or nudges >= STOP_NUDGE_CAP:
+        record(stop="paused", detail="the turn ended with no change since the last nudge, `continue` resumes from docs/TODO.md",
                head=head, left=left, same=found["same"])
         return
     record(blocked=True, head=head, left=left)
     if left:
-        reason = (f"dotagent: the run is active and docs/TODO.md still has {left} unfinished PR(s). Do not end the turn. Run "
-                  "`sh \"$RUN\" state`, then take the next unticked subtask. Stop only with `sh \"$RUN\" stop <reason> \"<line>\"` "
-                  "when a stop in loop.md fires; to ask the user, record `needs-human` first.")
+        reason = (f"dotagent: {left} PR(s) left in docs/TODO.md. Take the next unit (`sh \"$RUN\" state`). If you need the user, "
+                  "run `sh \"$RUN\" stop needs-human \"<question>\"` first, then ask.")
     else:
-        reason = ("dotagent: every PR in docs/TODO.md is ticked, but the run is not closed. Check the `finish:` predicate against "
-                  "the real artifact, then run `sh \"$RUN\" stop done \"<evidence>\"`. If the predicate fails, take the next unit.")
+        reason = ("dotagent: every PR in docs/TODO.md is ticked. Check the `finish:` predicate against the real artifact, then "
+                  "run `sh \"$RUN\" stop done \"<evidence>\"`, or take the next unit if it fails.")
     print(json.dumps({"decision": "block", "reason": reason}))
+
+
+def explain():
+    # A readable timeline of the newest run, one line per event: time, kind, and what happened. The record to read when asked
+    # what the run did and why. It reads runs.jsonl, the machine log, so a deleted file only loses history, never the work.
+    kinds = (("start", "start"), ("phase", "phase"), ("decision", "decision"), ("progress", "unit"), ("blocked", "nudge"), ("stop", "stop"))
+    lines = []
+    for event in current_run() or entries():
+        kind = next((label for key, label in kinds if key in event), "event")
+        when = time.strftime("%H:%M:%S", time.localtime(event.get("t", 0)))
+        if kind == "start":
+            detail = event["start"]
+        elif kind == "phase":
+            detail = event["phase"]
+        elif kind == "decision":
+            detail = f'{event.get("decision", "")}: {event.get("why", "")} ({event.get("result", "")})'
+        elif kind == "unit":
+            detail = f'{event["progress"]} {event.get("kind", "")} head={str(event.get("head", ""))[:7]} left={event.get("left", "")}'
+        elif kind == "nudge":
+            detail = f'the turn was held, PR(s) left={event.get("left", "")}'
+        elif kind == "stop":
+            detail = f'{event["stop"]}: {event.get("detail", "")}'
+        else:
+            detail = ""
+        lines.append(f"{when}  {kind:<9} {detail}".rstrip())
+    print("\n".join(lines) or "no run recorded yet")
 
 
 def run_decision(args):
@@ -600,6 +629,9 @@ def cli(args):
         return
     if args[:1] == ["status"]:
         print(len(unfinished()))
+        return
+    if args[:1] == ["explain"]:
+        explain()
         return
     if args[:1] == ["state"]:
         print(state_line())

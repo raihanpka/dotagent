@@ -602,10 +602,10 @@ printf '# TODO: x\n\n## PR 1: feat(a): add a\nbranch: feat/a\n\n- [ ] 1.1 `feat(
 sh "$guard" start "add a" >/dev/null
 out="$(stop_out "$(stop_json false)")"
 blocks "$out" && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL an active run with unfinished work does not block: $out"; }
-case "$out" in *"unfinished"*"next"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL the block does not name the next step: $out" ;; esac
+case "$out" in *"PR(s) left"*"next unit"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL the block does not name the next step: $out" ;; esac
 out="$(stop_out "$(stop_json true)")"
-blocks "$out" && { fail=$((fail + 1)); echo "FAIL a second block with no progress blocks again: $out"; } || pass=$((pass + 1))
-case "$(sh "$guard" state)" in *"run=stopped"*"reason=no-progress"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL two blocks with no progress do not record no-progress: $(sh "$guard" state)" ;; esac
+blocks "$out" && { fail=$((fail + 1)); echo "FAIL the same state blocks twice: $out"; } || pass=$((pass + 1))
+case "$(sh "$guard" state)" in *"run=stopped"*"reason=paused"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a turn that ends with no change is not paused: $(sh "$guard" state)" ;; esac
 sh "$guard" start continue >/dev/null
 sh "$guard" stop user "paused by the user" >/dev/null
 blocks "$(stop_out "$(stop_json false)")" && { fail=$((fail + 1)); echo "FAIL a user stop still blocks"; } || pass=$((pass + 1))
@@ -621,6 +621,17 @@ case "$out" in "keep_going=off") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); ec
 sh "$guard" set keep_going maybe >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL keep_going accepts a wrong value"; } || pass=$((pass + 1))
 cfg '{}'
 rm -f "$tmp/proj/.dotagent/runs.jsonl"
+
+# explain prints the newest run as a timeline: the start, the stop, and the reason
+cfg '{}'
+rm -f "$tmp/proj/.dotagent/runs.jsonl"
+sh "$guard" start "explain check" >/dev/null
+sh "$guard" stop user "paused for a check" >/dev/null
+out="$(sh "$guard" explain)"
+case "$out" in *"start"*"explain check"*"stop"*"user: paused for a check"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL explain: $out" ;; esac
+rm -f "$tmp/proj/.dotagent/runs.jsonl"
+out="$(sh "$guard" explain)"
+case "$out" in *"no run recorded yet"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL explain without a log: $out" ;; esac
 
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]

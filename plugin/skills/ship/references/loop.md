@@ -27,10 +27,7 @@ One turn of the circle:
 
 The loop is the default. Nothing waits between units. The only pauses are a stop and the user.
 
-**The stop hook.** While a run is active and not stopped, the guard's `Stop` hook blocks the end of the turn and names the next step. Two
-blocks with no change to HEAD or the unfinished count record `no-progress` and let the turn end. To pause, the user says stop and you run
-`sh "$RUN" stop user "<why>"`. To ask the user a real question, record `stop needs-human` first, then ask. `keep_going off` in the
-config turns the hook off, and the loop then rests on this file alone.
+**The stop hook.** When a turn ends with an active run, the guard's `Stop` hook blocks it once with the next step. If the state is the same (HEAD and the unfinished count did not move), the turn ends and the run is recorded as `paused`. That is not a failure: state is on disk, and `continue` resumes it. A block that asks for the user is `stop needs-human` first, then the question. `keep_going off` in the config turns the hook off.
 
 **Budget.** `budget` is only enforced when a cap is set, for example `CLAUDE_FLAGS="--max-turns 40"` in `loop.sh`. Without a cap, the
 only stops are the other rows, so set a cap for an unattended run.
@@ -74,6 +71,7 @@ A plateau pivots before it stops.
 | `error` | A tool or CLI failed twice | The exact command and the log line |
 | `regression` | A post-merge `watch:` fails | The signal, the window, the rollback, and the next fix |
 | `user` | The user says stop or pause | The reason, in the user's words |
+| `paused` | A turn ended with no change since the last nudge | Nothing failed. `continue` resumes from `docs/TODO.md` |
 
 Two or more failed fixes that share a premise are a `premise` stop, not another fix. Write the premise down and test it directly. Do not
 start the next fix before the premise is written and tested.
@@ -98,7 +96,7 @@ next: check whether the query is built in the store or the handler, then fix tha
 A later `continue` runs `sh "$RUN" start continue`, which clears the stop. The `## stopped` block stays until the next task replaces the TODO,
 so the next context can read why the last one stopped.
 
-For an audit trail, `sh "$RUN" log > decisions.tsv` prints the `## log` table as TSV. Commit that file only when the task asks for it.
+To explain what a run did and why, `sh "$RUN" explain` prints its timeline: the start, each unit, each held turn, each decision, and the stop with its reason. It reads `.dotagent/runs.jsonl`, so the timeline is per machine and is not committed. For an audit trail, `sh "$RUN" log > decisions.tsv` prints the `## log` table as TSV. Commit that file only when the task asks for it.
 
 ## The unattended loop
 
