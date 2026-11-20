@@ -45,7 +45,7 @@ TODO = os.path.join("docs", "TODO.md")
 RUNS = os.path.join(".dotagent", "runs.jsonl")  # one JSON line per event: a subagent spawn, a gate pass, a plan phase
 PHASE_TTL = 3600  # a forgotten plan phase must never lock a repo for long
 # A run ends for one reason. `done` is the finish predicate; every other reason stops the loop and asks for a human or a new experiment.
-STOP_REASONS = ("done", "no-progress", "premise", "needs-human", "question", "red-base", "conflict", "denied", "budget", "error", "regression")
+STOP_REASONS = ("done", "no-progress", "premise", "needs-human", "question", "red-base", "conflict", "denied", "budget", "error", "regression", "user")
 STALL_LIMIT = 4  # two same rows is a pivot, four is a stall. A plateau pivots before it stops.
 
 
@@ -58,6 +58,7 @@ CHOICES = {
     "commit_scope": ("required", "optional"),  # whether `type(scope): summary` needs its scope
     "em_dash": ("block", "allow"),
     "emoji": ("block", "allow"),
+    "keep_going": ("on", "off"),  # on: the Stop hook keeps an active run going, off: the turn may end and the run waits for `continue`
 }
 # Answers the user gave once, so a skill never asks twice. Unset means not asked yet.
 ANSWERS = {
@@ -227,6 +228,33 @@ def run_stop(reason, detail):
     found = run_summary()
     record(stop=reason, detail=detail.strip(), head=clean_head(), left=len(unfinished()), same=found["same"])
     print("stop=" + reason)
+
+
+def stop_hook(event):
+    # Claude Code and Codex call this when the agent is about to end its turn. While a run is active and not stopped, the turn
+    # does not end: the hook blocks and names the next step. A block that moved neither HEAD nor the unfinished count, twice
+    # in a row, records `no-progress` and lets the turn end, so a loop cannot spin. To pause, the user says stop and the agent
+    # runs `run.sh stop user`. To ask the user a real question, the agent first records `stop needs-human`.
+    if opt("KEEP_GOING") == "off":
+        return
+    found = run_summary()
+    if found["run"] != "active":
+        return
+    head, left = clean_head(), len(unfinished())
+    last_block = next((e for e in reversed(current_run()) if "blocked" in e), None)
+    if event.get("stop_hook_active") and last_block and last_block.get("head") == head and last_block.get("left") == left:
+        record(stop="no-progress", detail="the stop hook blocked twice with no change to HEAD or the unfinished count",
+               head=head, left=left, same=found["same"])
+        return
+    record(blocked=True, head=head, left=left)
+    if left:
+        reason = (f"dotagent: the run is active and docs/TODO.md still has {left} unfinished PR(s). Do not end the turn. Run "
+                  "`sh \"$RUN\" state`, then take the next unticked subtask. Stop only with `sh \"$RUN\" stop <reason> \"<line>\"` "
+                  "when a stop in loop.md fires; to ask the user, record `needs-human` first.")
+    else:
+        reason = ("dotagent: every PR in docs/TODO.md is ticked, but the run is not closed. Check the `finish:` predicate against "
+                  "the real artifact, then run `sh \"$RUN\" stop done \"<evidence>\"`. If the predicate fails, take the next unit.")
+    print(json.dumps({"decision": "block", "reason": reason}))
 
 
 def run_decision(args):
@@ -888,6 +916,8 @@ def main():
         or os.environ.get("COMMANDCODE_SESSION_ID")
         or ""
     )
+    if event.get("hook_event_name") == "Stop":
+        return stop_hook(event)
     if event.get("hook_event_name") == "SessionStart":
         prune_runs()
         lines = [

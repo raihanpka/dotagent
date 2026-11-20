@@ -27,6 +27,18 @@ One turn of the circle:
 
 The loop is the default. Nothing waits between units. The only pauses are a stop and the user.
 
+**The stop hook.** While a run is active and not stopped, the guard's `Stop` hook blocks the end of the turn and names the next step. Two
+blocks with no change to HEAD or the unfinished count record `no-progress` and let the turn end. To pause, the user says stop and you run
+`sh "$RUN" stop user "<why>"`. To ask the user a real question, record `stop needs-human` first, then ask. `keep_going off` in the
+config turns the hook off, and the loop then rests on this file alone.
+
+**Budget.** `budget` is only enforced when a cap is set, for example `CLAUDE_FLAGS="--max-turns 40"` in `loop.sh`. Without a cap, the
+only stops are the other rows, so set a cap for an unattended run.
+
+**Long processes.** Anything you expect to run more than five minutes (a CI watch, the full gate, a long build or test, a dev server, a
+`claude -p` process, a monitor) runs with `run_in_background`. Do the next small unit or a read-only check while it runs. Never idle-wait
+or poll in a sleep loop. Read its output when it finishes, and if it fails, take the pivot path.
+
 ## Retry, pivot, and the next task
 
 - A failed check gets two tries on one hypothesis. A different hypothesis gets its own two tries. Do not repeat the same fix a third time.
@@ -61,6 +73,7 @@ A plateau pivots before it stops.
 | `budget` | The unit, turn, or time budget is spent | Done, left, and the next unit |
 | `error` | A tool or CLI failed twice | The exact command and the log line |
 | `regression` | A post-merge `watch:` fails | The signal, the window, the rollback, and the next fix |
+| `user` | The user says stop or pause | The reason, in the user's words |
 
 Two or more failed fixes that share a premise are a `premise` stop, not another fix. Write the premise down and test it directly. Do not
 start the next fix before the premise is written and tested.

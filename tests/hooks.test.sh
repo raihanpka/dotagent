@@ -591,5 +591,36 @@ case "$out" in *"run=stopped"*"reason=needs-human"*) pass=$((pass + 1)) ;; *) fa
 out="$(printf '{"hook_event_name":"SessionStart"}' | CLAUDE_PROJECT_DIR=$s sh "$guard")"
 case "$out" in *"stop=needs-human"*"stopped: needs-human"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL a lone stop is not announced: $out" ;; esac
 
+# the stop hook: an active run keeps the turn going, a stalled block lets it end, a stop or a keep_going off releases it
+stop_out() { printf '%s' "$1" | sh "$guard" 2>/dev/null; }
+stop_json() { jq -nc --argjson a "$1" '{hook_event_name:"Stop",stop_hook_active:$a}'; }
+blocks() { case "$1" in *'"decision": "block"'*) return 0 ;; *) return 1 ;; esac; }
+cfg '{}'
+rm -f "$tmp/proj/.dotagent/runs.jsonl"
+blocks "$(stop_out "$(stop_json false)")" && { fail=$((fail + 1)); echo "FAIL stop with no run blocks"; } || pass=$((pass + 1))
+printf '# TODO: x\n\n## PR 1: feat(a): add a\nbranch: feat/a\n\n- [ ] 1.1 `feat(a): add a`. x.\n\ndone:\n' > "$tmp/proj/docs/TODO.md"
+sh "$guard" start "add a" >/dev/null
+out="$(stop_out "$(stop_json false)")"
+blocks "$out" && pass=$((pass + 1)) || { fail=$((fail + 1)); echo "FAIL an active run with unfinished work does not block: $out"; }
+case "$out" in *"unfinished"*"next"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL the block does not name the next step: $out" ;; esac
+out="$(stop_out "$(stop_json true)")"
+blocks "$out" && { fail=$((fail + 1)); echo "FAIL a second block with no progress blocks again: $out"; } || pass=$((pass + 1))
+case "$(sh "$guard" state)" in *"run=stopped"*"reason=no-progress"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL two blocks with no progress do not record no-progress: $(sh "$guard" state)" ;; esac
+sh "$guard" start continue >/dev/null
+sh "$guard" stop user "paused by the user" >/dev/null
+blocks "$(stop_out "$(stop_json false)")" && { fail=$((fail + 1)); echo "FAIL a user stop still blocks"; } || pass=$((pass + 1))
+sh "$guard" start continue >/dev/null
+printf '# TODO: x\n\n## PR 1: feat(a): add a\nbranch: feat/a\n\n- [x] 1.1 `feat(a): add a`. x.\n\ndone: https://example.test/pull/1\n' > "$tmp/proj/docs/TODO.md"
+out="$(stop_out "$(stop_json false)")"
+case "$out" in *"stop done"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL all PRs ticked does not ask for stop done: $out" ;; esac
+cfg '{"keep_going":"off"}'
+blocks "$(stop_out "$(stop_json false)")" && { fail=$((fail + 1)); echo "FAIL keep_going off still blocks"; } || pass=$((pass + 1))
+cfg '{}'
+out="$(sh "$guard" set keep_going off)"
+case "$out" in "keep_going=off") pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL set keep_going: $out" ;; esac
+sh "$guard" set keep_going maybe >/dev/null 2>&1 && { fail=$((fail + 1)); echo "FAIL keep_going accepts a wrong value"; } || pass=$((pass + 1))
+cfg '{}'
+rm -f "$tmp/proj/.dotagent/runs.jsonl"
+
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]

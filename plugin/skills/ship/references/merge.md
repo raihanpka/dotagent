@@ -19,9 +19,9 @@ trailer, a hook refuses it. Tick only what was done and delete every unchecked l
 
 ## CI
 
-After the push run `gh pr checks --watch`. On a failure read the failing log, fix it, push, and watch again. Never skip, weaken, or
-delete a check to get green. Two failed fixes are a stop, not a third fix: `stop error` with the command and the first failing line, or
-`stop premise` when the failures share one premise. Write `## stopped` and end with `next:`.
+After the push run `gh pr checks --watch` with `run_in_background`, do the next small unit while it runs, and read the result when it ends. On a failure read the failing log, fix it, push, and watch again. Never skip, weaken, or
+delete a check to get green. Two tries on one hypothesis, then a pivot (`loop.md`). A failure that survives the pivot is `stop error` with the command and the first
+failing line, or `stop premise` when the failures share one premise. Write `## stopped` and end with `next:`.
 
 ## Review comments
 
