@@ -263,7 +263,7 @@ def stop_hook(event):
 def explain():
     # A readable timeline of the newest run, one line per event: time, kind, and what happened. The record to read when asked
     # what the run did and why. It reads runs.jsonl, the machine log, so a deleted file only loses history, never the work.
-    kinds = (("start", "start"), ("phase", "phase"), ("decision", "decision"), ("progress", "unit"), ("blocked", "nudge"), ("stop", "stop"))
+    kinds = (("start", "start"), ("phase", "phase"), ("decision", "decision"), ("progress", "unit"), ("blocked", "nudge"), ("stop", "stop"), ("compact", "compact"))
     lines = []
     for event in current_run() or entries():
         kind = next((label for key, label in kinds if key in event), "event")
@@ -280,6 +280,8 @@ def explain():
             detail = f'the turn was held, PR(s) left={event.get("left", "")}'
         elif kind == "stop":
             detail = f'{event["stop"]}: {event.get("detail", "")}'
+        elif kind == "compact":
+            detail = f'{event["compact"]} compaction, PR(s) left={event.get("left", "")}, the transcript is summarized, state is on disk'
         else:
             detail = ""
         lines.append(f"{when}  {kind:<9} {detail}".rstrip())
@@ -950,6 +952,11 @@ def main():
     )
     if event.get("hook_event_name") == "Stop":
         return stop_hook(event)
+    if event.get("hook_event_name") == "PreCompact":
+        # Compaction summarizes the transcript and can drop rules. The state is on disk, so this only records the moment.
+        if current_run():
+            record(compact=str(event.get("trigger") or "auto"), head=clean_head(), left=len(unfinished()))
+        return
     if event.get("hook_event_name") == "SessionStart":
         prune_runs()
         lines = [

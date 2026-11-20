@@ -633,5 +633,14 @@ rm -f "$tmp/proj/.dotagent/runs.jsonl"
 out="$(sh "$guard" explain)"
 case "$out" in *"no run recorded yet"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL explain without a log: $out" ;; esac
 
+# a compaction is recorded in the run, so explain shows it
+cfg '{}'
+rm -f "$tmp/proj/.dotagent/runs.jsonl"
+sh "$guard" start "compact check" >/dev/null
+printf '{"hook_event_name":"PreCompact","trigger":"auto"}' | sh "$guard" >/dev/null 2>&1
+out="$(sh "$guard" explain)"
+case "$out" in *"compact"*"auto compaction"*) pass=$((pass + 1)) ;; *) fail=$((fail + 1)); echo "FAIL compaction not in explain: $out" ;; esac
+rm -f "$tmp/proj/.dotagent/runs.jsonl"
+
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]

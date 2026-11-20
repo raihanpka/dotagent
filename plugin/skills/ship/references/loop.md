@@ -111,6 +111,27 @@ TODO and never pushes. The lead never carries the whole plan.
 
 The loop is safe to rerun. `state`, `docs/TODO.md`, git, and `gh` are the record, so a crash loses the context, not the work.
 
+## Compaction
+
+Auto-compaction summarizes the transcript and can drop the rules this file gives. Do not rely on a compacted transcript for the run:
+
+- The state is on disk: `docs/TODO.md`, git, `gh`, and `runs.jsonl`. A compaction loses the summary, not the work.
+- The `PreCompact` hook records a `compact` row, so `explain` shows where the context was cut.
+- After a compaction the `SessionStart` hook reprints the capsule. Read it, then `sh "$RUN" state`, before any new unit.
+- Keep the rules that must survive in `CLAUDE.md` or `AGENTS.md`, not only in a skill. Those files are sent again on every request.
+
+## Cross-model review
+
+Before a hand back of a run that left a trail, a reviewer on another vendor's model reads the trail and the transcript. It looks for
+risky decisions, weak evidence, skipped or unproven checks, and gaps a skim would miss. It does not redo the work.
+
+- Use the Codex CLI in its non-interactive, read-only mode when `command -v codex` finds it (check the flags with `codex --help`). Pass it
+  the paths of `docs/TODO.md`, `runs.jsonl`, and the transcript.
+- Self-review is not a cross-model review. Never call your own check one.
+- The reply ends with a section `Attention`. Its first line is `reviewed by <model>`, then one flag per line with a pointer to the row or
+  moment it means, or `No flags`.
+- With no other-vendor reviewer, write `reviewed by none, cross-model unavailable` and say why. Do not invent a model name.
+
 ## Deciding vs stopping
 
 A reversible point is decided, not asked. Pick the option you would defend, write `question: choice, because reason` under `## decisions`

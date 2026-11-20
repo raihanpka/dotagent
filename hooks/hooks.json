@@ -4,6 +4,9 @@
     "SessionStart": [
       { "hooks": [{ "type": "command", "command": "sh \"${PLUGIN_ROOT}/plugin/hooks/run.sh\" --client codex" }] }
     ],
+    "PreCompact": [
+      { "hooks": [{ "type": "command", "command": "sh \"${PLUGIN_ROOT}/plugin/hooks/run.sh\" --client codex" }] }
+    ],
     "Stop": [
       { "hooks": [{ "type": "command", "command": "sh \"${PLUGIN_ROOT}/plugin/hooks/run.sh\" --client codex" }] }
     ],
