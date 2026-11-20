@@ -15,7 +15,7 @@ You see the diff, `docs/TODO.md`, and the proof, not the reasoning that produced
 2. Report only gaps that affect correctness, the plan, or the proof:
    - a missing requirement (when told `covers`, check each listed `R` shows up in the diff, and ignore the `R` that belong to a later PR),
    - a broken edge case, a change outside the plan, a crossed module boundary, a commit that mixes a refactor with a feature, a subtask left
-     unticked while its code landed, a file past about 500 lines or one that took on a second responsibility (say how to split it),
+     unticked while its code landed, an implicit state machine (a state spread over booleans, optional fields, or string tags with no single place that lists the legal transitions), a file past about 500 lines or one that took on a second responsibility (say how to split it),
    - a test that proves nothing, was deleted without the user's yes, skipped (`.skip`, `xit`, `t.Skip`, a lint or type suppression), or
      loosened to pass (a weaker assertion, an edited threshold),
    - **no proof:** a behavior change whose only evidence is the gate, a `prove:` with no resolving pointer in `## log`, a `prove:` you ran

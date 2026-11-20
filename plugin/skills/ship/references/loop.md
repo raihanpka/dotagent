@@ -27,6 +27,15 @@ One turn of the circle:
 
 The loop is the default. Nothing waits between units. The only pauses are a stop and the user.
 
+**The stop hook.** When a turn ends with an active run, the guard's `Stop` hook blocks it once with the next step. If the state is the same (HEAD and the unfinished count did not move), the turn ends and the run is recorded as `paused`. That is not a failure: state is on disk, and `continue` resumes it. A block that asks for the user is `stop needs-human` first, then the question. `keep_going off` in the config turns the hook off.
+
+**Budget.** `budget` is only enforced when a cap is set, for example `CLAUDE_FLAGS="--max-turns 40"` in `loop.sh`. Without a cap, the
+only stops are the other rows, so set a cap for an unattended run.
+
+**Long processes.** Anything you expect to run more than five minutes (a CI watch, the full gate, a long build or test, a dev server, a
+`claude -p` process, a monitor) runs with `run_in_background`. Do the next small unit or a read-only check while it runs. Never idle-wait
+or poll in a sleep loop. Read its output when it finishes, and if it fails, take the pivot path.
+
 ## Retry, pivot, and the next task
 
 - A failed check gets two tries on one hypothesis. A different hypothesis gets its own two tries. Do not repeat the same fix a third time.
@@ -61,6 +70,8 @@ A plateau pivots before it stops.
 | `budget` | The unit, turn, or time budget is spent | Done, left, and the next unit |
 | `error` | A tool or CLI failed twice | The exact command and the log line |
 | `regression` | A post-merge `watch:` fails | The signal, the window, the rollback, and the next fix |
+| `user` | The user says stop or pause | The reason, in the user's words |
+| `paused` | A turn ended with no change since the last nudge | Nothing failed. `continue` resumes from `docs/TODO.md` |
 
 Two or more failed fixes that share a premise are a `premise` stop, not another fix. Write the premise down and test it directly. Do not
 start the next fix before the premise is written and tested.
@@ -85,7 +96,7 @@ next: check whether the query is built in the store or the handler, then fix tha
 A later `continue` runs `sh "$RUN" start continue`, which clears the stop. The `## stopped` block stays until the next task replaces the TODO,
 so the next context can read why the last one stopped.
 
-For an audit trail, `sh "$RUN" log > decisions.tsv` prints the `## log` table as TSV. Commit that file only when the task asks for it.
+To explain what a run did and why, `sh "$RUN" explain` prints its timeline: the start, each unit, each held turn, each decision, and the stop with its reason. It reads `.dotagent/runs.jsonl`, so the timeline is per machine and is not committed. For an audit trail, `sh "$RUN" log > decisions.tsv` prints the `## log` table as TSV. Commit that file only when the task asks for it.
 
 ## The unattended loop
 
@@ -99,6 +110,27 @@ TODO and never pushes. The lead never carries the whole plan.
 - Every exit prints a `next:` line.
 
 The loop is safe to rerun. `state`, `docs/TODO.md`, git, and `gh` are the record, so a crash loses the context, not the work.
+
+## Compaction
+
+Auto-compaction summarizes the transcript and can drop the rules this file gives. Do not rely on a compacted transcript for the run:
+
+- The state is on disk: `docs/TODO.md`, git, `gh`, and `runs.jsonl`. A compaction loses the summary, not the work.
+- The `PreCompact` hook records a `compact` row, so `explain` shows where the context was cut.
+- After a compaction the `SessionStart` hook reprints the capsule. Read it, then `sh "$RUN" state`, before any new unit.
+- Keep the rules that must survive in `CLAUDE.md` or `AGENTS.md`, not only in a skill. Those files are sent again on every request.
+
+## Cross-model review
+
+Before a hand back of a run that left a trail, a reviewer on another vendor's model reads the trail and the transcript. It looks for
+risky decisions, weak evidence, skipped or unproven checks, and gaps a skim would miss. It does not redo the work.
+
+- Use the Codex CLI in its non-interactive, read-only mode when `command -v codex` finds it (check the flags with `codex --help`). Pass it
+  the paths of `docs/TODO.md`, `runs.jsonl`, and the transcript.
+- Self-review is not a cross-model review. Never call your own check one.
+- The reply ends with a section `Attention`. Its first line is `reviewed by <model>`, then one flag per line with a pointer to the row or
+  moment it means, or `No flags`.
+- With no other-vendor reviewer, write `reviewed by none, cross-model unavailable` and say why. Do not invent a model name.
 
 ## Deciding vs stopping
 
